@@ -1,45 +1,11 @@
-<!-- Champ clé API dans le top bar (ajoute près du champ search) -->
-<input id="userKey" placeholder="Ta clé eBird (optionnel)" style="width:260px;margin-left:8px" />
+<!DOCTYPE html>
+<html lang="fr">
+<body>
+    <h1>Décrypter une pause</h1>
+    <input id="userKey" placeholder="Colle ta clé eBird ici" />
+    <button onclick="lancerRecherche()">Rechercher</button>
+    <div id="resultats"></div>
 
-<script>
-  // API_BASE selon Vercel
-  const API_BASE = '/api/ebird';
-
-  // restore key from sessionStorage
-  const keyInput = document.getElementById('userKey');
-  keyInput.value = sessionStorage.getItem('ebird_key') || '';
-
-  keyInput.addEventListener('change', () => {
-    const v = keyInput.value.trim();
-    if (v) sessionStorage.setItem('ebird_key', v);
-    else sessionStorage.removeItem('ebird_key');
-  });
-
-  // helper to get headers including user key if present
-  function makeHeaders() {
-    const headers = { 'Content-Type': 'application/json' };
-    const k = sessionStorage.getItem('ebird_key');
-    if (k) headers['x-user-ebird-key'] = k;
-    return headers;
-  }
-
-  // Exemple : recherche taxons (remplace l'appel fetch précédent)
-  async function fetchTaxonomy(q) {
-    const r = await fetch(`${API_BASE}?q=${encodeURIComponent(q)}`, { headers: makeHeaders() });
-    if (!r.ok) throw new Error('Server error ' + r.status);
-    return r.json();
-  }
-
-  // Exemple : charger observations (remplace l'appel fetch précédent)
-  async function loadObservations(speciesCode, lat, lng, distKm) {
-    markers.clearLayers();
-    const url = `${API_BASE}?speciesCode=${encodeURIComponent(speciesCode)}&lat=${lat}&lng=${lng}&dist=${distKm}&back=30&maxResults=500`;
-    const r = await fetch(url, { headers: makeHeaders() });
-    if (!r.ok) {
-      alert('Erreur serveur ' + r.status);
-      return;
-    }
-    const data = await r.json();
-    // ... traitement identique à ton code existant
-  }
-</script>
+    <script src="js/app.js"></script>
+</body>
+</html>
