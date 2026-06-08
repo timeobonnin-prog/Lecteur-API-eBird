@@ -2,25 +2,34 @@
 const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
-  const API_KEY = process.env.EBIRD_API_KEY;
-  if (!API_KEY) {
-    return res.status(500).json({ error: 'EBIRD_API_KEY not set on server' });
-  }
-
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-user-ebird-key');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const q = req.query.q;
-  const speciesCode = req.query.speciesCode;
   try {
+    // Récupère la clé : priorité à la clé utilisateur envoyée dans l'en-tête
+    const userKey = req.headers['x-user-ebird-key'];
+    const serverKey = process.env.EBIRD_API_KEY;
+    const API_KEY = (userKey && userKey.trim()) ? userKey.trim() : serverKey;
+
+    if (!API_KEY) {
+      return res.status(400).json({ error: 'No eBird API key provided (server or user).' });
+    }
+
+    // Ne jamais logger la clé
+    // Construire l'URL selon les paramètres
+    const q = req.query.q;
+    const speciesCode = req.query.speciesCode;
+
     if (q) {
       const url = `https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=en&query=${encodeURIComponent(q)}`;
       const r = await fetch(url, { headers: { 'x-ebirdapitoken': API_KEY } });
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
       const data = await r.json();
+      res.setHeader('Cache-Control','s-maxage=60'); // court cache
       return res.json(data);
     }
 
@@ -34,6 +43,7 @@ module.exports = async (req, res) => {
       const r = await fetch(url, { headers: { 'x-ebirdapitoken': API_KEY } });
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
       const data = await r.json();
+      res.setHeader('Cache-Control','s-maxage=60');
       return res.json(data);
     }
 
