@@ -1,6 +1,7 @@
 {
   "name": "mon-api-oiseaux",
   "version": "1.0.0",
+  "description": "Décrypter une pause - Observations eBird en Indre-et-Loire",
   "dependencies": {
     "node-fetch": "^2.6.7"
   }
