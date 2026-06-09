@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
-  // Entêtes de sécurité indispensables pour autoriser les requêtes mobiles et navigateurs
+  // Entêtes de sécurité indispensables (CORS et autorisation des requêtes)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-user-ebird-key');
@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  // Récupération de la clé API envoyée par le téléphone
+  // Récupération sécurisée de la clé transmise par l'application
   const userKey = req.headers['x-user-ebird-key'];
   const API_KEY = userKey || process.env.EBIRD_API_KEY;
 
@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
   const lat = req.query.lat || '47.3941';
   const lng = req.query.lng || '0.6848';
   const dist = req.query.dist || '25';
-  const back = req.query.back || '14'; // Reçoit la valeur de jours déjà calculée par le front-end
+  const back = req.query.back || '14'; // Récupère le nombre total de jours calculé
 
   // URL eBird officielle avec traduction française activée (sppLocale=fr)
   const url = `https://api.ebird.org/v2/data/obs/geo/recent?lat=${lat}&lng=${lng}&dist=${dist}&back=${back}&sppLocale=fr`;
