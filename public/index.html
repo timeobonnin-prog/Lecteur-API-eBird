@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Radar Aviaire Tactique — Système d'Exploration Indre-et-Loire</title>
+    <title>Radar Aviaire Tactique — Système d'Exploration</title>
     
-    <!-- Bibliothèques Cartographiques Leaflet Stables et Officielles -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        /* --- CONFIGURATION DES VARIABLES GLOBALES CYBER-NATURE --- */
+        /* --- VARIABLES GLOBALES (MODE NUIT PAR DÉFAUT) --- */
         :root {
             --neon-green: #10b981;
             --neon-glow: rgba(16, 185, 129, 0.3);
@@ -18,9 +17,21 @@
             --border-line: rgba(16, 185, 129, 0.25);
             --text-light: #f8fafc;
             --text-gray: #94a3b8;
+            --popup-bg: #091710;
         }
 
-        /* --- STYLES DE BASE ET COMPATIBILITÉ ÉCRANS TACTILES --- */
+        /* --- VARIABLES GLOBALES (MODE JOUR) --- */
+        body.day-mode {
+            --neon-green: #059669;
+            --neon-glow: rgba(5, 150, 105, 0.2);
+            --dark-bg: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --border-line: rgba(5, 150, 105, 0.3);
+            --text-light: #0f172a;
+            --text-gray: #475569;
+            --popup-bg: #ffffff;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -37,13 +48,14 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: background-color 0.4s;
         }
 
-        /* --- ÉCRAN DE VÉRIFICATION INITIAL (OVERLAY LOG-IN) --- */
+        /* --- ÉCRAN DE VÉRIFICATION INITIAL --- */
         #authOverlay {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle at center, #041d10 0%, #010402 100%);
+            background: var(--dark-bg);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -57,7 +69,7 @@
             transform: scale(1.08);
         }
         .auth-container {
-            background: rgba(4, 11, 7, 0.95);
+            background: var(--panel-bg);
             border: 2px solid var(--neon-green);
             box-shadow: 0 0 35px var(--neon-glow);
             border-radius: 24px;
@@ -72,8 +84,524 @@
             letter-spacing: 3px;
             text-transform: uppercase;
             margin-bottom: 8px;
+            color: var(--text-light);
+        }
+        .auth-container p {
+            font-size: 0.85rem;
+            color: var(--neon-green);
+            margin-bottom: 32px;
+            text-transform: uppercase;
+        }
+        .key-input-field {
+            width: 100%;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-line);
+            border-radius: 30px;
+            color: var(--text-light);
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+            margin-bottom: 24px;
+            transition: 0.3s;
+        }
+        body:not(.day-mode) .key-input-field { background: rgba(0,0,0,0.7); }
+
+        .submit-scan-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--neon-green);
             color: #fff;
-            text-shadow: 0 0 8px var(--neon-glow);
+            font-weight: 800;
+            font-size: 1rem;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+
+        /* --- BARRE DE COMMANDE SUPÉRIEURE --- */
+        .top-command-bar {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-line);
+            padding: 14px 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: background 0.4s;
+        }
+        .bar-first-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .brand-block { display: flex; align-items: center; gap: 10px; }
+        .brand-bird-svg {
+            width: 32px; height: 32px; fill: var(--neon-green);
+            filter: drop-shadow(0 0 6px var(--neon-green));
+            animation: birdFloat 4s infinite ease-in-out;
+        }
+        @keyframes birdFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        .brand-title-text {
+            font-size: 1.05rem; font-weight: 900; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--text-light);
+        }
+        .interactive-selectors { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        
+        .tactical-dropdown, .tactical-input-number, .search-input-box {
+            background: var(--dark-bg);
+            border: 1px solid var(--border-line);
+            color: var(--text-light);
+            outline: none;
+            transition: 0.3s;
+        }
+        .tactical-dropdown { padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; cursor: pointer; }
+        .tactical-input-number { padding: 8px; width: 55px; border-radius: 10px; font-size: 0.85rem; text-align: center; }
+        .search-block { width: 100%; position: relative; }
+        .search-input-box { width: 100%; padding: 12px 18px; border-radius: 14px; font-size: 0.95rem; }
+        .search-input-box:focus { border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-glow); }
+
+        /* --- SÉLECTEUR D'AUTOCOMPLÉTION --- */
+        .autocomplete-dropdown-panel {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            border-radius: 0 0 14px 14px;
+            z-index: 3000; max-height: 220px; overflow-y: auto; display: none;
+        }
+        .autocomplete-row-item {
+            padding: 12px 18px; cursor: pointer; color: var(--text-light);
+            font-size: 0.9rem; border-bottom: 1px solid var(--border-line);
+        }
+        .autocomplete-row-item:hover { background: var(--neon-glow); color: var(--neon-green); }
+
+        /* --- CONTEXTE ET ZONE CARTOGRAPHIQUE --- */
+        .workspace-area { flex: 1; position: relative; display: flex; flex-direction: column; }
+        #live-map-viewport { position: absolute; inset: 0; background: var(--dark-bg); z-index: 1; }
+
+        /* --- STATS ET LISTE LATÉRALE --- */
+        #radar-sidebar-panel {
+            position: absolute; top: 16px; right: 16px; bottom: 95px; width: 300px;
+            background: var(--panel-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-line); border-radius: 20px; z-index: 999;
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6); transition: 0.4s;
+        }
+        .panel-header-title {
+            padding: 14px; background: rgba(0, 0, 0, 0.05); border-bottom: 1px solid var(--border-line);
+            font-size: 0.9rem; font-weight: 800; color: var(--neon-green);
+            text-transform: uppercase; display: flex; justify-content: space-between;
+        }
+        body:not(.day-mode) .panel-header-title { background: rgba(0,0,0,0.4); }
+        .birds-scroller { flex: 1; overflow-y: auto; padding: 8px; }
+        .bird-card-item {
+            padding: 12px; border-radius: 10px; margin-bottom: 8px; cursor: pointer;
+            border-left: 4px solid transparent; background: rgba(128, 128, 128, 0.05); transition: 0.2s;
+        }
+        .bird-card-item:hover { background: var(--neon-glow); border-left-color: var(--neon-green); }
+        .card-bird-name { font-size: 0.9rem; font-weight: 700; color: var(--text-light); }
+        .card-bird-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 3px; }
+
+        /* --- MODE ADAPTATIF SMARTPHONE --- */
+        @media (max-width: 767px) {
+            .top-command-bar { padding: 10px; gap: 8px; }
+            .brand-title-text { font-size: 0.95rem; }
+            #radar-sidebar-panel { top: auto; left: 10px; right: 10px; bottom: 95px; width: auto; height: 140px; }
+            .birds-scroller { display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; padding: 10px; }
+            .bird-card-item { flex: 0 0 230px; margin-bottom: 0; border-left: none; border-bottom: 4px solid transparent; }
+            .bird-card-item:hover { border-bottom-color: var(--neon-green); }
+        }
+
+        /* --- CONSOLE ET POPUPS --- */
+        #mobile-diagnostic-terminal {
+            position: absolute; bottom: 16px; left: 16px; right: 16px; height: 65px;
+            background: var(--panel-bg); border: 1px solid var(--neon-green); border-radius: 14px;
+            z-index: 1000; padding: 10px 14px; font-family: monospace; font-size: 0.75rem;
+            overflow-y: auto; color: var(--text-light);
+        }
+        .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
+        .maps-icon-svg { width: 30px; height: 30px; fill: var(--neon-green); animation: mapsPinBounce 1.8s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
+        @keyframes mapsPinBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
+        
+        /* Styles personnalisés pour la Popup de la carte (Jour/Nuit) */
+        .custom-popup-box { background: var(--popup-bg); color: var(--text-light); padding: 5px; font-family: sans-serif; min-width: 220px; line-height: 1.45; border-radius: 8px; }
+        .custom-popup-title { color: var(--neon-green); font-size: 1rem; font-weight: bold; }
+        .custom-popup-sci { color: var(--text-gray); font-size: 0.75rem; display: block; margin: 2px 0 6px 0; }
+        .custom-popup-details { font-size: 0.8rem; border-top: 1px solid var(--border-line); padding-top: 6px; }
+        .custom-popup-link { color: var(--neon-green); font-weight: bold; text-decoration: underline; display: inline-block; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- ÉCRAN D'AUTHENTIFICATION -->
+    <div id="authOverlay">
+        <div class="auth-container">
+            <h1>Radar Aviaire</h1>
+            <p>Système Tactique Global</p>
+            <input type="password" id="tokenField" class="key-input-field" placeholder="Colle ta clé API eBird..." />
+            <button class="submit-scan-btn" onclick="initialiserRadarComplet()">Activer le Scanner</button>
+        </div>
+    </div>
+
+    <!-- PANNEAU SUPÉRIEUR -->
+    <header class="top-command-bar">
+        <div class="bar-first-row">
+            <div class="brand-block">
+                <svg class="brand-bird-svg" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/>
+                </svg>
+                <span class="brand-title-text">Radar Tactique</span>
+            </div>
+            <div class="interactive-selectors">
+                <!-- NOUVEAU : Bouton GPS et Bouton Jour/Nuit -->
+                <button id="themeToggleBtn" onclick="basculerThemeManuel()" class="tactical-dropdown" title="Changer le thème">🌙</button>
+                <button onclick="geolocaliserUtilisateur()" class="tactical-dropdown" title="Ma Position">📍</button>
+                
+                <input type="number" id="timeAmountInput" class="tactical-input-number" value="14" min="1" onchange="executerScanServeur()">
+                <select id="timeUnitDropdown" class="tactical-dropdown" onchange="executerScanServeur()">
+                    <option value="1" selected>Jours</option>
+                    <option value="30">Mois</option>
+                    <option value="365">Années</option>
+                </select>
+                <select id="radiusDropdown" class="tactical-dropdown" onchange="executerScanServeur()">
+                    <option value="10">10 km</option>
+                    <option value="25" selected>25 km</option>
+                    <option value="50">50 km</option>
+                </select>
+            </div>
+        </div>
+        <div class="search-block">
+            <input type="text" id="filterInput" class="search-input-box" placeholder="🔍 Recherche (Cible une espèce pour voir TOUTES ses observations)" oninput="gererAutocompletion()" />
+            <div id="suggestionsBox" class="autocomplete-dropdown-panel"></div>
+        </div>
+    </header>
+
+    <!-- ZONE CARTOGRAPHIQUE -->
+    <main class="workspace-area">
+        <div id="live-map-viewport"></div>
+
+        <div id="radar-sidebar-panel">
+            <div class="panel-header-title">
+                <span>Résultats Radar</span>
+                <span id="counter-badge" style="color:#fff; background:var(--neon-green); padding:1px 8px; border-radius:10px;">0</span>
+            </div>
+            <div id="birds-list-viewport" class="birds-scroller"></div>
+        </div>
+
+        <div id="mobile-diagnostic-terminal">> Système en attente d'authentification...</div>
+    </main>
+
+    <!-- LOGIQUE JAVASCRIPT -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let globalLeafletMap;
+        let mapLayerGroup;
+        let currentTileLayer;
+        let radarCenterCoordinates = { lat: 47.3941, lng: 0.6848 }; // Indre-et-Loire par défaut
+        let ebirdRawDataset = [];
+        let secureUserToken = "";
+        let activeSpeciesCode = null; // Code de l'espèce pour la recherche ciblée profonde
+        let isNightMode = true;
+
+        function loggerDiagnostic(texte, statut = 'info') {
+            const terminal = document.getElementById('mobile-diagnostic-terminal');
+            if (terminal) {
+                let colorStyle = '';
+                if (statut === 'success') colorStyle = 'style="color: var(--neon-green);"';
+                if (statut === 'warning') colorStyle = 'style="color: #fb923c;"';
+                if (statut === 'error') colorStyle = 'style="color: #f87171; font-weight:bold;"';
+                terminal.innerHTML += `<br><span ${colorStyle}>[${new Date().toLocaleTimeString()}] ${texte}</span>`;
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        }
+
+        // --- GESTION DU THÈME JOUR/NUIT AUTOMATIQUE ---
+        function appliquerTheme(nuit) {
+            isNightMode = nuit;
+            const themeBtn = document.getElementById('themeToggleBtn');
+            if (isNightMode) {
+                document.body.classList.remove('day-mode');
+                themeBtn.innerText = '🌙';
+            } else {
+                document.body.classList.add('day-mode');
+                themeBtn.innerText = '☀️';
+            }
+            mettreAJourFondDeCarte();
+        }
+
+        function basculerThemeManuel() {
+            appliquerTheme(!isNightMode);
+        }
+
+        function mettreAJourFondDeCarte() {
+            if (!globalLeafletMap) return;
+            if (currentTileLayer) globalLeafletMap.removeLayer(currentTileLayer);
+            
+            const tileUrl = isNightMode 
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png' 
+                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+                
+            currentTileLayer = L.tileLayer(tileUrl, { attribution: '&copy; CartoDB' }).addTo(globalLeafletMap);
+        }
+
+        // --- GESTION GPS 📍 ---
+        function geolocaliserUtilisateur() {
+            if (navigator.geolocation) {
+                loggerDiagnostic("Recherche du signal GPS...", "info");
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        radarCenterCoordinates = { lat: position.coords.latitude, lng: position.coords.longitude };
+                        globalLeafletMap.setView([radarCenterCoordinates.lat, radarCenterCoordinates.lng], 11);
+                        loggerDiagnostic("Position GPS synchronisée.", "success");
+                        executerScanServeur(activeSpeciesCode); // Relance le scan autour de toi
+                    },
+                    (error) => {
+                        loggerDiagnostic("Échec GPS. Vérifie tes autorisations.", "warning");
+                    }
+                );
+            } else {
+                loggerDiagnostic("La fonction GPS n'est pas supportée.", "error");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Détection de l'heure pour Jour/Nuit (Nuit de 21h à 7h59)
+            const heureActuelle = new Date().getHours();
+            appliquerTheme(heureActuelle >= 21 || heureActuelle < 8);
+
+            loggerDiagnostic("Chargement du moteur cartographique...");
+            try {
+                globalLeafletMap = L.map('live-map-viewport', { zoomControl: false }).setView([radarCenterCoordinates.lat, radarCenterCoordinates.lng], 10);
+                L.control.zoom({ position: 'bottomright' }).addTo(globalLeafletMap);
+                mapLayerGroup = L.layerGroup().addTo(globalLeafletMap);
+                
+                mettreAJourFondDeCarte();
+                loggerDiagnostic("Carte Leaflet initialisée.", "success");
+
+                const savedToken = localStorage.getItem('ebird_secure_token');
+                if (savedToken) {
+                    document.getElementById('tokenField').value = savedToken;
+                    secureUserToken = savedToken;
+                    loggerDiagnostic("Clé de sécurité détectée en mémoire.", "success");
+                }
+
+                document.getElementById('tokenField').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') initialiserRadarComplet();
+                });
+
+                globalLeafletMap.on('click', (e) => {
+                    radarCenterCoordinates = { lat: e.latlng.lat, lng: e.latlng.lng };
+                    loggerDiagnostic(`Repère déplacé manuellement.`);
+                    executerScanServeur(activeSpeciesCode);
+                });
+            } catch (err) {
+                loggerDiagnostic(`Erreur critique de carte : ${err.message}`, "error");
+            }
+        });
+
+        const mapsCustomPin = L.divIcon({
+            className: 'maps-icon-container',
+            html: `<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
+            iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30]
+        });
+
+        function initialiserRadarComplet() {
+            const tokenInput = document.getElementById('tokenField').value.trim();
+            if (!tokenInput && !secureUserToken) {
+                alert("Saisis ta clé eBird pour activer la liaison satellite.");
+                return;
+            }
+            if (tokenInput) {
+                secureUserToken = tokenInput;
+                localStorage.setItem('ebird_secure_token', secureUserToken);
+            }
+            loggerDiagnostic("Liaison satellite établie...", "success");
+            document.getElementById('authOverlay').classList.add('hidden');
+            setTimeout(() => { globalLeafletMap.invalidateSize(); executerScanServeur(); }, 350);
+        }
+
+        // --- SCAN SERVEUR (AVEC OU SANS ESPÈCE CIBLÉE) ---
+        async function executerScanServeur(speciesCodeToFetch = null) {
+            if (!secureUserToken) return;
+
+            const amount = parseInt(document.getElementById('timeAmountInput').value) || 1;
+            const unit = parseInt(document.getElementById('timeUnitDropdown').value) || 1;
+            const radius = document.getElementById('radiusDropdown').value;
+            let computedDays = amount * unit;
+
+            if (computedDays > 30) {
+                loggerDiagnostic(`Alerte : Limite satellite eBird atteinte. Réduction à 30 jours max.`, "warning");
+                computedDays = 30;
+            }
+
+            mapLayerGroup.clearLayers();
+            const logMsg = speciesCodeToFetch 
+                ? `Scan CIBLÉ en cours (Toutes les observations de l'espèce)...` 
+                : `Scan GÉNÉRAL (Dernière observation par espèce)...`;
+            loggerDiagnostic(logMsg);
+
+            L.circle([radarCenterCoordinates.lat, radarCenterCoordinates.lng], {
+                color: '#10b981', fillColor: '#10b981', fillOpacity: 0.04,
+                radius: radius * 1000, weight: 1
+            }).addTo(mapLayerGroup);
+
+            try {
+                // Requête vers ton Vercel, en envoyant le speciesCode s'il y en a un
+                const codeParam = speciesCodeToFetch ? `&species=${speciesCodeToFetch}` : '';
+                const queryUrl = `/api/ebird?lat=${radarCenterCoordinates.lat}&lng=${radarCenterCoordinates.lng}&dist=${radius}&back=${computedDays}${codeParam}`;
+                
+                const response = await fetch(queryUrl, { headers: { 'x-user-ebird-key': secureUserToken } });
+                const content = await response.json();
+
+                if (content.error) {
+                    loggerDiagnostic(`Erreur serveur : ${content.error}`, "error");
+                    return;
+                }
+
+                ebirdRawDataset = content;
+                loggerDiagnostic(`Scan terminé : ${ebirdRawDataset.length} marqueurs trouvés.`, "success");
+                filtrerEtAfficherOiseaux();
+
+            } catch (networkError) {
+                loggerDiagnostic(`Échec réseau : ${networkError.message}`, "error");
+            }
+        }
+
+        function gererAutocompletion() {
+            const currentQuery = document.getElementById('filterInput').value.toLowerCase();
+            const suggestionsBox = document.getElementById('suggestionsBox');
+            suggestionsBox.innerHTML = '';
+
+            // Si la barre de recherche est vidée, on annule la cible spécifique et on relance le scan général
+            if (!currentQuery) {
+                suggestionsBox.style.display = 'none';
+                if (activeSpeciesCode) {
+                    activeSpeciesCode = null;
+                    executerScanServeur(); // Recharge la vue globale (1 observation max par espèce)
+                } else {
+                    filtrerEtAfficherOiseaux();
+                }
+                return;
+            }
+
+            // Uniquement si on est en scan général, on propose les noms
+            if (!activeSpeciesCode) {
+                const matchingNames = [];
+                ebirdRawDataset.forEach(item => {
+                    if (item.comName && !matchingNames.includes(item.comName)) {
+                        if (item.comName.toLowerCase().includes(currentQuery)) matchingNames.push(item.comName);
+                    }
+                });
+
+                const limitedMatches = matchingNames.slice(0, 5);
+
+                if (limitedMatches.length > 0) {
+                    suggestionsBox.style.display = 'block';
+                    limitedMatches.forEach(specieName => {
+                        const row = document.createElement('div');
+                        row.className = 'autocomplete-row-item';
+                        row.innerText = specieName;
+                        row.onclick = () => {
+                            document.getElementById('filterInput').value = specieName;
+                            suggestionsBox.style.display = 'none';
+                            
+                            // 🚀 CIBLAGE PROFOND DE L'ESPÈCE (récupère son code et relance l'API)
+                            const selectedBird = ebirdRawDataset.find(b => b.comName === specieName);
+                            if (selectedBird && selectedBird.speciesCode) {
+                                activeSpeciesCode = selectedBird.speciesCode;
+                                executerScanServeur(activeSpeciesCode);
+                            }
+                        };
+                        suggestionsBox.appendChild(row);
+                    });
+                } else {
+                    suggestionsBox.style.display = 'none';
+                }
+            }
+            filtrerEtAfficherOiseaux();
+        }
+
+        document.addEventListener('click', (event) => {
+            if (event.target.id !== 'filterInput') {
+                document.getElementById('suggestionsBox').style.display = 'none';
+            }
+        });
+
+        function filtrerEtAfficherOiseaux() {
+            const searchFilter = document.getElementById('filterInput').value.toLowerCase();
+            const listContainer = document.getElementById('birds-list-viewport');
+            const badge = document.getElementById('counter-badge');
+
+            listContainer.innerHTML = '';
+            mapLayerGroup.eachLayer((layer) => { if (!layer.options.radius) mapLayerGroup.removeLayer(layer); });
+
+            // On filtre le jeu de données actuel (qui est soit global, soit dédié à une seule espèce)
+            const filteredResults = ebirdRawDataset.filter(item => {
+                const matchesFrench = item.comName && item.comName.toLowerCase().includes(searchFilter);
+                const matchesScientific = item.sciName && item.sciName.toLowerCase().includes(searchFilter);
+                // Si on a ciblé une espèce précise, on affiche tout le jeu de données sans re-filtrer le texte
+                return activeSpeciesCode ? true : (matchesFrench || matchesScientific);
+            });
+
+            badge.innerText = filteredResults.length;
+
+            if (filteredResults.length === 0) {
+                listContainer.innerHTML = '<div style="color:var(--text-gray); font-size:0.8rem; text-align:center; padding:15px;">Aucune donnée sur le radar</div>';
+                return;
+            }
+
+            filteredResults.forEach(bird => {
+                const FrenchName = bird.comName || "Inconnu";
+                const totalSeen = bird.howMany || 1;
+                const observer = bird.userDisplayName || "Anonyme";
+                const obsHour = bird.obsDt || "Date inconnue";
+                const checklistUrl = `https://ebird.org/checklist/${bird.subId}`;
+
+                const birdMarker = L.marker([bird.lat, bird.lng], { icon: mapsCustomPin });
+                
+                // Utilisation des classes CSS pour le popup afin de supporter le mode Jour/Nuit
+                birdMarker.bindPopup(`
+                    <div class="custom-popup-box">
+                        <div class="custom-popup-title">${FrenchName}</div>
+                        <i class="custom-popup-sci">${bird.sciName}</i>
+                        <div class="custom-popup-details">
+                            👤 Observateur : <b>${observer}</b><br>
+                            🕒 Relevé : <b>${obsHour}</b><br>
+                            🔢 Nombre : <b>${totalSeen}</b><br>
+                            📍 Localité : <span style="color:var(--text-gray);">${bird.locName}</span><br>
+                            🔗 <a href="${checklistUrl}" target="_blank" class="custom-popup-link">Voir la checklist sur eBird</a>
+                        </div>
+                    </div>
+                `);
+                birdMarker.addTo(mapLayerGroup);
+
+                const card = document.createElement('div');
+                card.className = 'bird-card-item';
+                card.innerHTML = `
+                    <div class="card-bird-name">${FrenchName} (x${totalSeen})</div>
+                    <div class="card-bird-sub">🕒 ${obsHour} | 👤 ${observer}</div>
+                    <div class="card-bird-sub" style="color: var(--neon-green)">📍 ${bird.locName}</div>
+                `;
+                card.onclick = () => {
+                    globalLeafletMap.setView([bird.lat, bird.lng], 14);
+                    birdMarker.openPopup();
+                };
+                listContainer.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
         }
         .auth-container p {
             font-size: 0.85rem;
