@@ -1,7 +1,8 @@
 {
-  "name": "mon-api-oiseaux",
-  "version": "1.0.0",
-  "description": "Décrypter une pause - Observations eBird en Indre-et-Loire",
+  "name": "api ebird en ligne",
+  "version": "2.5.0",
+  "description": "Interface tactique et épurée pour l'observation de la nature",
+  "main": "api/ebird.js",
   "dependencies": {
     "node-fetch": "^2.6.7"
   }
