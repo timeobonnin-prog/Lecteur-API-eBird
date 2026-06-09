@@ -1,11 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="g" x1="0" x2="1">
-      <stop offset="0" stop-color="#6fb3ff"/>
-      <stop offset="1" stop-color="#2b7cff"/>
-    </linearGradient>
-  </defs>
-  <circle cx="256" cy="256" r="200" fill="url(#g)"/>
-  <ellipse cx="256" cy="300" rx="260" ry="60" fill="#ffd27f" transform="rotate(-20 256 256)" opacity="0.9"/>
-  <circle cx="180" cy="200" r="18" fill="#fff" opacity="0.6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fond planète Terre -->
+  <circle cx="256" cy="256" r="200" fill="#2b7cff"/>
+  <path d="M256 56a200 200 0 0 1 0 400A200 200 0 0 1 256 56z" fill="#6fb3ff"/>
+  <path d="M180 180c20 10 40 0 60 20s40 10 60 30 40 10 60 40-20 40-60 40-80-20-100-40-40-60-20-90z" fill="#3cb371"/>
+  <!-- Anneau orbital -->
+  <ellipse cx="256" cy="300" rx="260" ry="60" fill="#ffd27f" transform="rotate(-20 256 256)" opacity="0.8"/>
+  <!-- Jumelles -->
+  <g transform="translate(180,320)">
+    <circle cx="40" cy="0" r="40" fill="#222"/>
+    <circle cx="120" cy="0" r="40" fill="#222"/>
+    <circle cx="40" cy="0" r="30" fill="#4faaff"/>
+    <circle cx="120" cy="0" r="30" fill="#4faaff"/>
+    <rect x="40" y="-10" width="80" height="20" fill="#333"/>
+  </g>
+  <!-- Oiseau -->
+  <g transform="translate(220,240)">
+    <path d="M0 0c20-10 40 0 50 20s10 40-10 50-40 0-50-20 0-40 10-50z" fill="#a0522d"/>
+    <path d="M10 10c10-10 30-10 40 10s0 30-20 30-30-10-20-30z" fill="#ff7f50"/>
+    <circle cx="45" cy="20" r="5" fill="#000"/>
+  </g>
 </svg>
