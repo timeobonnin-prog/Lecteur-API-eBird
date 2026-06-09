@@ -16,13 +16,16 @@ module.exports = async (req, res) => {
   const lng = req.query.lng || '0.6848';
   const dist = req.query.dist || '25';
   const back = req.query.back || '14';
-  const sppLocale = 'fr'; // Force les noms en français
 
-  const url = `https://api.ebird.org/v2/data/obs/geo/recent?lat=${lat}&lng=${lng}&dist=${dist}&back=${back}&sppLocale=${sppLocale}`;
+  // Paramètre de langue 'fr' pour recevoir les noms d'oiseaux en français
+  const url = `https://api.ebird.org/v2/data/obs/geo/recent?lat=${lat}&lng=${lng}&dist=${dist}&back=${back}&sppLocale=fr`;
 
   try {
     const r = await fetch(url, { headers: { 'x-ebirdapitoken': API_KEY } });
-    if (!r.ok) return res.status(r.status).json({ error: `Erreur ${r.status}` });
+    if (!r.ok) {
+      const errorText = await r.text();
+      return res.status(r.status).json({ error: `Erreur eBird (${r.status}): ${errorText}` });
+    }
     const data = await r.json();
     return res.json(data);
   } catch (err) {
