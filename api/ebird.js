@@ -19,11 +19,11 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Clé API eBird introuvable. Saisis-la dans le champ du radar.' });
   }
 
-  // Coordonnées géographiques de ciblage (Par défaut : Indre-et-Loire / Tours)
+  // Coordonnées géographiques et temporelles de ciblage
   const lat = req.query.lat || '47.3941';
   const lng = req.query.lng || '0.6848';
   const dist = req.query.dist || '25';
-  const back = req.query.back || '14';
+  const back = req.query.back || '14'; // Reçoit la valeur de jours déjà calculée par le front-end
 
   // URL eBird officielle avec traduction française activée (sppLocale=fr)
   const url = `https://api.ebird.org/v2/data/obs/geo/recent?lat=${lat}&lng=${lng}&dist=${dist}&back=${back}&sppLocale=fr`;
