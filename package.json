@@ -1,8 +1,7 @@
 {
-  "name": "api ebird en ligne",
-  "version": "2.5.0",
-  "description": "Interface tactique et épurée pour l'observation de la nature",
-  "main": "api/ebird.js",
+  "name": "radar-aviaire",
+  "version": "3.0.0",
+  "description": "Radar interactif avec design fluide",
   "dependencies": {
     "node-fetch": "^2.6.7"
   }
