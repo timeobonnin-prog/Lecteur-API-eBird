@@ -2,6 +2,8 @@
 
 Site statique frontend plus fonction serverless pour interroger l'API eBird de façon sécurisée.
 
+vous pouvez dempander une clé api ebird [ici](https://ebird.org/api/keygen) 
+
 ## Structure
 - index.html : frontend public
 - api/ebird.js : fonction serverless pour Vercel
