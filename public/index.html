@@ -2,78 +2,174 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radar Aviaire - Décrypter une Pause</title>
-    <!-- CSS de Leaflet pour la carte -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Radar Aviaire — Décrypter une Pause</title>
+    <!-- Source de la carte Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- DESIGN ÉPURÉ, NATURE ET INFORMATIQUE --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        
-        /* Arrière-plan en mouvement perpétuel mais discret */
-        body { 
-            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-            background: linear-gradient(135deg, #020504, #062115, #020504, #041009);
-            background-size: 400% 400%;
-            animation: gradientMove 15s ease infinite;
-            color: #ecfdf5;
+        :root {
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.3);
+            --bg-dark: #020604;
         }
 
-        @keyframes gradientMove {
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        /* Arrière-plan général en mouvement fluide et épuré */
+        body { 
+            background: linear-gradient(135deg, #020604, #051a0e, #020604);
+            background-size: 300% 300%;
+            animation: fluidGrid 12s ease infinite;
+            height: 100vh; height: 100dvh;
+            display: flex; flex-direction: column; overflow: hidden; color: #f1f5f9;
+        }
+        @keyframes fluidGrid {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        /* --- BARRE DU HAUT --- */
+        /* --- BARRE DU HAUT RESPONSIVE (PC & MOBILE) --- */
         .top-bar {
-            background: rgba(2, 5, 4, 0.7); backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(16, 185, 129, 0.4);
-            padding: 12px 20px; display: grid; grid-template-columns: 200px 1fr auto;
-            align-items: center; z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            background: rgba(2, 6, 4, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 12px 20px; display: flex; flex-direction: column; gap: 12px; z-index: 100;
         }
 
-        /* Gauche : Oiseau qui bouge légèrement */
-        .brand { display: flex; align-items: center; gap: 12px; }
-        .moving-bird {
-            width: 35px; height: 35px; fill: #10b981;
-            animation: birdHover 4s infinite ease-in-out;
-            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+        /* Ligne supérieure : Logo + Filtres */
+        .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        /* Oiseau Totem qui bouge légèrement en haut à gauche */
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .bird-icon {
+            width: 30px; height: 30px; fill: var(--primary);
+            animation: birdBob 4s infinite ease-in-out;
+            filter: drop-shadow(0 0 5px var(--primary));
         }
-        @keyframes birdHover {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-5px) rotate(4deg); }
+        @keyframes birdBob {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-3px) scale(1.05); }
         }
-        .brand-text { font-weight: bold; color: #34d399; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem;}
+        .brand-text { font-size: 0.9rem; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: var(--primary); }
 
-        /* Milieu : Barre de recherche épurée */
-        .search-wrapper { display: flex; justify-content: center; width: 100%; }
-        .search-input {
-            width: 100%; max-width: 500px; padding: 10px 20px;
-            background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 25px; color: #fff; text-align: center; font-size: 1rem;
-            outline: none; transition: 0.3s;
-        }
-        .search-input:focus { border-color: #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); background: rgba(0,0,0,0.5); }
-
-        /* Droite : Filtres et Clé API */
-        .controls { display: flex; gap: 10px; align-items: center; }
-        .tactical-select, .tactical-input, .tactical-btn {
+        /* Filtres à droite */
+        .right-menu { display: flex; gap: 8px; align-items: center; }
+        .select-tactical {
             background: #040d08; border: 1px solid rgba(16, 185, 129, 0.4);
-            color: #ecfdf5; padding: 8px 15px; border-radius: 8px; outline: none; font-size: 0.85rem; transition: 0.3s;
+            color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; outline: none;
         }
-        .tactical-input { width: 160px; }
-        .tactical-input:focus, .tactical-select:focus { border-color: #10b981; }
-        .tactical-btn { background: rgba(16, 185, 129, 0.1); cursor: pointer; color: #10b981; font-weight: bold; }
-        .tactical-btn:hover { background: #10b981; color: #000; box-shadow: 0 0 10px #10b981; }
 
-        /* --- CARTE AU MILIEU --- */
-        .map-container {
-            flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center;
+        /* Barre de recherche centrale (s'affiche au milieu sur PC) */
+        .search-wrapper { width: 100%; display: flex; justify-content: center; }
+        .search-input {
+            width: 100%; max-width: 500px; padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px; color: #fff; text-align: center; font-size: 0.95rem; outline: none; transition: 0.3s;
         }
-        #map { 
-            width: 100%; height: 100%; border-radius: 15px; 
-            border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); background: rgba(0,0,0,0.6); }
+
+        /* --- ZONE DE LA CARTE COMPATIBLE MOBILE --- */
+        .map-frame { flex: 1; position: relative; width: 100%; }
+        #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; background: #010402; }
+
+        /* --- LOGO MAPS EN PETIT POUR LES OISEAUX --- */
+        .maps-pin-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
+        .maps-svg-pin {
+            width: 26px; height: 26px; fill: var(--primary);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            animation: pinPulse 1.5s infinite alternate ease-in-out;
+        }
+        @keyframes pinPulse {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-2px); }
+        }
+
+        /* --- ÉCRAN DE CONNEXION TRANSPARENT (MODAL OVERLAY) --- */
+        #authOverlay {
+            position: absolute; inset: 0; background: rgba(2, 6, 4, 0.8);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            display: flex; justify-content: center; align-items: center; z-index: 1000;
+            transition: opacity 0.5s ease, pointer-events 0.5s ease; padding: 20px;
+        }
+        #authOverlay.activated { opacity: 0; pointer-events: none; }
+        .auth-box {
+            background: rgba(4, 13, 8, 0.9); border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 30px 24px; border-radius: 16px; width: 100%; max-width: 380px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+        }
+        .auth-box h1 { font-size: 1.4rem; font-weight: 400; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; color: #fff; }
+        .auth-box p { font-size: 0.85rem; color: #64748b; margin-bottom: 24px; }
+        .key-field {
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(16, 185, 129, 0.5);
+            border-radius: 25px; color: #fff; text-align: center; font-size: 0.95rem; outline: none; margin-bottom: 16px;
+        }
+        .key-field:focus { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+        .btn-scan {
+            width: 100%; padding: 12px; background: var(--primary); color: #020604; font-weight: bold;
+            border: none; border-radius: 25px; cursor: pointer; text-transform: uppercase; font-size: 0.9rem; transition: 0.2s;
+        }
+        .btn-scan:hover { background: #34d399; transform: translateY(-1px); }
+
+        /* Ajustements automatiques pour les grands écrans (PC) */
+        @media (min-width: 768px) {
+            .top-bar { flex-direction: row; justify-content: space-between; height: 70px; padding: 0 25px; }
+            .top-row { width: auto; gap: 20px; }
+            .search-wrapper { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ÉCRAN D'ACCÈS INITIAL (S'efface après validation) -->
+    <div id="authOverlay">
+        <div class="auth-box">
+            <h1>Radar Tactique</h1>
+            <p>Initialisation du scan des espèces en Indre-et-Loire</p>
+            <input type="password" id="apiSecretKey" class="key-field" placeholder="Colle ta clé API eBird ici..." />
+            <button class="btn-scan" onclick="validerCleEtScanner()">Scanner la Nature</button>
+        </div>
+    </div>
+
+    <!-- BARRE DE CONTRÔLE SUPÉRIEURE -->
+    <header class="top-bar">
+        <div class="top-row">
+            <div class="brand">
+                <!-- Petit oiseau SVG mobile -->
+                <svg class="bird-icon" viewBox="0 0 24 24">
+                    <path d="M21 3c-1.84 0-3.56.4-5.12 1.1A9.974 9.974 0 0 0 12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10c0-.85-.11-1.67-.31-2.46C22.61 8.52 23 7.3 23 6c0-1.66-.67-3.16-1.76-4.24C20.16 2.67 18.66 2 17 2v2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2V4c0-1.1-.9-2-2-2zM12 4c3.31 0 6.16 2.01 7.39 4.92-1.12.35-2.22.95-3.17 1.77C15.02 9.53 13.59 9 12 9c-2.76 0-5 2.24-5 5 0 1.59.71 3.02 1.83 3.97-.6.76-1.46 1.34-2.45 1.68C5.2 18.23 4 15.26 4 12c0-4.41 3.59-8 8-8zm0 7c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+                </svg>
+                <span class="brand-text">Radar</span>
+            </div>
+            
+            <div class="right-menu">
+                <select id="daysFilter" class="select-tactical" onchange="declencherRecherche()">
+                    <option value="4">4 jours</option>
+                    <option value="7">7 jours</option>
+                    <option value="14" selected>14 jours</option>
+                </select>
+                <select id="radiusFilter" class="select-tactical" onchange="declencherRecherche()">
+                    <option value="10">10 km</option>
+                    <option value="25" selected>25 km</option>
+                    <option value="50">50 km</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="search-wrapper">
+            <input type="text" id="birdSearch" class="search-input" placeholder="🔍 Filtre une espèce (Ex: Mésange, Milan...)" onkeyup="filtrerMarqueurs()" />
+        </div>
+    </header>
+
+    <!-- CARTE INTERACTIVE PLEIN ÉCRAN -->
+    <main class="map-frame">
+        <div id="map"></div>
+    </main>
+
+    <!-- Scripts Cartographiques Leaflet et Logique -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
             background: #010402;
         }
 
