@@ -106,3 +106,31 @@ function filtrerCarte() {
 
 // Démarre la carte quand la page se charge
 window.onload = initCarte;
+        (o.comName && o.comName.toLowerCase().includes(texte)) || 
+        (o.sciName && o.sciName.toLowerCase().includes(texte))
+    );
+
+    oiseauxFiltres.forEach(oiseau => {
+        const nom = oiseau.comName || "Espèce Inconnue";
+        
+        // Place le petit logo Maps
+        const marqueur = L.marker([oiseau.lat, oiseau.lng], { icon: logoMaps });
+        
+        // Affiche les infos quand on clique dessus
+        marqueur.bindPopup(`
+            <div style="text-align: center;">
+                <h3 style="color: #34d399; margin-bottom: 5px;">${nom}</h3>
+                <em style="color: #94a3b8;">${oiseau.sciName}</em><br>
+                <div style="margin-top: 10px; font-size: 0.9em;">
+                    📍 ${oiseau.locName}<br>
+                    👁️ Vue(s) : ${oiseau.howMany || 1}
+                </div>
+            </div>
+        `);
+        
+        marqueur.addTo(calquePoints);
+    });
+}
+
+// Démarre la carte quand la page se charge
+window.onload = initCarte;
