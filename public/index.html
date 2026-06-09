@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lecteur clé API Ebird</title>
+    <title>Radar Aviaire Tactique — Système d'Exploration Indre-et-Loire</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -492,6 +492,9 @@
         // Étape 2 : Lancement du radar après saisie de la clé
         function initialiserRadarComplet() {
             const tokenInput = document.getElementById('tokenField').value.trim();
+            if (!tokenInput) {
+                alert("Saisis ta clé eBird pour activer la liaison satellite.");
+                return;
             }
 
             secureUserToken = tokenInput;
@@ -948,7 +951,7 @@
     <!-- ÉCRAN DE VALIDATION DE CLÉ -->
     <div id="authOverlay">
         <div class="auth-container">
-            <h1>>Lecteur clé API Ebird</h1>
+            <h1>Radar Aviaire</h1>
             <p>Système d'analyse Indre-et-Loire</p>
             <input type="password" id="tokenField" class="key-input-field" placeholder="Colle ta clé API eBird..." />
             <button class="submit-scan-btn" onclick="initialiserRadarComplet()">Activer le Scanner</button>
@@ -1068,6 +1071,9 @@
         // Étape 2 : Lancement du radar après saisie de la clé
         function initialiserRadarComplet() {
             const tokenInput = document.getElementById('tokenField').value.trim();
+            if (!tokenInput) {
+                alert("Saisis ta clé eBird pour activer la liaison satellite.");
+                return;
             }
 
             secureUserToken = tokenInput;
