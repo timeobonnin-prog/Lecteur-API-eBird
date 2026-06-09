@@ -1068,9 +1068,6 @@
         // Étape 2 : Lancement du radar après saisie de la clé
         function initialiserRadarComplet() {
             const tokenInput = document.getElementById('tokenField').value.trim();
-            if (!tokenInput) {
-                alert("Saisis ta clé eBird pour activer la liaison satellite.");
-                return;
             }
 
             secureUserToken = tokenInput;
