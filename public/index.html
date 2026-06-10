@@ -21,7 +21,6 @@
             --popup-bg: #091710;
         }
 
-        /* --- Mode jour --- */
         body.day-mode {
             --neon-green: #059669;
             --neon-glow: rgba(5, 150, 105, 0.2);
@@ -40,7 +39,6 @@
             height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.4s;
         }
 
-        /* --- Écran d'authentification --- */
         #authOverlay {
             position: fixed; inset: 0; background: var(--dark-bg);
             display: flex; justify-content: center; align-items: center; z-index: 99999;
@@ -64,7 +62,6 @@
             border: none; border-radius: 30px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
         }
 
-        /* --- Barre supérieure --- */
         .top-command-bar {
             background: var(--panel-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-line);
             padding: 10px 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px;
@@ -97,7 +94,6 @@
             padding: 6px; border-radius: 8px; width: 130px; font-size: 0.85rem;
         }
 
-        /* --- Carte + Sidebar --- */
         .workspace-area { flex: 1; position: relative; display: flex; }
         #live-map-viewport { position: absolute; inset: 0; background: var(--dark-bg); z-index: 1; }
 
@@ -115,11 +111,28 @@
             display: flex; justify-content: space-between; align-items: center;
             font-weight: 800; color: var(--neon-green); text-transform: uppercase; font-size: 0.8rem;
         }
-        .sidebar-input, .sidebar-select {
+        .search-wrapper { position: relative; }
+        .sidebar-input {
             width: 100%; padding: 8px; border-radius: 8px; background: var(--dark-bg);
             border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.8rem;
         }
         .sidebar-input:focus { border-color: var(--neon-green); }
+        .autocomplete-list {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--panel-bg); border: 1px solid var(--neon-green);
+            border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto;
+            display: none; z-index: 10;
+        }
+        .autocomplete-item {
+            padding: 8px 10px; cursor: pointer; font-size: 0.8rem;
+            border-bottom: 1px solid var(--border-line);
+        }
+        .autocomplete-item:hover { background: rgba(16,185,129,0.2); }
+
+        .sidebar-select {
+            width: 100%; padding: 8px; border-radius: 8px; background: var(--dark-bg);
+            border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.8rem;
+        }
 
         .birds-scroller { flex: 1; overflow-y: auto; padding: 6px; }
         .bird-card-item {
@@ -130,12 +143,10 @@
         .card-list-name { font-weight: bold; color: var(--text-light); font-size: 0.9rem; }
         .card-list-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 4px; }
 
-        /* Icônes des marqueurs */
         .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
         .maps-icon-svg { width: 28px; height: 28px; fill: var(--neon-green); animation: mapsPinBounce 1.5s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
         @keyframes mapsPinBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
 
-        /* Popups : descriptif du lieu + liste des espèces */
         .custom-popup-box {
             background: var(--popup-bg); color: var(--text-light); padding: 8px 10px;
             min-width: 220px; font-size: 0.85rem; line-height: 1.4;
@@ -166,7 +177,6 @@
 </head>
 <body>
 
-    <!-- AUTH -->
     <div id="authOverlay">
         <div class="auth-container">
             <h1>Radar Aviaire</h1>
@@ -176,7 +186,6 @@
         </div>
     </div>
 
-    <!-- HEADER -->
     <header class="top-command-bar">
         <div class="bar-first-row">
             <div class="brand-block">
@@ -188,7 +197,6 @@
                 <button class="icon-btn" onclick="executerScan()" title="Lancer le scan">🔄</button>
             </div>
         </div>
-        <!-- Filtres -->
         <div class="filters-row">
             <input type="number" id="timeAmount" class="tactical-input-number" value="14" min="1">
             <select id="timeUnit" class="tactical-dropdown">
@@ -207,7 +215,6 @@
         </div>
     </header>
 
-    <!-- MAIN -->
     <main class="workspace-area">
         <div id="live-map-viewport"></div>
 
@@ -217,7 +224,10 @@
                     <span>Listes (Lieux)</span>
                     <span id="counter-badge" style="color:white; background:var(--neon-green); padding:2px 8px; border-radius:12px;">0</span>
                 </div>
-                <input type="text" id="searchInput" class="sidebar-input" placeholder="🔍 Chercher un lieu ou une espèce..." oninput="afficherInterface()" />
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" class="sidebar-input" placeholder="🔍 Chercher un lieu ou une espèce..." oninput="autocompleteEspeces()" autocomplete="off" />
+                    <div id="autocompleteList" class="autocomplete-list"></div>
+                </div>
                 <select id="sortSelect" class="sidebar-select" onchange="afficherInterface()">
                     <option value="alphabet">🔤 Tri : Ordre Alphabétique</option>
                     <option value="nombre">🔢 Tri : Nombre d'oiseaux</option>
@@ -234,7 +244,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map, layerGroup, currentTile;
-        let radarCenter = [47.3941, 0.6848]; // Centre Indre-et-Loire
+        let radarCenter = [47.3941, 0.6848]; // Centre Indre-et-Loire (modifiable par clic)
         let ebirdRawData = [];
         let lieuxData = {};
         let markersList = {};
@@ -266,6 +276,12 @@
 
             document.getElementById('tokenField').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') initialiserRadar();
+            });
+
+            // 🆕 Déplacement du cercle par clic sur la carte
+            map.on('click', function(e) {
+                radarCenter = [e.latlng.lat, e.latlng.lng];
+                executerScan();   // relance un scan autour du nouveau centre
             });
         });
 
@@ -335,7 +351,6 @@
                     };
                 }
 
-                // Fusionner les espèces identiques
                 const existant = lieuxData[locId].oiseaux.find(o => o.nom === (obs.comName || "Inconnu"));
                 if (existant) {
                     existant.qte += (obs.howMany || 1);
@@ -373,6 +388,59 @@
             className: 'maps-icon-container',
             html: `<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
             iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28]
+        });
+
+        // --- AUTOCOMPLÉTION DES ESPÈCES ---
+        function autocompleteEspeces() {
+            const input = document.getElementById('searchInput');
+            const query = input.value.trim().toLowerCase();
+            const list = document.getElementById('autocompleteList');
+            
+            if (!query) {
+                list.style.display = 'none';
+                afficherInterface();
+                return;
+            }
+
+            // Collecter toutes les espèces uniques depuis les lieux
+            const toutesEspeces = new Set();
+            Object.values(lieuxData).forEach(lieu => {
+                lieu.oiseaux.forEach(o => {
+                    if (o.nom.toLowerCase().includes(query)) {
+                        toutesEspeces.add(o.nom);
+                    }
+                });
+            });
+
+            const suggestions = Array.from(toutesEspeces).slice(0, 5); // max 5 suggestions
+            
+            if (suggestions.length === 0) {
+                list.style.display = 'none';
+                return;
+            }
+
+            list.innerHTML = '';
+            suggestions.forEach(nom => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = nom;
+                item.addEventListener('click', function() {
+                    input.value = nom;
+                    list.style.display = 'none';
+                    afficherInterface(); // le filtre s'applique via la valeur de l'input
+                });
+                list.appendChild(item);
+            });
+            list.style.display = 'block';
+        }
+
+        // Cacher l'autocomplétion si on clique ailleurs
+        document.addEventListener('click', function(e) {
+            const searchInput = document.getElementById('searchInput');
+            const autocompleteList = document.getElementById('autocompleteList');
+            if (e.target !== searchInput && e.target !== autocompleteList) {
+                autocompleteList.style.display = 'none';
+            }
         });
 
         // --- AFFICHAGE ---
@@ -413,7 +481,6 @@
             lieuxFiltres.forEach(lieu => {
                 const dateFormatee = formatDate(lieu.dateDerniere);
 
-                // Construction du popup : descriptif + liste des espèces
                 let htmlPopup = `
                     <div class="custom-popup-box">
                         <div class="custom-popup-title">${lieu.nomLieu}</div>
@@ -433,7 +500,6 @@
                                 .addTo(layerGroup);
                 markersList[lieu.id] = marker;
 
-                // Élément du menu latéral
                 const card = document.createElement('div');
                 card.className = 'bird-card-item';
                 card.innerHTML = `
