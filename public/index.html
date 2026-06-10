@@ -298,8 +298,15 @@
         const heure = new Date().getHours();
         basculerTheme(heure >= 21 || heure < 8);
 
-        document.getElementById('tokenField').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') initialiserRadar();
+        // Focus automatique pour que la touche Entrée fonctionne immédiatement
+        const tokenField = document.getElementById('tokenField');
+        tokenField.focus();
+
+        tokenField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();   // empêche tout comportement par défaut
+                initialiserRadar();
+            }
         });
 
         map.on('click', function(e) {
@@ -348,6 +355,7 @@
             startDate = thirtyDaysAgo.toISOString().split('T')[0];
         }
 
+        // Utilisation du proxy (pas de clé dans l'URL)
         const url = `/api/ebird-proxy?lat=${radarCenter[0]}&lng=${radarCenter[1]}&dist=${radius}&start=${startDate}&end=${endDate}`;
 
         try {
