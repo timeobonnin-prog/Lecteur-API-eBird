@@ -9,7 +9,6 @@
     <link rel="icon" type="image/png" href="API Ebird.png">
     
     <style>
-        /* --- VARIABLES (mode nuit par défaut) --- */
         :root {
             --neon-green: #10b981;
             --neon-glow: rgba(16, 185, 129, 0.3);
@@ -81,7 +80,6 @@
         }
         .icon-btn:hover { background: rgba(16, 185, 129, 0.15); }
 
-        /* Section GitHub */
         .github-container {
             position: relative;
             display: flex;
@@ -97,7 +95,7 @@
         .github-popup {
             position: absolute;
             top: 100%; right: 0;
-            margin-top: 4px; /* Réduit pour éviter un trop grand espace */
+            margin-top: 4px;
             background: var(--panel-bg);
             border: 1px solid var(--border-line);
             border-radius: 12px;
@@ -193,26 +191,8 @@
         .maps-icon-svg { width: 28px; height: 28px; fill: var(--neon-green); animation: mapsPinBounce 1.5s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
         @keyframes mapsPinBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
 
-        .custom-popup-box {
-            background: var(--popup-bg); color: var(--text-light); padding: 8px 10px;
-            min-width: 220px; font-size: 0.85rem; line-height: 1.4;
-        }
-        .custom-popup-title {
-            color: var(--neon-green); font-weight: bold; font-size: 0.95rem;
-            margin-bottom: 4px; border-bottom: 1px solid var(--border-line); padding-bottom: 4px;
-        }
-        .custom-popup-info {
-            font-size: 0.75rem; color: var(--text-gray); margin-bottom: 6px;
-        }
-        .custom-popup-species {
-            margin: 0; padding: 0; list-style: none;
-            max-height: 150px; overflow-y: auto;
-        }
-        .custom-popup-species li {
-            margin-bottom: 2px;
-            display: flex; justify-content: space-between;
-        }
-        .custom-popup-species .qte { color: var(--neon-green); font-weight: bold; }
+        /* On peut masquer les popups Leaflet par défaut, mais on les garde ici car on ne les utilise plus */
+        .leaflet-popup { display: none; } /* Cache tous les popups */
 
         @media (max-width: 767px) {
             #radar-sidebar-panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 200px; }
@@ -242,7 +222,6 @@
                 <button class="icon-btn" id="themeToggleBtn" onclick="basculerTheme()">🌙</button>
                 <button class="icon-btn" onclick="executerScan()" title="Lancer le scan">🔄</button>
                 
-                <!-- Section GitHub -->
                 <div class="github-container" id="githubContainer">
                     <div class="github-icon" id="githubIcon">
                         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -301,15 +280,14 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map, layerGroup, currentTile;
-        let radarCenter = [47.3941, 0.6848]; // Centre Indre-et-Loire (modifiable par clic)
+        let radarCenter = [47.3941, 0.6848];
         let ebirdRawData = [];
         let lieuxData = {};
         let markersList = {};
-        let cardElements = {};       // Pour les interactions carte ↔ liste
+        let cardElements = {};
         let isNightMode = true;
         let savedToken = localStorage.getItem('ebirdToken');
 
-        // --- THÈME ---
         function basculerTheme(forceNight = null) {
             isNightMode = forceNight !== null ? forceNight : !isNightMode;
             document.body.className = isNightMode ? '' : 'day-mode';
@@ -336,13 +314,12 @@
                 if (e.key === 'Enter') initialiserRadar();
             });
 
-            // 🆕 Déplacement du cercle par clic sur la carte
             map.on('click', function(e) {
                 radarCenter = [e.latlng.lat, e.latlng.lng];
-                executerScan();   // relance un scan autour du nouveau centre
+                executerScan();
             });
 
-            // Gestion améliorée du pop-up GitHub (délai pour éviter la fermeture intempestive)
+            // Popup GitHub avec délai
             const githubContainer = document.getElementById('githubContainer');
             const githubPopup = document.getElementById('githubPopup');
             let githubTimeout;
@@ -354,10 +331,10 @@
             githubContainer.addEventListener('mouseleave', () => {
                 githubTimeout = setTimeout(() => {
                     githubPopup.style.display = 'none';
-                }, 200); // 200ms de délai
+                }, 200);
             });
             githubPopup.addEventListener('mouseenter', () => {
-                clearTimeout(githubTimeout); // annuler la fermeture quand on entre dans le popup
+                clearTimeout(githubTimeout);
             });
             githubPopup.addEventListener('mouseleave', () => {
                 githubTimeout = setTimeout(() => {
@@ -376,7 +353,6 @@
             setTimeout(() => { map.invalidateSize(); executerScan(); }, 400);
         }
 
-        // --- SCAN ---
         async function executerScan() {
             if (!savedToken) return;
 
@@ -412,7 +388,6 @@
             }
         }
 
-        // --- REGROUPEMENT PAR LIEU ---
         function traiterDonnees() {
             lieuxData = {};
             ebirdRawData.forEach(obs => {
@@ -451,7 +426,6 @@
                 }
             });
 
-            // Cercle de rayon
             layerGroup.clearLayers();
             const radius = document.getElementById('radiusSelect').value;
             L.circle(radarCenter, {
@@ -471,7 +445,6 @@
             iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28]
         });
 
-        // --- AUTOCOMPLÉTION DES ESPÈCES ---
         function autocompleteEspeces() {
             const input = document.getElementById('searchInput');
             const query = input.value.trim().toLowerCase();
@@ -522,9 +495,7 @@
             }
         });
 
-        // --- AFFICHAGE (avec interactions carte ↔ liste) ---
         function afficherInterface() {
-            // Supprimer les anciens marqueurs (pas le cercle)
             layerGroup.eachLayer(layer => {
                 if (layer instanceof L.Marker) layerGroup.removeLayer(layer);
             });
@@ -549,7 +520,6 @@
                 return;
             }
 
-            // Tri
             if (methodeTri === 'alphabet') {
                 lieuxFiltres.sort((a, b) => a.nomLieu.localeCompare(b.nomLieu));
             } else if (methodeTri === 'nombre') {
@@ -561,24 +531,8 @@
             lieuxFiltres.forEach(lieu => {
                 const dateFormatee = formatDate(lieu.dateDerniere);
 
-                // Popup
-                let htmlPopup = `
-                    <div class="custom-popup-box">
-                        <div class="custom-popup-title">${lieu.nomLieu}</div>
-                        <div class="custom-popup-info">
-                            🕒 ${dateFormatee} · 👤 ${lieu.observateur}<br>
-                            🦅 ${lieu.oiseaux.length} espèce(s) · 🔢 ${lieu.totalOiseaux} indiv.
-                        </div>
-                        <ul class="custom-popup-species">
-                `;
-                lieu.oiseaux.forEach(o => {
-                    htmlPopup += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
-                });
-                htmlPopup += `</ul></div>`;
-
-                // Marqueur
+                // Marqueur SANS popup
                 const marker = L.marker([lieu.lat, lieu.lng], { icon: iconeRadar })
-                                .bindPopup(htmlPopup)
                                 .addTo(layerGroup);
                 markersList[lieu.id] = marker;
 
@@ -603,15 +557,13 @@
                     </div>
                 `;
 
-                // Survol de la fiche → centrer la carte sans zoom
                 card.addEventListener('mouseenter', () => {
                     map.setView([lieu.lat, lieu.lng], map.getZoom(), { animate: true, duration: 0.3 });
                 });
 
-                // Clic sur la fiche → zoom et ouverture du popup
                 card.onclick = () => {
                     map.setView([lieu.lat, lieu.lng], 14);
-                    markersList[lieu.id].openPopup();
+                    // Ne plus ouvrir de popup
                 };
 
                 cardElements[lieu.id] = card;
