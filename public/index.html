@@ -135,18 +135,27 @@
         .maps-icon-svg { width: 28px; height: 28px; fill: var(--neon-green); animation: mapsPinBounce 1.5s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
         @keyframes mapsPinBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
 
-        /* Popups simplifiées */
+        /* Popups : descriptif du lieu + liste des espèces */
         .custom-popup-box {
-            background: var(--popup-bg); color: var(--text-light); padding: 8px;
-            min-width: 200px; font-size: 0.85rem; line-height: 1.4;
+            background: var(--popup-bg); color: var(--text-light); padding: 8px 10px;
+            min-width: 220px; font-size: 0.85rem; line-height: 1.4;
         }
         .custom-popup-title {
             color: var(--neon-green); font-weight: bold; font-size: 0.95rem;
             margin-bottom: 4px; border-bottom: 1px solid var(--border-line); padding-bottom: 4px;
         }
-        .custom-popup-date { font-size: 0.75rem; color: var(--text-gray); margin-bottom: 6px; }
-        .custom-popup-species { margin: 0; padding: 0; list-style: none; }
-        .custom-popup-species li { margin-bottom: 2px; }
+        .custom-popup-info {
+            font-size: 0.75rem; color: var(--text-gray); margin-bottom: 6px;
+        }
+        .custom-popup-species {
+            margin: 0; padding: 0; list-style: none;
+            max-height: 150px; overflow-y: auto;
+        }
+        .custom-popup-species li {
+            margin-bottom: 2px;
+            display: flex; justify-content: space-between;
+        }
+        .custom-popup-species .qte { color: var(--neon-green); font-weight: bold; }
 
         @media (max-width: 767px) {
             #radar-sidebar-panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 200px; }
@@ -326,7 +335,7 @@
                     };
                 }
 
-                // On évite les doublons de la même espèce en sommant les quantités
+                // Fusionner les espèces identiques
                 const existant = lieuxData[locId].oiseaux.find(o => o.nom === (obs.comName || "Inconnu"));
                 if (existant) {
                     existant.qte += (obs.howMany || 1);
@@ -340,7 +349,6 @@
 
                 lieuxData[locId].totalOiseaux += (obs.howMany || 1);
 
-                // Mettre à jour la date la plus récente
                 if (new Date(obs.obsDt) > lieuxData[locId].dateObj) {
                     lieuxData[locId].dateObj = new Date(obs.obsDt);
                     lieuxData[locId].dateDerniere = obs.obsDt;
@@ -369,7 +377,7 @@
 
         // --- AFFICHAGE ---
         function afficherInterface() {
-            // On supprime uniquement les marqueurs ajoutés par cette fonction (pas le cercle)
+            // Supprimer les anciens marqueurs (pas le cercle)
             layerGroup.eachLayer(layer => {
                 if (layer instanceof L.Marker) layerGroup.removeLayer(layer);
             });
@@ -402,19 +410,21 @@
                 lieuxFiltres.sort((a, b) => b.dateObj - a.dateObj);
             }
 
-            // Marqueurs et popups
             lieuxFiltres.forEach(lieu => {
                 const dateFormatee = formatDate(lieu.dateDerniere);
 
-                // POPUP SIMPLIFIÉE : lieu, date, liste des espèces
+                // Construction du popup : descriptif + liste des espèces
                 let htmlPopup = `
                     <div class="custom-popup-box">
                         <div class="custom-popup-title">${lieu.nomLieu}</div>
-                        <div class="custom-popup-date">🕒 ${dateFormatee}</div>
+                        <div class="custom-popup-info">
+                            🕒 ${dateFormatee} · 👤 ${lieu.observateur}<br>
+                            🦅 ${lieu.oiseaux.length} espèce(s) · 🔢 ${lieu.totalOiseaux} indiv.
+                        </div>
                         <ul class="custom-popup-species">
                 `;
                 lieu.oiseaux.forEach(o => {
-                    htmlPopup += `<li>• ${o.nom} (x${o.qte})</li>`;
+                    htmlPopup += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
                 });
                 htmlPopup += `</ul></div>`;
 
@@ -423,13 +433,13 @@
                                 .addTo(layerGroup);
                 markersList[lieu.id] = marker;
 
-                // Carte dans le menu latéral
+                // Élément du menu latéral
                 const card = document.createElement('div');
                 card.className = 'bird-card-item';
                 card.innerHTML = `
                     <div class="card-list-name">${lieu.nomLieu}</div>
                     <div class="card-list-sub">
-                        🕒 ${dateFormatee}<br>
+                        🕒 ${dateFormatee} · 👤 ${lieu.observateur}<br>
                         🦅 ${lieu.oiseaux.length} espèce(s) · 🔢 ${lieu.totalOiseaux} indiv.
                     </div>
                 `;
