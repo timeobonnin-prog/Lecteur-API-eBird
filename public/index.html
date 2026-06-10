@@ -451,6 +451,7 @@ body {
 // ==================== VARIABLES GLOBALES ====================
 let globalLeafletMap;
 let mapLayerGroup;
+let currentTileLayer; // pour changer le fond de carte
 let radarCenterCoordinates = { lat: 47.3941, lng: 0.6848 };
 let ebirdRawDataset = [];
 let secureUserToken = "";
@@ -468,6 +469,19 @@ function loggerDiagnostic(texte, statut = 'info') {
   terminal.scrollTop = terminal.scrollHeight;
 }
 
+// ==================== GESTION DU FOND DE CARTE JOUR/NUIT ====================
+function setMapTiles(isLight) {
+  if (currentTileLayer) {
+    globalLeafletMap.removeLayer(currentTileLayer);
+  }
+  const tileUrl = isLight
+    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+  currentTileLayer = L.tileLayer(tileUrl, {
+    attribution: '&copy; CartoDB'
+  }).addTo(globalLeafletMap);
+}
+
 // ==================== INITIALISATION CARTE ====================
 document.addEventListener("DOMContentLoaded", () => {
   loggerDiagnostic("Chargement du moteur cartographique...");
@@ -477,12 +491,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     L.control.zoom({ position: 'bottomright' }).addTo(globalLeafletMap);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-      attribution: '&copy; CartoDB'
-    }).addTo(globalLeafletMap);
+    // Détection du thème stocké
+    const storedTheme = localStorage.getItem('radar-theme');
+    const isLight = storedTheme === 'light';
+    setMapTiles(isLight);
 
     mapLayerGroup = L.layerGroup().addTo(globalLeafletMap);
-    loggerDiagnostic("Carte Leaflet initialisée (CartoDB Dark Matter).", "success");
+    loggerDiagnostic("Carte Leaflet initialisée.", "success");
 
     // Clé stockée
     const savedToken = localStorage.getItem('ebird_secure_token');
@@ -513,17 +528,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ---- BOUTON THEME JOUR/NUIT ----
     const themeBtn = document.getElementById('themeToggle');
-    // Détection préférence
-    const storedTheme = localStorage.getItem('radar-theme');
-    if (storedTheme === 'light') {
+    // Appliquer le thème visuel et icône
+    if (isLight) {
       document.body.classList.add('light-mode');
       themeBtn.innerHTML = '☀️';
     }
     themeBtn.addEventListener('click', () => {
       document.body.classList.toggle('light-mode');
-      const isLight = document.body.classList.contains('light-mode');
-      themeBtn.innerHTML = isLight ? '☀️' : '🌙';
-      localStorage.setItem('radar-theme', isLight ? 'light' : 'dark');
+      const nowLight = document.body.classList.contains('light-mode');
+      themeBtn.innerHTML = nowLight ? '☀️' : '🌙';
+      localStorage.setItem('radar-theme', nowLight ? 'light' : 'dark');
+      // Changer le fond de carte
+      setMapTiles(nowLight);
     });
 
   } catch (err) {
@@ -545,7 +561,6 @@ function formatParisTime(obsDtString) {
   if (!obsDtString) return "Heure inconnue";
   // eBird donne "YYYY-MM-DD HH:MM" (heure locale de l'observation)
   // On suppose que c'est déjà en Europe/Paris (France).
-  // On parse et on reformate en JJ/MM/AAAA HH:MM (Paris)
   const parts = obsDtString.split(' ');
   if (parts.length !== 2) return obsDtString;
   const datePart = parts[0]; // YYYY-MM-DD
