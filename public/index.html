@@ -70,7 +70,6 @@
         .brand-bird-svg { width: 28px; height: 28px; fill: var(--neon-green); filter: drop-shadow(0 0 6px var(--neon-green)); }
         .brand-title-text { font-size: 1.05rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
         
-        /* Lien logo eBird */
         .brand-logo-link {
             display: flex;
             align-items: center;
@@ -260,7 +259,6 @@
     <header class="top-command-bar">
         <div class="bar-first-row">
             <div class="brand-block">
-                <!-- Logo eBird cliquable pour obtenir une clé API -->
                 <a href="https://ebird.org/api/keygen" target="_blank" class="brand-logo-link" title="Obtenir une clé API eBird">
                     <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
                 </a>
@@ -304,7 +302,7 @@
         <div id="radar-sidebar-panel">
             <div class="panel-header-title">
                 <div class="header-top-row">
-                    <span>Listes (Lieux)</span>
+                    <span>Listes (Checklists)</span>
                     <span id="counter-badge" style="color:white; background:var(--neon-green); padding:2px 8px; border-radius:12px;">0</span>
                 </div>
                 <div class="search-wrapper">
@@ -326,7 +324,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Fonction utilitaire pour normaliser (supprimer les accents)
+        // Normalisation des accents
         function normalize(str) {
             return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         }
@@ -334,7 +332,7 @@
         let map, layerGroup, currentTile;
         let radarCenter = [47.3941, 0.6848];
         let ebirdRawData = [];
-        let lieuxData = {};
+        let listesData = {};   // Désormais indexé par subId (checklist)
         let markersList = {};
         let cardElements = {};
         let isNightMode = true;
@@ -440,13 +438,14 @@
         }
 
         function traiterDonnees() {
-            lieuxData = {};
+            // Regroupement par checklist (subId)
+            listesData = {};
             ebirdRawData.forEach(obs => {
-                const locId = obs.locId || `${obs.lat}_${obs.lng}`;
+                const subId = obs.subId || `obs_${obs.lat}_${obs.lng}_${obs.obsDt}`; // fallback unique
                 
-                if (!lieuxData[locId]) {
-                    lieuxData[locId] = {
-                        id: locId,
+                if (!listesData[subId]) {
+                    listesData[subId] = {
+                        id: subId,
                         nomLieu: obs.locName || "Lieu inconnu",
                         lat: obs.lat,
                         lng: obs.lng,
@@ -455,26 +454,27 @@
                         dateObj: new Date(obs.obsDt),
                         oiseaux: [],
                         totalOiseaux: 0,
-                        checklistSubId: obs.subId || null
+                        checklistSubId: subId.startsWith('obs_') ? null : subId // vrai subId eBird
                     };
                 }
 
-                const existant = lieuxData[locId].oiseaux.find(o => o.nom === (obs.comName || "Inconnu"));
+                const existant = listesData[subId].oiseaux.find(o => o.nom === (obs.comName || "Inconnu"));
                 if (existant) {
                     existant.qte += (obs.howMany || 1);
                 } else {
-                    lieuxData[locId].oiseaux.push({
+                    listesData[subId].oiseaux.push({
                         nom: obs.comName || "Inconnu",
                         sci: obs.sciName || '',
                         qte: obs.howMany || 1
                     });
                 }
 
-                lieuxData[locId].totalOiseaux += (obs.howMany || 1);
+                listesData[subId].totalOiseaux += (obs.howMany || 1);
 
-                if (new Date(obs.obsDt) > lieuxData[locId].dateObj) {
-                    lieuxData[locId].dateObj = new Date(obs.obsDt);
-                    lieuxData[locId].dateDerniere = obs.obsDt;
+                // Garder la date la plus récente de la checklist (au cas où plusieurs obs dans la même checklist)
+                if (new Date(obs.obsDt) > listesData[subId].dateObj) {
+                    listesData[subId].dateObj = new Date(obs.obsDt);
+                    listesData[subId].dateDerniere = obs.obsDt;
                 }
             });
 
@@ -497,6 +497,7 @@
             iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28]
         });
 
+        // Autocomplétion basée sur les espèces de toutes les checklists
         function autocompleteEspeces() {
             const input = document.getElementById('searchInput');
             const query = normalize(input.value.trim());
@@ -508,12 +509,13 @@
                 return;
             }
 
-            // Utiliser ebirdRawData pour extraire toutes les espèces uniques
             const toutesEspeces = new Set();
-            ebirdRawData.forEach(obs => {
-                if (obs.comName && normalize(obs.comName).includes(query)) {
-                    toutesEspeces.add(obs.comName);
-                }
+            Object.values(listesData).forEach(liste => {
+                liste.oiseaux.forEach(o => {
+                    if (normalize(o.nom).includes(query)) {
+                        toutesEspeces.add(o.nom);
+                    }
+                });
             });
 
             const suggestions = Array.from(toutesEspeces).slice(0, 5);
@@ -558,36 +560,36 @@
             const recherche = normalize(document.getElementById('searchInput').value);
             const methodeTri = document.getElementById('sortSelect').value;
 
-            let lieuxFiltres = Object.values(lieuxData).filter(lieu => {
-                const matchLieu = normalize(lieu.nomLieu).includes(recherche);
-                const matchEspece = lieu.oiseaux.some(o => normalize(o.nom).includes(recherche));
+            let listesFiltrees = Object.values(listesData).filter(liste => {
+                const matchLieu = normalize(liste.nomLieu).includes(recherche);
+                const matchEspece = liste.oiseaux.some(o => normalize(o.nom).includes(recherche));
                 return matchLieu || matchEspece;
             });
 
-            document.getElementById('counter-badge').innerText = lieuxFiltres.length;
+            document.getElementById('counter-badge').innerText = listesFiltrees.length;
 
-            if (lieuxFiltres.length === 0) {
+            if (listesFiltrees.length === 0) {
                 listContainer.innerHTML = `<div style="padding:15px; text-align:center; color:var(--text-gray);">Aucune liste trouvée.</div>`;
                 return;
             }
 
             if (methodeTri === 'alphabet') {
-                lieuxFiltres.sort((a, b) => a.nomLieu.localeCompare(b.nomLieu));
+                listesFiltrees.sort((a, b) => a.nomLieu.localeCompare(b.nomLieu));
             } else if (methodeTri === 'nombre') {
-                lieuxFiltres.sort((a, b) => b.totalOiseaux - a.totalOiseaux);
+                listesFiltrees.sort((a, b) => b.totalOiseaux - a.totalOiseaux);
             } else if (methodeTri === 'date') {
-                lieuxFiltres.sort((a, b) => b.dateObj - a.dateObj);
+                listesFiltrees.sort((a, b) => b.dateObj - a.dateObj);
             }
 
-            lieuxFiltres.forEach(lieu => {
-                const dateFormatee = formatDate(lieu.dateDerniere);
+            listesFiltrees.forEach(liste => {
+                const dateFormatee = formatDate(liste.dateDerniere);
 
-                const marker = L.marker([lieu.lat, lieu.lng], { icon: iconeRadar })
+                const marker = L.marker([liste.lat, liste.lng], { icon: iconeRadar })
                                 .addTo(layerGroup);
-                markersList[lieu.id] = marker;
+                markersList[liste.id] = marker;
 
                 marker.on('click', function() {
-                    const fiche = cardElements[lieu.id];
+                    const fiche = cardElements[liste.id];
                     if (fiche) {
                         fiche.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         fiche.classList.add('highlight');
@@ -602,19 +604,19 @@
                 card.className = 'bird-card-item';
                 
                 let speciesListHtml = '';
-                lieu.oiseaux.forEach(o => {
+                liste.oiseaux.forEach(o => {
                     speciesListHtml += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
                 });
 
-                const checklistLinkHtml = lieu.checklistSubId 
-                    ? `<a href="https://ebird.org/checklist/${lieu.checklistSubId}" target="_blank" class="checklist-link">🔗 Voir la checklist eBird</a>`
+                const checklistLinkHtml = liste.checklistSubId 
+                    ? `<a href="https://ebird.org/checklist/${liste.checklistSubId}" target="_blank" class="checklist-link">🔗 Voir la checklist eBird</a>`
                     : '';
 
                 card.innerHTML = `
-                    <div class="card-list-name">${lieu.nomLieu}</div>
+                    <div class="card-list-name">${liste.nomLieu}</div>
                     <div class="card-list-sub">
-                        🕒 ${dateFormatee} · 👤 ${lieu.observateur}<br>
-                        🦅 ${lieu.oiseaux.length} espèce(s) · 🔢 ${lieu.totalOiseaux} indiv.
+                        🕒 ${dateFormatee} · 👤 ${liste.observateur}<br>
+                        🦅 ${liste.oiseaux.length} espèce(s) · 🔢 ${liste.totalOiseaux} indiv.
                     </div>
                     <div class="species-detail">
                         <ul>${speciesListHtml}</ul>
@@ -623,15 +625,15 @@
                 `;
 
                 card.addEventListener('mouseenter', () => {
-                    map.setView([lieu.lat, lieu.lng], map.getZoom(), { animate: true, duration: 0.3 });
+                    map.setView([liste.lat, liste.lng], map.getZoom(), { animate: true, duration: 0.3 });
                 });
 
                 card.onclick = () => {
-                    map.setView([lieu.lat, lieu.lng], 14);
+                    map.setView([liste.lat, liste.lng], 14);
                     card.classList.toggle('expanded');
                 };
 
-                cardElements[lieu.id] = card;
+                cardElements[liste.id] = card;
                 listContainer.appendChild(card);
             });
         }
