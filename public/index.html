@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lecteur API eBird – Sécurisé par Vercel</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="icon" type="image/svg+xml" href="ebird.svg">
+    
     <style>
         :root {
             --neon-green: #10b981;
@@ -16,7 +18,6 @@
             --text-light: #f8fafc;
             --text-gray: #94a3b8;
         }
-
         body.day-mode {
             --neon-green: #059669;
             --neon-glow: rgba(5, 150, 105, 0.2);
@@ -28,66 +29,170 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-        body { background: var(--dark-bg); color: var(--text-light); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.4s; }
+        body { background-color: var(--dark-bg); color: var(--text-light); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.4s; }
 
-        #authOverlay { position: fixed; inset: 0; background: var(--dark-bg); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 24px; transition: 0.5s; }
+        /* --- Écran d'authentification --- */
+        #authOverlay {
+            position: fixed; inset: 0; background: var(--dark-bg);
+            display: flex; justify-content: center; align-items: center; z-index: 99999;
+            padding: 24px; transition: all 0.5s ease;
+        }
         #authOverlay.hidden { opacity: 0; pointer-events: none; transform: scale(1.05); }
-        .auth-container { background: var(--panel-bg); border: 2px solid var(--neon-green); box-shadow: 0 0 35px var(--neon-glow); border-radius: 24px; padding: 40px 30px; max-width: 440px; text-align: center; }
-        .auth-container h1 { font-size: 1.9rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; }
+        
+        .auth-container {
+            background: var(--panel-bg); border: 2px solid var(--neon-green); box-shadow: 0 0 35px var(--neon-glow);
+            border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 440px; text-align: center;
+        }
+        .auth-container h1 { font-size: 1.9rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; color: var(--text-light); }
         .auth-container p { color: var(--neon-green); margin-bottom: 32px; text-transform: uppercase; font-size: 0.85rem; }
-        .key-input-field { width: 100%; padding: 16px; background: rgba(0,0,0,0.1); border: 1px solid var(--border-line); border-radius: 30px; color: var(--text-light); text-align: center; outline: none; margin-bottom: 24px; }
-        .submit-scan-btn { width: 100%; padding: 16px; background: var(--neon-green); color: white; font-weight: bold; border: none; border-radius: 30px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* Logo eBird sur l'écran de connexion */
+        .auth-logo-link {
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .auth-logo-img {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 6px var(--neon-green));
+            transition: filter 0.2s;
+        }
+        .auth-logo-link:hover .auth-logo-img {
+            filter: drop-shadow(0 0 15px var(--neon-green));
+        }
 
-        .top-command-bar { background: var(--panel-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-line); padding: 10px 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+        .key-input-field {
+            width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.1); border: 1px solid var(--border-line);
+            border-radius: 30px; color: var(--text-light); text-align: center; outline: none; margin-bottom: 24px;
+        }
+        .submit-scan-btn {
+            width: 100%; padding: 16px; background: var(--neon-green); color: white; font-weight: bold;
+            border: none; border-radius: 30px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        /* --- Barre supérieure (après connexion) --- */
+        .top-command-bar {
+            background: var(--panel-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-line);
+            padding: 10px 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px;
+        }
         .bar-first-row { display: flex; justify-content: space-between; align-items: center; }
         .brand-block { display: flex; align-items: center; gap: 10px; }
-        .brand-logo-img { width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 0 4px var(--neon-green)); transition: 0.2s; }
-        .brand-logo-link:hover .brand-logo-img { filter: drop-shadow(0 0 10px var(--neon-green)); }
+        
+        /* Icône SVG décorative (pas de lien) */
+        .brand-bird-svg {
+            width: 28px; height: 28px;
+            fill: var(--neon-green);
+            filter: drop-shadow(0 0 6px var(--neon-green));
+        }
         .brand-title-text { font-size: 1.05rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
 
         .control-buttons { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-        .icon-btn { background: transparent; border: 1px solid var(--border-line); color: var(--text-light); font-size: 1rem; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .icon-btn:hover { background: rgba(16,185,129,0.15); }
+        .icon-btn {
+            background: transparent; border: 1px solid var(--border-line); color: var(--text-light);
+            font-size: 1rem; width: 34px; height: 34px; border-radius: 8px; display: flex;
+            align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+        }
+        .icon-btn:hover { background: rgba(16, 185, 129, 0.15); }
 
         .github-container { position: relative; display: flex; align-items: center; }
-        .github-icon { background: transparent; border: 1px solid var(--border-line); color: var(--text-light); font-size: 1rem; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .github-icon:hover { background: rgba(16,185,129,0.15); }
-        .github-popup { position: absolute; top: 100%; right: 0; margin-top: 4px; background: var(--panel-bg); border: 1px solid var(--border-line); border-radius: 12px; padding: 10px; min-width: 200px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); backdrop-filter: blur(12px); display: none; z-index: 2500; font-size: 0.8rem; }
-        .github-popup a { display: block; padding: 6px 8px; color: var(--text-light); text-decoration: none; border-radius: 6px; margin-bottom: 2px; transition: 0.2s; }
+        .github-icon {
+            background: transparent; border: 1px solid var(--border-line); color: var(--text-light);
+            font-size: 1rem; width: 34px; height: 34px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .github-icon:hover { background: rgba(16, 185, 129, 0.15); }
+        .github-popup {
+            position: absolute; top: 100%; right: 0; margin-top: 4px;
+            background: var(--panel-bg); border: 1px solid var(--border-line);
+            border-radius: 12px; padding: 10px; min-width: 200px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); backdrop-filter: blur(12px);
+            display: none; z-index: 2500; font-size: 0.8rem;
+        }
+        .github-popup a {
+            display: block; padding: 6px 8px; color: var(--text-light);
+            text-decoration: none; border-radius: 6px; margin-bottom: 2px; transition: 0.2s;
+        }
         .github-popup a:hover { background: var(--neon-glow); color: var(--neon-green); }
 
         .filters-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-        .tactical-dropdown, .tactical-input-number { background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; outline: none; }
+        .tactical-dropdown, .tactical-input-number {
+            background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light);
+            padding: 6px 10px; border-radius: 8px; outline: none; font-size: 0.85rem;
+        }
         .tactical-input-number { width: 60px; text-align: center; }
-        .date-input { background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light); padding: 6px; border-radius: 8px; width: 130px; font-size: 0.85rem; }
+        .date-input {
+            background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light);
+            padding: 6px; border-radius: 8px; width: 130px; font-size: 0.85rem;
+        }
 
         .workspace-area { flex: 1; position: relative; display: flex; }
         #live-map-viewport { position: absolute; inset: 0; background: var(--dark-bg); z-index: 1; }
 
-        #radar-sidebar-panel { position: absolute; top: 10px; right: 10px; bottom: 10px; width: 300px; background: var(--panel-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-line); border-radius: 20px; z-index: 999; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .panel-header-title { padding: 10px; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-line); display: flex; flex-direction: column; gap: 8px; }
-        .header-top-row { display: flex; justify-content: space-between; align-items: center; font-weight: 800; color: var(--neon-green); text-transform: uppercase; font-size: 0.8rem; }
+        #radar-sidebar-panel {
+            position: absolute; top: 10px; right: 10px; bottom: 10px; width: 300px;
+            background: var(--panel-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-line);
+            border-radius: 20px; z-index: 999; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .panel-header-title {
+            padding: 10px; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-line);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .header-top-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: 800; color: var(--neon-green); text-transform: uppercase; font-size: 0.8rem;
+        }
         .search-wrapper { position: relative; }
-        .sidebar-input { width: 100%; padding: 8px; border-radius: 8px; background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.8rem; }
+        .sidebar-input {
+            width: 100%; padding: 8px; border-radius: 8px; background: var(--dark-bg);
+            border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.8rem;
+        }
         .sidebar-input:focus { border-color: var(--neon-green); }
-        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--panel-bg); border: 1px solid var(--neon-green); border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto; display: none; z-index: 10; }
-        .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 0.8rem; border-bottom: 1px solid var(--border-line); }
+        .autocomplete-list {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--panel-bg); border: 1px solid var(--neon-green);
+            border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto;
+            display: none; z-index: 10;
+        }
+        .autocomplete-item {
+            padding: 8px 10px; cursor: pointer; font-size: 0.8rem;
+            border-bottom: 1px solid var(--border-line);
+        }
         .autocomplete-item:hover { background: rgba(16,185,129,0.2); }
-        .sidebar-select { width: 100%; padding: 8px; border-radius: 8px; background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.8rem; }
+
+        .sidebar-select {
+            width: 100%; padding: 8px; border-radius: 8px; background: var(--dark-bg);
+            border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.8rem;
+        }
 
         .birds-scroller { flex: 1; overflow-y: auto; padding: 6px; }
-        .bird-card-item { padding: 10px; border-radius: 10px; margin-bottom: 6px; cursor: pointer; background: rgba(128,128,128,0.05); transition: 0.2s; border-left: 3px solid transparent; }
+        .bird-card-item {
+            padding: 10px; border-radius: 10px; margin-bottom: 6px; cursor: pointer;
+            background: rgba(128,128,128,0.05); transition: 0.2s; border-left: 3px solid transparent;
+        }
         .bird-card-item:hover { background: var(--neon-glow); border-left-color: var(--neon-green); }
         .bird-card-item.highlight { background: var(--neon-glow) !important; border-left-color: var(--neon-green) !important; }
         .card-list-name { font-weight: bold; color: var(--text-light); font-size: 0.9rem; }
         .card-list-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 4px; }
 
-        .species-detail { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-line); font-size: 0.8rem; }
+        .species-detail {
+            display: none; margin-top: 8px; padding-top: 8px;
+            border-top: 1px solid var(--border-line); font-size: 0.8rem;
+        }
         .bird-card-item.expanded .species-detail { display: block; }
         .species-detail ul { list-style: none; padding: 0; margin: 0; }
-        .species-detail li { display: flex; justify-content: space-between; margin-bottom: 2px; color: var(--text-light); }
+        .species-detail li {
+            display: flex; justify-content: space-between;
+            margin-bottom: 2px; color: var(--text-light);
+        }
         .species-detail .qte { color: var(--neon-green); font-weight: bold; }
-        .checklist-link { display: inline-block; margin-top: 8px; color: var(--neon-green); text-decoration: none; font-size: 0.8rem; font-weight: bold; border: 1px solid var(--border-line); padding: 4px 8px; border-radius: 6px; transition: 0.2s; }
+        .checklist-link {
+            display: inline-block; margin-top: 8px; color: var(--neon-green);
+            text-decoration: none; font-size: 0.8rem; font-weight: bold;
+            border: 1px solid var(--border-line); padding: 4px 8px; border-radius: 6px;
+            transition: 0.2s;
+        }
         .checklist-link:hover { background: rgba(16,185,129,0.15); }
 
         .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
@@ -103,348 +208,358 @@
 </head>
 <body>
 
-<div id="authOverlay">
-    <div class="auth-container">
-        <h1>Lecteur API eBird</h1>
-        <p>Connexion sécurisée – Vercel</p>
-        <input type="password" id="tokenField" class="key-input-field" placeholder="Clé API eBird..." />
-        <button class="submit-scan-btn" onclick="initialiserRadar()">Activer le Scanner</button>
-    </div>
-</div>
-
-<header class="top-command-bar">
-    <div class="bar-first-row">
-        <div class="brand-block">
-            <a href="https://ebird.org/api/keygen" target="_blank" class="brand-logo-link" title="Obtenir une clé API eBird">
-                <img src="ebird.svg" alt="eBird" class="brand-logo-img" />
+    <!-- ÉCRAN DE CONNEXION AVEC LOGO eBIRD -->
+    <div id="authOverlay">
+        <div class="auth-container">
+            <!-- Logo eBird cliquable pour obtenir une clé API -->
+            <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo-link" title="Obtenir une clé API eBird">
+                <img src="ebird.svg" alt="eBird" class="auth-logo-img" />
             </a>
-            <span class="brand-title-text">Lecteur API eBird</span>
-        </div>
-        <div class="control-buttons">
-            <button class="icon-btn" id="themeToggleBtn" onclick="basculerTheme()">🌙</button>
-            <div class="github-container" id="githubContainer">
-                <div class="github-icon" id="githubIcon">
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                </div>
-                <div class="github-popup" id="githubPopup">
-                    <a href="https://github.com/timeobonnin-prog/mon-api/issues" target="_blank">📝 Proposer une fonctionnalité</a>
-                    <a href="https://github.com/timeobonnin-prog/mon-api" target="_blank">💻 Contribuer au développement</a>
-                </div>
-            </div>
+            <h1>Lecteur API eBird</h1>
+            <p>Connexion sécurisée – Vercel</p>
+            <input type="password" id="tokenField" class="key-input-field" placeholder="Clé API eBird..." />
+            <button class="submit-scan-btn" onclick="initialiserRadar()">Activer le Scanner</button>
         </div>
     </div>
-    <div class="filters-row">
-        <select id="radiusSelect" class="tactical-dropdown" onchange="executerScan()">
-            <option value="10">10 km</option>
-            <option value="25" selected>25 km</option>
-            <option value="50">50 km</option>
-        </select>
-        <input type="date" id="startDate" class="date-input" onchange="executerScan()">
-        <input type="date" id="endDate" class="date-input" onchange="executerScan()">
-        <button class="icon-btn" onclick="document.getElementById('startDate').value='';document.getElementById('endDate').value='';executerScan();" style="font-size:0.8rem;">✕</button>
-    </div>
-</header>
 
-<main class="workspace-area">
-    <div id="live-map-viewport"></div>
-
-    <div id="radar-sidebar-panel">
-        <div class="panel-header-title">
-            <div class="header-top-row">
-                <span>Listes (Checklists)</span>
-                <span id="counter-badge" style="color:white; background:var(--neon-green); padding:2px 8px; border-radius:12px;">0</span>
+    <!-- BARRE D'EN-TÊTE (après connexion) avec l'icône SVG d'origine -->
+    <header class="top-command-bar">
+        <div class="bar-first-row">
+            <div class="brand-block">
+                <!-- Icône SVG décorative (pas de lien) -->
+                <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
+                <span class="brand-title-text">Lecteur API eBird</span>
             </div>
-            <div id="totalSpeciesCounter" style="font-size:0.7rem; color:var(--text-gray); text-align:center;">0 espèce(s) distincte(s)</div>
-            <div class="search-wrapper">
-                <input type="text" id="searchInput" class="sidebar-input" placeholder="🔍 Chercher un lieu ou une espèce..." oninput="autocompleteEspeces()" autocomplete="off" />
-                <div id="autocompleteList" class="autocomplete-list"></div>
+            <div class="control-buttons">
+                <button class="icon-btn" id="themeToggleBtn" onclick="basculerTheme()">🌙</button>
+                <div class="github-container" id="githubContainer">
+                    <div class="github-icon" id="githubIcon">
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    </div>
+                    <div class="github-popup" id="githubPopup">
+                        <a href="https://github.com/timeobonnin-prog/mon-api/issues" target="_blank">📝 Proposer une fonctionnalité</a>
+                        <a href="https://github.com/timeobonnin-prog/mon-api" target="_blank">💻 Contribuer au développement</a>
+                    </div>
+                </div>
             </div>
-            <select id="sortSelect" class="sidebar-select" onchange="afficherInterface()">
-                <option value="alphabet">🔤 Tri : Ordre Alphabétique</option>
-                <option value="nombre">🔢 Tri : Nombre d'oiseaux</option>
-                <option value="date">🕒 Tri : Date la plus récente</option>
+        </div>
+        <div class="filters-row">
+            <select id="radiusSelect" class="tactical-dropdown" onchange="executerScan()">
+                <option value="10">10 km</option>
+                <option value="25" selected>25 km</option>
+                <option value="50">50 km</option>
             </select>
+            <input type="date" id="startDate" class="date-input" onchange="executerScan()">
+            <input type="date" id="endDate" class="date-input" onchange="executerScan()">
+            <button class="icon-btn" onclick="document.getElementById('startDate').value='';document.getElementById('endDate').value='';executerScan();" style="font-size:0.8rem;">✕</button>
         </div>
-        <div id="birds-list-viewport" class="birds-scroller">
-            <div style="padding:15px; text-align:center; color:var(--text-gray); font-size:0.85rem;">En attente de connexion radar...</div>
+    </header>
+
+    <main class="workspace-area">
+        <div id="live-map-viewport"></div>
+
+        <div id="radar-sidebar-panel">
+            <div class="panel-header-title">
+                <div class="header-top-row">
+                    <span>Listes (Checklists)</span>
+                    <span id="counter-badge" style="color:white; background:var(--neon-green); padding:2px 8px; border-radius:12px;">0</span>
+                </div>
+                <div id="totalSpeciesCounter" style="font-size:0.7rem; color:var(--text-gray); text-align:center;">0 espèce(s) distincte(s)</div>
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" class="sidebar-input" placeholder="🔍 Chercher un lieu ou une espèce..." oninput="autocompleteEspeces()" autocomplete="off" />
+                    <div id="autocompleteList" class="autocomplete-list"></div>
+                </div>
+                <select id="sortSelect" class="sidebar-select" onchange="afficherInterface()">
+                    <option value="alphabet">🔤 Tri : Ordre Alphabétique</option>
+                    <option value="nombre">🔢 Tri : Nombre d'oiseaux</option>
+                    <option value="date">🕒 Tri : Date la plus récente</option>
+                </select>
+            </div>
+            
+            <div id="birds-list-viewport" class="birds-scroller">
+                <div style="padding:15px; text-align:center; color:var(--text-gray); font-size:0.85rem;">En attente de connexion radar...</div>
+            </div>
         </div>
-    </div>
-</main>
+    </main>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    function normalize(str) {
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    }
-
-    let map, layerGroup, currentTile;
-    let radarCenter = [47.3941, 0.6848];
-    let ebirdRawData = [];
-    let listesData = {};
-    let markersList = {};
-    let cardElements = {};
-    let isNightMode = true;
-    let savedToken = localStorage.getItem('ebirdToken');
-
-    function basculerTheme(forceNight = null) {
-        isNightMode = forceNight !== null ? forceNight : !isNightMode;
-        document.body.className = isNightMode ? '' : 'day-mode';
-        document.getElementById('themeToggleBtn').innerText = isNightMode ? '🌙' : '☀️';
-        if (currentTile) map.removeLayer(currentTile);
-        const tileUrl = isNightMode
-            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
-        currentTile = L.tileLayer(tileUrl).addTo(map);
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        map = L.map('live-map-viewport', { zoomControl: false }).setView(radarCenter, 10);
-        L.control.zoom({ position: 'bottomleft' }).addTo(map);
-        layerGroup = L.layerGroup().addTo(map);
-        const heure = new Date().getHours();
-        basculerTheme(heure >= 21 || heure < 8);
-        if (savedToken) document.getElementById('tokenField').value = savedToken;
-        document.getElementById('tokenField').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') initialiserRadar();
-        });
-        map.on('click', function(e) {
-            radarCenter = [e.latlng.lat, e.latlng.lng];
-            executerScan();
-        });
-        const githubContainer = document.getElementById('githubContainer');
-        const githubPopup = document.getElementById('githubPopup');
-        let githubTimeout;
-        githubContainer.addEventListener('mouseenter', () => {
-            clearTimeout(githubTimeout);
-            githubPopup.style.display = 'block';
-        });
-        githubContainer.addEventListener('mouseleave', () => {
-            githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
-        });
-        githubPopup.addEventListener('mouseenter', () => clearTimeout(githubTimeout));
-        githubPopup.addEventListener('mouseleave', () => {
-            githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
-        });
-    });
-
-    function initialiserRadar() {
-        const token = document.getElementById('tokenField').value.trim();
-        if (!token) return alert("Saisis ta clé eBird !");
-        localStorage.setItem('ebirdToken', token);
-        savedToken = token;
-        document.getElementById('authOverlay').classList.add('hidden');
-        setTimeout(() => { map.invalidateSize(); executerScan(); }, 400);
-    }
-
-    async function executerScan() {
-        if (!savedToken) return;
-        document.getElementById('birds-list-viewport').innerHTML = `<div style="padding:15px; text-align:center; color:var(--neon-green); font-size:0.85rem;">Balayage en cours...</div>`;
-
-        const radius = document.getElementById('radiusSelect').value;
-        let startDate = document.getElementById('startDate').value;
-        let endDate = document.getElementById('endDate').value;
-
-        // Si les dates ne sont pas renseignées, utiliser les 30 derniers jours
-        if (!startDate || !endDate) {
-            const today = new Date();
-            const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-            endDate = today.toISOString().split('T')[0];
-            startDate = thirtyDaysAgo.toISOString().split('T')[0];
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Fonction de normalisation pour la recherche (insensible aux accents)
+        function normalize(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         }
 
-        const url = `/api/ebird?lat=${radarCenter[0]}&lng=${radarCenter[1]}&dist=${radius}&start=${startDate}&end=${endDate}`;
+        let map, layerGroup, currentTile;
+        let radarCenter = [47.3941, 0.6848];
+        let ebirdRawData = [];
+        let listesData = {};   // indexé par subId (checklist)
+        let markersList = {};
+        let cardElements = {};
+        let isNightMode = true;
+        let savedToken = localStorage.getItem('ebirdToken');
 
-        try {
-            const rep = await fetch(url, { headers: { 'x-user-ebird-key': savedToken } });
-            const data = await rep.json();
-            if (data.error) throw new Error(data.error);
-            ebirdRawData = data;
-            traiterDonnees();
-        } catch (e) {
-            document.getElementById('birds-list-viewport').innerHTML = `<div style="padding:15px; color:#f87171;">Erreur: ${e.message}</div>`;
+        function basculerTheme(forceNight = null) {
+            isNightMode = forceNight !== null ? forceNight : !isNightMode;
+            document.body.className = isNightMode ? '' : 'day-mode';
+            document.getElementById('themeToggleBtn').innerText = isNightMode ? '🌙' : '☀️';
+            if (currentTile) map.removeLayer(currentTile);
+            const tileUrl = isNightMode 
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png' 
+                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+            currentTile = L.tileLayer(tileUrl).addTo(map);
         }
-    }
 
-    function traiterDonnees() {
-        listesData = {};
-        ebirdRawData.forEach(obs => {
-            const subId = obs.subId;
-            if (!subId) return;
+        document.addEventListener("DOMContentLoaded", () => {
+            map = L.map('live-map-viewport', { zoomControl: false }).setView(radarCenter, 10);
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+            layerGroup = L.layerGroup().addTo(map);
+            
+            const heure = new Date().getHours();
+            basculerTheme(heure >= 21 || heure < 8);
 
-            if (!listesData[subId]) {
-                listesData[subId] = {
-                    id: subId,
-                    nomLieu: obs.locName || "Lieu inconnu",
-                    lat: obs.lat,
-                    lng: obs.lng,
-                    observateur: obs.userDisplayName || "Anonyme",
-                    dateDerniere: obs.obsDt,
-                    dateObj: new Date(obs.obsDt),
-                    oiseaux: [],
-                    totalOiseaux: 0,
-                    checklistSubId: subId
-                };
-            }
+            if (savedToken) document.getElementById('tokenField').value = savedToken;
 
-            const existant = listesData[subId].oiseaux.find(o => o.nom === (obs.comName || "Inconnu"));
-            if (existant) {
-                existant.qte += (obs.howMany || 1);
-            } else {
-                listesData[subId].oiseaux.push({
-                    nom: obs.comName || "Inconnu",
-                    sci: obs.sciName || '',
-                    qte: obs.howMany || 1
-                });
-            }
-            listesData[subId].totalOiseaux += (obs.howMany || 1);
-            if (new Date(obs.obsDt) > listesData[subId].dateObj) {
-                listesData[subId].dateObj = new Date(obs.obsDt);
-                listesData[subId].dateDerniere = obs.obsDt;
-            }
-        });
+            document.getElementById('tokenField').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') initialiserRadar();
+            });
 
-        layerGroup.clearLayers();
-        const radius = document.getElementById('radiusSelect').value;
-        L.circle(radarCenter, {
-            color: '#10b981',
-            fillColor: '#10b981',
-            fillOpacity: 0.04,
-            radius: radius * 1000,
-            weight: 1
-        }).addTo(layerGroup);
+            map.on('click', function(e) {
+                radarCenter = [e.latlng.lat, e.latlng.lng];
+                executerScan();
+            });
 
-        afficherInterface();
-    }
-
-    const iconeRadar = L.divIcon({
-        className: 'maps-icon-container',
-        html: `<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
-        iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28]
-    });
-
-    function autocompleteEspeces() {
-        const input = document.getElementById('searchInput');
-        const query = normalize(input.value.trim());
-        const list = document.getElementById('autocompleteList');
-        if (!query) { list.style.display = 'none'; afficherInterface(); return; }
-
-        const toutesEspeces = new Set();
-        Object.values(listesData).forEach(liste => {
-            liste.oiseaux.forEach(o => {
-                if (normalize(o.nom).includes(query)) toutesEspeces.add(o.nom);
+            const githubContainer = document.getElementById('githubContainer');
+            const githubPopup = document.getElementById('githubPopup');
+            let githubTimeout;
+            githubContainer.addEventListener('mouseenter', () => {
+                clearTimeout(githubTimeout);
+                githubPopup.style.display = 'block';
+            });
+            githubContainer.addEventListener('mouseleave', () => {
+                githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
+            });
+            githubPopup.addEventListener('mouseenter', () => clearTimeout(githubTimeout));
+            githubPopup.addEventListener('mouseleave', () => {
+                githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
             });
         });
-        const suggestions = Array.from(toutesEspeces).slice(0, 5);
-        if (suggestions.length === 0) { list.style.display = 'none'; return; }
-        list.innerHTML = '';
-        suggestions.forEach(nom => {
-            const item = document.createElement('div');
-            item.className = 'autocomplete-item';
-            item.textContent = nom;
-            item.addEventListener('click', () => {
-                input.value = nom;
-                list.style.display = 'none';
-                afficherInterface();
-            });
-            list.appendChild(item);
-        });
-        list.style.display = 'block';
-    }
 
-    document.addEventListener('click', function(e) {
-        const autocompleteList = document.getElementById('autocompleteList');
-        const searchInput = document.getElementById('searchInput');
-        if (e.target !== searchInput && e.target !== autocompleteList) {
-            autocompleteList.style.display = 'none';
-        }
-    });
-
-    function afficherInterface() {
-        layerGroup.eachLayer(layer => { if (layer instanceof L.Marker) layerGroup.removeLayer(layer); });
-        markersList = {};
-        cardElements = {};
-        const listContainer = document.getElementById('birds-list-viewport');
-        listContainer.innerHTML = '';
-
-        const recherche = normalize(document.getElementById('searchInput').value);
-        const methodeTri = document.getElementById('sortSelect').value;
-
-        let listesFiltrees = Object.values(listesData).filter(liste => {
-            const matchLieu = normalize(liste.nomLieu).includes(recherche);
-            const matchEspece = liste.oiseaux.some(o => normalize(o.nom).includes(recherche));
-            return matchLieu || matchEspece;
-        });
-
-        const toutesEspecesSet = new Set();
-        Object.values(listesData).forEach(liste => liste.oiseaux.forEach(o => toutesEspecesSet.add(o.nom)));
-        document.getElementById('totalSpeciesCounter').innerText = `${toutesEspecesSet.size} espèce(s) distincte(s)`;
-        document.getElementById('counter-badge').innerText = listesFiltrees.length;
-
-        if (listesFiltrees.length === 0) {
-            listContainer.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-gray);">Aucune liste trouvée.</div>';
-            return;
+        function initialiserRadar() {
+            const token = document.getElementById('tokenField').value.trim();
+            if (!token) return alert("Saisis ta clé eBird !");
+            localStorage.setItem('ebirdToken', token);
+            savedToken = token;
+            document.getElementById('authOverlay').classList.add('hidden');
+            setTimeout(() => { map.invalidateSize(); executerScan(); }, 400);
         }
 
-        if (methodeTri === 'alphabet') listesFiltrees.sort((a,b) => a.nomLieu.localeCompare(b.nomLieu));
-        else if (methodeTri === 'nombre') listesFiltrees.sort((a,b) => b.totalOiseaux - a.totalOiseaux);
-        else if (methodeTri === 'date') listesFiltrees.sort((a,b) => b.dateObj - a.dateObj);
+        async function executerScan() {
+            if (!savedToken) return;
+            document.getElementById('birds-list-viewport').innerHTML = `<div style="padding:15px; text-align:center; color:var(--neon-green); font-size:0.85rem;">Balayage en cours...</div>`;
 
-        listesFiltrees.forEach(liste => {
-            const dateFormatee = formatDate(liste.dateDerniere);
-            const marker = L.marker([liste.lat, liste.lng], { icon: iconeRadar }).addTo(layerGroup);
-            markersList[liste.id] = marker;
+            const radius = document.getElementById('radiusSelect').value;
+            let startDate = document.getElementById('startDate').value;
+            let endDate = document.getElementById('endDate').value;
 
-            marker.on('click', () => {
-                const fiche = cardElements[liste.id];
-                if (fiche) {
-                    fiche.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    fiche.classList.add('highlight');
-                    if (!fiche.classList.contains('expanded')) fiche.classList.add('expanded');
-                    setTimeout(() => fiche.classList.remove('highlight'), 1500);
+            // Si aucune date, prendre les 30 derniers jours par défaut
+            if (!startDate || !endDate) {
+                const today = new Date();
+                const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                endDate = today.toISOString().split('T')[0];
+                startDate = thirtyDaysAgo.toISOString().split('T')[0];
+            }
+
+            const url = `/api/ebird?lat=${radarCenter[0]}&lng=${radarCenter[1]}&dist=${radius}&start=${startDate}&end=${endDate}`;
+
+            try {
+                const rep = await fetch(url, { headers: { 'x-user-ebird-key': savedToken } });
+                const data = await rep.json();
+                if (data.error) throw new Error(data.error);
+                ebirdRawData = data;
+                traiterDonnees();
+            } catch (e) {
+                document.getElementById('birds-list-viewport').innerHTML = `<div style="padding:15px; color:#f87171;">Erreur: ${e.message}</div>`;
+            }
+        }
+
+        function traiterDonnees() {
+            listesData = {};
+            ebirdRawData.forEach(obs => {
+                const subId = obs.subId;
+                if (!subId) return;
+
+                if (!listesData[subId]) {
+                    listesData[subId] = {
+                        id: subId,
+                        nomLieu: obs.locName || "Lieu inconnu",
+                        lat: obs.lat,
+                        lng: obs.lng,
+                        observateur: obs.userDisplayName || "Anonyme",
+                        dateDerniere: obs.obsDt,
+                        dateObj: new Date(obs.obsDt),
+                        oiseaux: [],
+                        totalOiseaux: 0,
+                        checklistSubId: subId
+                    };
+                }
+
+                const existant = listesData[subId].oiseaux.find(o => o.nom === (obs.comName || "Inconnu"));
+                if (existant) {
+                    existant.qte += (obs.howMany || 1);
+                } else {
+                    listesData[subId].oiseaux.push({
+                        nom: obs.comName || "Inconnu",
+                        sci: obs.sciName || '',
+                        qte: obs.howMany || 1
+                    });
+                }
+                listesData[subId].totalOiseaux += (obs.howMany || 1);
+                if (new Date(obs.obsDt) > listesData[subId].dateObj) {
+                    listesData[subId].dateObj = new Date(obs.obsDt);
+                    listesData[subId].dateDerniere = obs.obsDt;
                 }
             });
 
-            const card = document.createElement('div');
-            card.className = 'bird-card-item';
-            let speciesListHtml = '';
-            liste.oiseaux.forEach(o => {
-                speciesListHtml += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
-            });
-            const checklistLinkHtml = liste.checklistSubId
-                ? `<a href="https://ebird.org/checklist/${liste.checklistSubId}" target="_blank" class="checklist-link">🔗 Voir la checklist eBird</a>`
-                : '';
+            layerGroup.clearLayers();
+            const radius = document.getElementById('radiusSelect').value;
+            L.circle(radarCenter, {
+                color: '#10b981',
+                fillColor: '#10b981',
+                fillOpacity: 0.04,
+                radius: radius * 1000,
+                weight: 1
+            }).addTo(layerGroup);
 
-            card.innerHTML = `
-                <div class="card-list-name">${liste.nomLieu}</div>
-                <div class="card-list-sub">
-                    🕒 ${dateFormatee} · 👤 ${liste.observateur}<br>
-                    🦅 ${liste.oiseaux.length} espèce(s) · 🔢 ${liste.totalOiseaux} indiv.
-                </div>
-                <div class="species-detail">
-                    <ul>${speciesListHtml}</ul>
-                    ${checklistLinkHtml}
-                </div>
-            `;
+            afficherInterface();
+        }
 
-            card.addEventListener('mouseenter', () => {
-                map.setView([liste.lat, liste.lng], map.getZoom(), { animate: true, duration: 0.3 });
-            });
-            card.onclick = () => {
-                map.setView([liste.lat, liste.lng], 14);
-                card.classList.toggle('expanded');
-            };
-
-            cardElements[liste.id] = card;
-            listContainer.appendChild(card);
+        const iconeRadar = L.divIcon({
+            className: 'maps-icon-container',
+            html: `<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
+            iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28]
         });
-    }
 
-    function formatDate(dtString) {
-        if (!dtString) return "?";
-        const [date, time] = dtString.split(' ');
-        const [y, m, d] = date.split('-');
-        return `${d}/${m}/${y} ${time || ''}`;
-    }
-</script>
+        function autocompleteEspeces() {
+            const input = document.getElementById('searchInput');
+            const query = normalize(input.value.trim());
+            const list = document.getElementById('autocompleteList');
+            if (!query) { list.style.display = 'none'; afficherInterface(); return; }
+
+            const toutesEspeces = new Set();
+            Object.values(listesData).forEach(liste => {
+                liste.oiseaux.forEach(o => {
+                    if (normalize(o.nom).includes(query)) toutesEspeces.add(o.nom);
+                });
+            });
+            const suggestions = Array.from(toutesEspeces).slice(0, 5);
+            if (suggestions.length === 0) { list.style.display = 'none'; return; }
+            list.innerHTML = '';
+            suggestions.forEach(nom => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = nom;
+                item.addEventListener('click', () => {
+                    input.value = nom;
+                    list.style.display = 'none';
+                    afficherInterface();
+                });
+                list.appendChild(item);
+            });
+            list.style.display = 'block';
+        }
+
+        document.addEventListener('click', function(e) {
+            const autocompleteList = document.getElementById('autocompleteList');
+            const searchInput = document.getElementById('searchInput');
+            if (e.target !== searchInput && e.target !== autocompleteList) {
+                autocompleteList.style.display = 'none';
+            }
+        });
+
+        function afficherInterface() {
+            layerGroup.eachLayer(layer => { if (layer instanceof L.Marker) layerGroup.removeLayer(layer); });
+            markersList = {};
+            cardElements = {};
+            const listContainer = document.getElementById('birds-list-viewport');
+            listContainer.innerHTML = '';
+
+            const recherche = normalize(document.getElementById('searchInput').value);
+            const methodeTri = document.getElementById('sortSelect').value;
+
+            let listesFiltrees = Object.values(listesData).filter(liste => {
+                const matchLieu = normalize(liste.nomLieu).includes(recherche);
+                const matchEspece = liste.oiseaux.some(o => normalize(o.nom).includes(recherche));
+                return matchLieu || matchEspece;
+            });
+
+            const toutesEspecesSet = new Set();
+            Object.values(listesData).forEach(liste => liste.oiseaux.forEach(o => toutesEspecesSet.add(o.nom)));
+            document.getElementById('totalSpeciesCounter').innerText = `${toutesEspecesSet.size} espèce(s) distincte(s)`;
+            document.getElementById('counter-badge').innerText = listesFiltrees.length;
+
+            if (listesFiltrees.length === 0) {
+                listContainer.innerHTML = `<div style="padding:15px; text-align:center; color:var(--text-gray);">Aucune liste trouvée.</div>`;
+                return;
+            }
+
+            if (methodeTri === 'alphabet') listesFiltrees.sort((a,b) => a.nomLieu.localeCompare(b.nomLieu));
+            else if (methodeTri === 'nombre') listesFiltrees.sort((a,b) => b.totalOiseaux - a.totalOiseaux);
+            else if (methodeTri === 'date') listesFiltrees.sort((a,b) => b.dateObj - a.dateObj);
+
+            listesFiltrees.forEach(liste => {
+                const dateFormatee = formatDate(liste.dateDerniere);
+                const marker = L.marker([liste.lat, liste.lng], { icon: iconeRadar }).addTo(layerGroup);
+                markersList[liste.id] = marker;
+
+                marker.on('click', () => {
+                    const fiche = cardElements[liste.id];
+                    if (fiche) {
+                        fiche.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        fiche.classList.add('highlight');
+                        if (!fiche.classList.contains('expanded')) fiche.classList.add('expanded');
+                        setTimeout(() => fiche.classList.remove('highlight'), 1500);
+                    }
+                });
+
+                const card = document.createElement('div');
+                card.className = 'bird-card-item';
+                let speciesListHtml = '';
+                liste.oiseaux.forEach(o => speciesListHtml += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`);
+                const checklistLinkHtml = liste.checklistSubId
+                    ? `<a href="https://ebird.org/checklist/${liste.checklistSubId}" target="_blank" class="checklist-link">🔗 Voir la checklist eBird</a>`
+                    : '';
+
+                card.innerHTML = `
+                    <div class="card-list-name">${liste.nomLieu}</div>
+                    <div class="card-list-sub">
+                        🕒 ${dateFormatee} · 👤 ${liste.observateur}<br>
+                        🦅 ${liste.oiseaux.length} espèce(s) · 🔢 ${liste.totalOiseaux} indiv.
+                    </div>
+                    <div class="species-detail">
+                        <ul>${speciesListHtml}</ul>
+                        ${checklistLinkHtml}
+                    </div>
+                `;
+
+                card.addEventListener('mouseenter', () => {
+                    map.setView([liste.lat, liste.lng], map.getZoom(), { animate: true, duration: 0.3 });
+                });
+                card.onclick = () => {
+                    map.setView([liste.lat, liste.lng], 14);
+                    card.classList.toggle('expanded');
+                };
+
+                cardElements[liste.id] = card;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function formatDate(dtString) {
+            if (!dtString) return "?";
+            const [date, time] = dtString.split(' ');
+            const [y, m, d] = date.split('-');
+            return `${d}/${m}/${y} ${time || ''}`;
+        }
+    </script>
 </body>
 </html>
