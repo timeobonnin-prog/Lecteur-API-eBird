@@ -30,7 +30,7 @@ body.light-mode {
 * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui, sans-serif; -webkit-tap-highlight-color:transparent; }
 body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; transition:0.3s; }
 
-/* Auth overlay */
+/* Auth */
 #authOverlay { position:fixed; inset:0; background:radial-gradient(circle at center, #041d10, #010402); display:flex; justify-content:center; align-items:center; z-index:99999; padding:24px; transition:0.5s; }
 #authOverlay.hidden { opacity:0; pointer-events:none; transform:scale(1.08); }
 .auth-container { background:var(--panel); border:2px solid var(--neon); box-shadow:0 0 35px var(--glow); border-radius:24px; padding:30px 20px; max-width:400px; text-align:center; backdrop-filter:blur(12px); }
@@ -40,14 +40,15 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
 .key-input-field:focus { border-color:var(--neon); box-shadow:0 0 15px var(--glow); }
 .submit-scan-btn { width:100%; padding:14px; background:var(--neon); color:#020604; font-weight:800; font-size:0.9rem; border:none; border-radius:30px; cursor:pointer; text-transform:uppercase; letter-spacing:1px; }
 
-/* Header compact */
+/* Header */
 .top-command-bar { background:var(--panel); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); padding:6px 12px; z-index:2000; display:flex; flex-direction:column; gap:6px; }
 .bar-first-row { display:flex; justify-content:space-between; align-items:center; }
 .brand-block { display:flex; align-items:center; gap:6px; }
 .header-logo { width:24px; height:24px; object-fit:contain; filter:drop-shadow(0 0 4px var(--neon)); }
 .brand-title-text { font-size:0.9rem; font-weight:900; letter-spacing:1px; text-transform:uppercase; }
-.control-buttons { display:flex; gap:4px; }
-.icon-btn { background:transparent; border:1px solid var(--border); color:var(--text); font-size:1rem; width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.control-buttons { display:flex; gap:4px; flex-wrap:wrap; }
+.icon-btn { background:transparent; border:1px solid var(--border); color:var(--text); font-size:1rem; width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; }
+.icon-btn .badge { position:absolute; top:-4px; right:-4px; background:#f87171; color:#fff; font-size:0.6rem; padding:0 3px; border-radius:10px; display:none; }
 .filters-collapsible { display:none; flex-direction:column; gap:6px; }
 .filters-collapsible.open { display:flex; }
 .interactive-selectors { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
@@ -66,7 +67,7 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
 .workspace-area { flex:1; position:relative; }
 #live-map-viewport { position:absolute; inset:0; background:#010402; z-index:1; }
 
-/* Sidebar compact */
+/* Sidebar */
 #radar-sidebar-panel { position:absolute; top:10px; right:10px; bottom:80px; width:260px; background:var(--panel); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:16px; z-index:999; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); }
 .panel-header-title { padding:8px 12px; background:rgba(0,0,0,0.4); border-bottom:1px solid var(--border); font-size:0.75rem; font-weight:800; color:var(--neon); text-transform:uppercase; display:flex; justify-content:space-between; align-items:center; }
 .sort-controls { display:flex; gap:2px; }
@@ -74,14 +75,22 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
 .sort-btn.active { background:var(--neon); color:#000; }
 .birds-scroller { flex:1; overflow-y:auto; padding:6px; }
 .bird-card-item { padding:8px; border-radius:8px; background:var(--card); margin-bottom:4px; border-left:3px solid transparent; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; transition:0.2s; position:relative; }
-.bird-card-item:hover { background:rgba(16,185,129,0.1); border-left-color:var(--neon); }
+.bird-card-item:hover { background:rgba(16,185,129,0.1); }
+.bird-card-item.compare-selected { border-left-color: #f59e0b !important; }
 .bird-card-info { flex:1; }
 .card-bird-name { font-size:0.85rem; font-weight:700; }
 .card-bird-sub { font-size:0.7rem; color:var(--grey); margin-top:2px; }
-.fav-star { font-size:1.2rem; cursor:pointer; color: #555; }
-.fav-star.active { color: #facc15; }
+.fav-star, .rare-flag { font-size:1.2rem; cursor:pointer; margin-left:4px; }
+.fav-star { color:#555; }
+.fav-star.active { color:#facc15; }
+.rare-flag { color:#555; }
+.rare-flag.active { color:#ef4444; }
 
-/* Console terminal */
+/* Legend compare */
+#compare-legend { display:none; padding:4px 8px; background:var(--panel); border-top:1px solid var(--border); font-size:0.7rem; color:var(--text); }
+#compare-legend span { display:inline-block; width:10px; height:10px; border-radius:50%; margin:0 4px; }
+
+/* Console */
 #mobile-diagnostic-terminal { position:absolute; bottom:10px; left:10px; right:10px; height:45px; background:rgba(1,4,2,0.95); border:1px solid var(--neon); border-radius:10px; z-index:1000; padding:6px 10px; font-family:'Courier New', monospace; font-size:0.65rem; overflow-y:auto; color:#a7f3d0; }
 
 /* Pins */
@@ -89,7 +98,7 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
 .maps-icon-svg { width:26px; height:26px; fill:var(--neon); filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7)); animation:bounce 1.8s infinite alternate; }
 @keyframes bounce { 0%{transform:translateY(0);} 100%{transform:translateY(-2px);} }
 
-/* Mobile tweaks */
+/* Mobile */
 @media (max-width:767px) {
   #radar-sidebar-panel { top:auto; left:8px; right:8px; bottom:80px; width:auto; height:120px; }
   .birds-scroller { display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; padding:6px; }
@@ -105,7 +114,7 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
     <h1>Décrypteur Aviaire</h1>
     <p>Indre-et-Loire</p>
     <input type="password" id="tokenField" class="key-input-field" placeholder="Clé API eBird..." />
-    <button class="submit-scan-btn" onclick="initialiserRadarComplet()">Activer le Scanner</button>
+    <button class="submit-scan-btn" onclick="initScan()">Activer le Scanner</button>
   </div>
 </div>
 
@@ -117,22 +126,26 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
     </div>
     <div class="control-buttons">
       <button class="icon-btn" id="themeToggle" title="Mode jour/nuit">🌙</button>
+      <button class="icon-btn" id="autoThemeBtn" title="Mode nuit auto">🌓</button>
       <button class="icon-btn" id="hamburgerToggle" title="Filtres">☰</button>
       <button class="icon-btn" id="geolocBtn" title="Position">📍</button>
+      <button class="icon-btn" id="trackBtn" title="Parcours ornitho">🛤️</button>
+      <button class="icon-btn" id="compareBtn" title="Comparer espèces">🔄</button>
       <button class="icon-btn" id="fullscreenBtn" title="Plein écran">⛶</button>
       <button class="icon-btn" id="soundToggle" title="Son">🔇</button>
-      <button class="icon-btn" id="favFilterBtn" title="Favoris">⭐</button>
+      <button class="icon-btn" id="favFilterBtn" title="Favoris">⭐<span class="badge" id="rareBadge">!</span></button>
+      <button class="icon-btn" id="shareBtn" title="Partager la vue">🔗</button>
     </div>
   </div>
   <div id="filtersPanel" class="filters-collapsible">
     <div class="interactive-selectors">
-      <input type="number" id="timeAmountInput" class="tactical-input-number" value="14" min="1" onchange="executerScanServeur()">
-      <select id="timeUnitDropdown" class="tactical-dropdown" onchange="executerScanServeur()">
+      <input type="number" id="timeAmountInput" class="tactical-input-number" value="14" min="1" onchange="runScan()">
+      <select id="timeUnitDropdown" class="tactical-dropdown" onchange="runScan()">
         <option value="1" selected>Jours</option>
         <option value="30">Mois</option>
         <option value="365">Années</option>
       </select>
-      <select id="radiusDropdown" class="tactical-dropdown" onchange="executerScanServeur()">
+      <select id="radiusDropdown" class="tactical-dropdown" onchange="runScan()">
         <option value="10">10 km</option>
         <option value="25" selected>25 km</option>
         <option value="50">50 km</option>
@@ -144,7 +157,7 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
       <button class="icon-btn" onclick="clearDates()" style="font-size:0.8rem;">✕</button>
     </div>
     <div class="search-block">
-      <input type="text" id="filterInput" class="search-input-box" placeholder="🔍 Recherche espèce..." oninput="gererAutocompletion()" />
+      <input type="text" id="filterInput" class="search-input-box" placeholder="🔍 Recherche espèce..." oninput="autocomplete()" />
       <div id="suggestionsBox" class="autocomplete-dropdown-panel"></div>
     </div>
   </div>
@@ -163,6 +176,7 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
       <span id="counter-badge" style="color:#fff; background:rgba(16,185,129,0.3); padding:0 6px; border-radius:8px; font-size:0.7rem;">0</span>
     </div>
     <div id="birds-list-viewport" class="birds-scroller"></div>
+    <div id="compare-legend"></div>
     <button id="exportBtn" style="margin:4px; background:var(--neon); border:none; border-radius:6px; padding:4px; cursor:pointer; font-size:0.7rem; text-transform:uppercase;">↓ CSV</button>
   </div>
   <div id="mobile-diagnostic-terminal">> En attente...</div>
@@ -170,15 +184,21 @@ body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-let globalLeafletMap, mapLayerGroup, currentTileLayer;
-let radarCenter = { lat: 47.3941, lng: 0.6848 };
+// ============ VARIABLES ============
+let map, layerGroup, tileLayer;
+let center = { lat:47.3941, lng:0.6848 };
 let dataset = [];
 let token = "";
-let autocompleteFlag = false;
-let speciesScan = false;
+let autocompleteFlag = false, speciesScan = false;
 let sortMode = 'date';
-let favorites = new Set(JSON.parse(localStorage.getItem('favSpecies') || '[]'));
-let audio = null;
+let favorites = new Set(JSON.parse(localStorage.getItem('favSpecies')||'[]'));
+let rareSpecies = new Set(JSON.parse(localStorage.getItem('rareSpecies')||'[]')); // codes espèces rares
+let compareSpecies = []; // jusqu'à 3 codes
+let compareMode = false;
+let audio = null, rareAudio = null;
+let tracking = false, trackWatchId = null, trackPoints = [], trackLine = null;
+let autoTheme = false, autoThemeInterval = null;
+let currentZoom = 10;
 
 // Silhouettes
 const silhouettes = {
@@ -194,15 +214,16 @@ function getGroup(name) {
   if (/héron|cigogne|aigrette|grue|ibis|spatule|bécasse|bécassine|courlis|vanneau|pluvier|chevalier|barge|huîtrier/.test(n)) return 'echassier';
   return 'default';
 }
-function customIcon(name) {
-  const svgPath = silhouettes[getGroup(name)];
+function customIcon(name, color='var(--neon)') {
+  const path = silhouettes[getGroup(name)];
   return L.divIcon({
     className: 'maps-icon-container',
-    html: `<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="${svgPath}"/></svg>`,
+    html: `<svg class="maps-icon-svg" viewBox="0 0 24 24" style="fill:${color};"><path d="${path}"/></svg>`,
     iconSize: [26,26], iconAnchor: [13,26], popupAnchor: [0,-26]
   });
 }
 
+// Logger
 function log(msg, status='info') {
   const t = document.getElementById('mobile-diagnostic-terminal');
   if (!t) return;
@@ -214,29 +235,63 @@ function log(msg, status='info') {
   t.scrollTop = t.scrollHeight;
 }
 
+// Tiles
 function setTiles(light) {
-  if (currentTileLayer) globalLeafletMap.removeLayer(currentTileLayer);
-  currentTileLayer = L.tileLayer(light
+  if (tileLayer) map.removeLayer(tileLayer);
+  tileLayer = L.tileLayer(light
     ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
     : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-    { attribution: '&copy; CartoDB' }
-  ).addTo(globalLeafletMap);
+    { attribution:'&copy; CartoDB' }
+  ).addTo(map);
 }
 
+// Auto theme (coucher soleil)
+function updateAutoTheme() {
+  if (!autoTheme) return;
+  const now = new Date();
+  const lat = center.lat;
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+  // Approximation coucher soleil (formule simplifiée)
+  const solarDeclination = 23.45 * Math.sin((dayOfYear - 81) * 2 * Math.PI / 365);
+  const latRad = lat * Math.PI / 180;
+  const cosSunset = -Math.tan(latRad) * Math.tan(solarDeclination * Math.PI / 180);
+  let sunsetHour;
+  if (cosSunset > 1) sunsetHour = 0; // nuit polaire
+  else if (cosSunset < -1) sunsetHour = 12; // jour polaire
+  else sunsetHour = Math.acos(cosSunset) * 180 / Math.PI / 15;
+  const sunsetTime = new Date(now);
+  sunsetTime.setHours(12 + sunsetHour, 0, 0);
+  const isNight = now > sunsetTime;
+  const bodyClass = document.body.classList.contains('light-mode');
+  if (isNight && bodyClass) {
+    document.body.classList.remove('light-mode');
+    document.getElementById('themeToggle').innerHTML = '🌙';
+    localStorage.setItem('radar-theme', 'dark');
+    setTiles(false);
+  } else if (!isNight && !bodyClass) {
+    document.body.classList.add('light-mode');
+    document.getElementById('themeToggle').innerHTML = '☀️';
+    localStorage.setItem('radar-theme', 'light');
+    setTiles(true);
+  }
+}
+
+// ============ INIT ============
 document.addEventListener("DOMContentLoaded", () => {
   try {
-    globalLeafletMap = L.map('live-map-viewport', { zoomControl:false }).setView([radarCenter.lat, radarCenter.lng], 10);
-    L.control.zoom({ position:'bottomright' }).addTo(globalLeafletMap);
+    map = L.map('live-map-viewport', { zoomControl:false }).setView([center.lat, center.lng], 10);
+    L.control.zoom({ position:'bottomright' }).addTo(map);
     const storedTheme = localStorage.getItem('radar-theme');
     const isLight = storedTheme === 'light';
     setTiles(isLight);
-    mapLayerGroup = L.layerGroup().addTo(globalLeafletMap);
+    layerGroup = L.layerGroup().addTo(map);
 
     const savedToken = localStorage.getItem('ebird_secure_token');
     if (savedToken) { token = savedToken; document.getElementById('tokenField').value = token; }
 
     document.getElementById('tokenField').addEventListener('keypress', e => { if (e.key==='Enter') initScan(); });
-    globalLeafletMap.on('click', e => { radarCenter = { lat:e.latlng.lat, lng:e.latlng.lng }; runScan(); });
+    map.on('click', e => { center = { lat:e.latlng.lat, lng:e.latlng.lng }; runScan(); });
+    map.on('zoomend', () => { currentZoom = map.getZoom(); });
 
     document.getElementById('hamburgerToggle').addEventListener('click', ()=> document.getElementById('filtersPanel').classList.toggle('open'));
 
@@ -250,21 +305,76 @@ document.addEventListener("DOMContentLoaded", () => {
       setTiles(nowLight);
     });
 
+    // Auto theme toggle
+    document.getElementById('autoThemeBtn').addEventListener('click', function() {
+      autoTheme = !autoTheme;
+      this.style.background = autoTheme ? 'var(--neon)' : 'transparent';
+      if (autoTheme) {
+        updateAutoTheme();
+        autoThemeInterval = setInterval(updateAutoTheme, 60000);
+        log("Mode nuit automatique activé", "success");
+      } else {
+        clearInterval(autoThemeInterval);
+        log("Mode automatique désactivé");
+      }
+    });
+
+    // Geoloc
     document.getElementById('geolocBtn').addEventListener('click', ()=>{
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
-          radarCenter = { lat:pos.coords.latitude, lng:pos.coords.longitude };
-          globalLeafletMap.setView([radarCenter.lat, radarCenter.lng], 12);
+          center = { lat:pos.coords.latitude, lng:pos.coords.longitude };
+          map.setView([center.lat, center.lng], 12);
           runScan();
         }, ()=> alert("Géolocalisation refusée."));
       }
     });
 
+    // Tracking
+    document.getElementById('trackBtn').addEventListener('click', function() {
+      if (!tracking) {
+        if (!navigator.geolocation) { alert("Géolocalisation non supportée."); return; }
+        tracking = true;
+        this.style.background = 'var(--neon)';
+        trackPoints = [];
+        if (trackLine) map.removeLayer(trackLine);
+        trackLine = L.polyline([], { color:'#f59e0b', weight:3 }).addTo(map);
+        trackWatchId = navigator.geolocation.watchPosition(pos => {
+          const pt = [pos.coords.latitude, pos.coords.longitude];
+          trackPoints.push(pt);
+          trackLine.setLatLngs(trackPoints);
+          map.setView(pt, map.getZoom());
+          // Scan auto toutes les 5 min
+          if (trackPoints.length % 5 === 0) {
+            center = { lat:pt[0], lng:pt[1] };
+            runScan();
+          }
+        }, err => log("Erreur GPS: "+err.message, "error"), { enableHighAccuracy:true });
+        log("Parcours ornitho activé", "success");
+      } else {
+        tracking = false;
+        this.style.background = 'transparent';
+        if (trackWatchId) navigator.geolocation.clearWatch(trackWatchId);
+        log("Parcours arrêté, trace conservée.");
+      }
+    });
+
+    // Compare mode
+    document.getElementById('compareBtn').addEventListener('click', function() {
+      compareMode = !compareMode;
+      this.style.background = compareMode ? 'var(--neon)' : 'transparent';
+      if (!compareMode) { compareSpecies = []; render(); document.getElementById('compare-legend').style.display='none'; }
+      else log("Mode comparaison : cliquez sur les fiches pour ajouter (max 3).", "info");
+      render();
+    });
+
+    // Fullscreen
     document.getElementById('fullscreenBtn').addEventListener('click', ()=>{
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else document.exitFullscreen();
     });
 
+    // Son ambiance
     const soundBtn = document.getElementById('soundToggle');
     soundBtn.addEventListener('click', ()=>{
       if (!audio) { audio = new Audio('https://www.soundjay.com/nature/sounds/forest-1.mp3'); audio.loop = true; }
@@ -272,19 +382,36 @@ document.addEventListener("DOMContentLoaded", () => {
       else { audio.pause(); soundBtn.innerHTML='🔇'; }
     });
 
-    document.getElementById('favFilterBtn').addEventListener('click', ()=>{
-      const btn = document.getElementById('favFilterBtn');
-      btn.classList.toggle('active');
+    // Favoris filter
+    document.getElementById('favFilterBtn').addEventListener('click', function() {
+      this.classList.toggle('active');
       document.getElementById('filterInput').value = '';
-      render(btn.classList.contains('active'));
+      render(this.classList.contains('active'));
+    });
+
+    // Share
+    document.getElementById('shareBtn').addEventListener('click', ()=>{
+      const params = new URLSearchParams();
+      params.set('lat', center.lat); params.set('lng', center.lng); params.set('zoom', currentZoom);
+      if (document.getElementById('filterInput').value) params.set('filter', document.getElementById('filterInput').value);
+      if (compareMode && compareSpecies.length) params.set('compare', compareSpecies.join(','));
+      const url = window.location.origin + window.location.pathname + '?' + params.toString();
+      navigator.clipboard.writeText(url).then(()=> log("Lien copié !", "success")).catch(()=> prompt("Copiez ce lien :", url));
     });
 
     document.getElementById('exportBtn').addEventListener('click', exportCSV);
 
-    log("Prêt.","success");
-  } catch(e) { log("Erreur: "+e.message,"error"); }
+    // Check rare species on load
+    window.addEventListener('storage', ()=> {
+      rareSpecies = new Set(JSON.parse(localStorage.getItem('rareSpecies')||'[]'));
+      render();
+    });
+
+    log("Prêt.", "success");
+  } catch(e) { log("Erreur: "+e.message, "error"); }
 });
 
+// ============ HELPERS ============
 function formatTime(dt) {
   if (!dt) return "?";
   const [date,time] = dt.split(' ');
@@ -297,7 +424,7 @@ function initScan() {
   if (!val && !token) { alert("Clé eBird requise."); return; }
   if (val) { token = val; localStorage.setItem('ebird_secure_token', token); }
   document.getElementById('authOverlay').classList.add('hidden');
-  setTimeout(()=>{ if(globalLeafletMap) globalLeafletMap.invalidateSize(); runScan(); }, 300);
+  setTimeout(()=>{ if(map) map.invalidateSize(); runScan(); }, 300);
 }
 
 function handleCustomDate() {
@@ -306,6 +433,7 @@ function handleCustomDate() {
 }
 function clearDates() { document.getElementById('startDate').value = ''; document.getElementById('endDate').value = ''; runScan(); }
 
+// ============ SCAN ============
 async function runScan(code = null) {
   if (!token) return;
   const start = document.getElementById('startDate').value, end = document.getElementById('endDate').value;
@@ -315,12 +443,12 @@ async function runScan(code = null) {
     const amount = parseInt(document.getElementById('timeAmountInput').value)||1;
     const unit = parseInt(document.getElementById('timeUnitDropdown').value)||1;
     back = Math.min(amount*unit, 30);
-    if (back===30) log("Limite eBird: 30 jours max.","warning");
+    if (back===30) log("Limite eBird: 30 jours max.", "warning");
   }
-  mapLayerGroup.clearLayers();
-  L.circle([radarCenter.lat, radarCenter.lng], { color:'#10b981', fillColor:'#10b981', fillOpacity:0.04, radius:radius*1000, weight:1 }).addTo(mapLayerGroup);
+  layerGroup.clearLayers();
+  L.circle([center.lat, center.lng], { color:'#10b981', fillColor:'#10b981', fillOpacity:0.04, radius:radius*1000, weight:1 }).addTo(layerGroup);
 
-  let url = `/api/ebird?lat=${radarCenter.lat}&lng=${radarCenter.lng}&dist=${radius}`;
+  let url = `/api/ebird?lat=${center.lat}&lng=${center.lng}&dist=${radius}`;
   if (start && end) url += `&start=${start}&end=${end}`;
   else url += `&back=${back}`;
   if (code) url += `&speciesCode=${encodeURIComponent(code)}`;
@@ -328,14 +456,29 @@ async function runScan(code = null) {
   try {
     const res = await fetch(url, { headers:{ 'x-user-ebird-key': token } });
     const data = await res.json();
-    if (data.error) { log("Erreur: "+data.error,"error"); alert(data.error); return; }
+    if (data.error) { log("Erreur: "+data.error, "error"); alert(data.error); return; }
     dataset = data;
     speciesScan = !!code;
-    log(`${dataset.length} obs reçues.`,"success");
+    log(`${dataset.length} obs reçues.`, "success");
+    checkRareSpecies();
     render();
-  } catch(e) { log("Réseau: "+e.message,"error"); }
+  } catch(e) { log("Réseau: "+e.message, "error"); }
 }
 
+function checkRareSpecies() {
+  if (rareSpecies.size === 0) return;
+  const found = dataset.some(b => rareSpecies.has(b.speciesCode));
+  const badge = document.getElementById('rareBadge');
+  badge.style.display = found ? 'block' : 'none';
+  if (found && !(audio && !audio.paused)) {
+    // Son discret
+    if (!rareAudio) { rareAudio = new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3'); }
+    rareAudio.play().catch(()=>{});
+    log("⚠️ Espèce rare détectée !", "warning");
+  }
+}
+
+// ============ AUTOCOMPLÉTION ============
 function autocomplete() {
   if (autocompleteFlag) { autocompleteFlag=false; return; }
   const input = document.getElementById('filterInput');
@@ -374,6 +517,7 @@ document.addEventListener('click', e => {
   if (box && e.target.id!=='filterInput') box.style.display='none';
 });
 
+// ============ TRI ============
 function setSort(m) {
   sortMode = m;
   document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
@@ -383,12 +527,14 @@ function setSort(m) {
   render();
 }
 
+// ============ RENDU ============
 function render(favOnly=false) {
   const filter = document.getElementById('filterInput').value.toLowerCase();
   const container = document.getElementById('birds-list-viewport');
   const badge = document.getElementById('counter-badge');
+  const legend = document.getElementById('compare-legend');
   container.innerHTML = '';
-  mapLayerGroup.eachLayer(l=>{ if (!l.options.radius) mapLayerGroup.removeLayer(l); });
+  layerGroup.eachLayer(l=>{ if (!l.options.radius) layerGroup.removeLayer(l); });
 
   let results = dataset.filter(item => {
     if (favOnly && !favorites.has(item.speciesCode)) return false;
@@ -402,6 +548,17 @@ function render(favOnly=false) {
   else if (sortMode==='alpha') results.sort((a,b)=>(a.comName||'').localeCompare(b.comName||''));
 
   badge.textContent = results.length;
+
+  // Legend compare
+  if (compareMode && compareSpecies.length) {
+    legend.style.display = 'block';
+    const colors = ['#10b981', '#f59e0b', '#8b5cf6'];
+    legend.innerHTML = 'Comparaison: ' + compareSpecies.map((code,i) => {
+      const name = dataset.find(b=>b.speciesCode===code)?.comName || code;
+      return `<span style="background:${colors[i]}"></span>${name}`;
+    }).join(' ');
+  } else legend.style.display = 'none';
+
   if (!results.length) {
     container.innerHTML = '<div style="color:var(--grey); text-align:center; padding:10px;">Aucun oiseau</div>';
     return;
@@ -412,45 +569,87 @@ function render(favOnly=false) {
     const count = bird.howMany || 1;
     const obs = bird.userDisplayName || "Anonyme";
     const dt = formatTime(bird.obsDt);
-    const url = bird.subId ? `https://ebird.org/checklist/${bird.subId}` : '#';
     const sci = bird.sciName || '';
     const loc = bird.locName || '?';
     const code = bird.speciesCode || '';
 
-    const icon = customIcon(name);
+    // Couleur du marqueur selon le mode comparaison
+    let markerColor = 'var(--neon)';
+    if (compareMode) {
+      const idx = compareSpecies.indexOf(code);
+      if (idx >= 0) {
+        const colors = ['#10b981', '#f59e0b', '#8b5cf6'];
+        markerColor = colors[idx] || 'var(--neon)';
+      }
+    }
+    const icon = customIcon(name, markerColor);
     const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(`
       <div style="background:#091710;color:#fff;padding:5px;min-width:200px;">
         <b style="color:#10b981;">${name}</b><br><i style="color:#94a3b8;font-size:0.75rem;">${sci}</i>
         <div style="font-size:0.75rem;border-top:1px solid rgba(16,185,129,0.2);margin-top:4px;padding-top:4px;">
           👤 ${obs}<br>🕒 ${dt}<br>🔢 ${count}<br>📍 ${loc}<br>
-          <a href="${url}" target="_blank" style="color:#34d399;">Checklist</a>
+          <a href="${checklistUrl(bird)}" target="_blank" style="color:#34d399;">Checklist</a>
+          <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(sci)}" target="_blank" style="color:#60a5fa; margin-left:6px;">📷 Photos</a>
         </div>
       </div>
-    `).addTo(mapLayerGroup);
+    `).addTo(layerGroup);
 
     const card = document.createElement('div');
     card.className = 'bird-card-item';
+    if (compareMode && compareSpecies.includes(code)) card.classList.add('compare-selected');
     const isFav = favorites.has(code);
+    const isRare = rareSpecies.has(code);
     card.innerHTML = `
-      <span class="fav-star ${isFav?'active':''}" data-code="${code}">${isFav?'★':'☆'}</span>
+      <span class="fav-star ${isFav?'active':''}" data-code="${code}">★</span>
+      <span class="rare-flag ${isRare?'active':''}" data-code="${code}">🚩</span>
       <div class="bird-card-info">
         <div class="card-bird-name">${name} (x${count})</div>
         <div class="card-bird-sub">🕒 ${dt} · ${obs}</div>
         <div class="card-bird-sub" style="color:var(--neon);">📍 ${loc}</div>
       </div>
     `;
+    // Fav toggle
     card.querySelector('.fav-star').addEventListener('click', (e)=>{
       e.stopPropagation();
-      if (favorites.has(code)) { favorites.delete(code); e.target.classList.remove('active'); e.target.textContent='☆'; }
-      else { favorites.add(code); e.target.classList.add('active'); e.target.textContent='★'; }
+      if (favorites.has(code)) { favorites.delete(code); e.target.classList.remove('active'); }
+      else { favorites.add(code); e.target.classList.add('active'); }
       localStorage.setItem('favSpecies', JSON.stringify([...favorites]));
       if (document.getElementById('favFilterBtn').classList.contains('active')) render(true);
     });
-    card.addEventListener('click', ()=>{ globalLeafletMap.setView([bird.lat, bird.lng], 14); marker.openPopup(); });
+    // Rare toggle
+    card.querySelector('.rare-flag').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if (rareSpecies.has(code)) { rareSpecies.delete(code); e.target.classList.remove('active'); }
+      else { rareSpecies.add(code); e.target.classList.add('active'); }
+      localStorage.setItem('rareSpecies', JSON.stringify([...rareSpecies]));
+      checkRareSpecies();
+    });
+    // Compare mode
+    card.addEventListener('click', ()=>{
+      if (compareMode) {
+        if (compareSpecies.includes(code)) {
+          compareSpecies = compareSpecies.filter(c => c !== code);
+        } else if (compareSpecies.length < 3) {
+          compareSpecies.push(code);
+        } else {
+          log("Maximum 3 espèces pour la comparaison.", "warning");
+          return;
+        }
+        render();
+        return;
+      }
+      map.setView([bird.lat, bird.lng], 14);
+      marker.openPopup();
+    });
     container.appendChild(card);
   });
 }
 
+function checklistUrl(bird) {
+  return bird.subId ? `https://ebird.org/checklist/${bird.subId}` : '#';
+}
+
+// ============ EXPORT CSV ============
 function exportCSV() {
   const filter = document.getElementById('filterInput').value.toLowerCase();
   const data = dataset.filter(i => {
