@@ -81,11 +81,12 @@
         .bird-card-info { flex:1; }
         .card-bird-name { font-size:0.85rem; font-weight:700; }
         .card-bird-sub { font-size:0.7rem; color:var(--grey); margin-top:2px; }
-        .fav-star, .rare-flag { font-size:1.2rem; cursor:pointer; margin-left:4px; }
-        .fav-star { color:#555; }
+        .fav-star, .rare-flag, .iucn-badge { font-size:1.2rem; margin-left:4px; }
+        .fav-star { color:#555; cursor:pointer; }
         .fav-star.active { color:#facc15; }
-        .rare-flag { color:#ef4444; } /* toujours rouge pour les espèces rares */
-        .rare-flag:not(.active) { display:none; } /* ne pas afficher si pas rare */
+        .rare-flag { color:#ef4444; }
+        .rare-flag:not(.active) { display:none; }
+        .iucn-badge { font-size:1rem; } /* pastille UICN */
 
         /* Back button */
         #backToSpeciesBtn { display:none; margin:4px; background:transparent; border:1px solid var(--border); color:var(--text); padding:2px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer; }
@@ -188,10 +189,34 @@
     const RARE_SPECIES_CODES = new Set([
         'tinfal',   // Faucon crécerelle
         'aegmon',   // Aigle botté
-        'circya',   // Busard cendré (code approximatif, à vérifier)
+        'circya',   // Busard cendré
         'bubvir',   // Grand-duc d'Europe
         // Ajoutez ici les codes réels des espèces rares en Indre-et-Loire
     ]);
+
+    // ============ STATUTS UICN (codes eBird → catégorie UICN) ============
+    // Catégories : CR (En danger critique), EN (En danger), VU (Vulnérable), NT (Quasi menacé), LC (Préoccupation mineure), DD (Données insuffisantes)
+    const UICN_STATUS = {
+        'tinfal': 'VU',   // Exemple : Faucon crécerelle classé Vulnérable
+        'aegmon': 'EN',   // Aigle botté En danger
+        'circya': 'NT',   // Busard cendré Quasi menacé
+        'bubvir': 'LC',   // Grand-duc en Préoccupation mineure
+        // Complétez avec les vrais statuts
+    };
+
+    function getIucnEmoji(code) {
+        const status = UICN_STATUS[code];
+        if (!status) return '';
+        switch (status) {
+            case 'CR': return '🔴'; // En danger critique
+            case 'EN': return '🟠'; // En danger
+            case 'VU': return '🟡'; // Vulnérable
+            case 'NT': return '🔵'; // Quasi menacé
+            case 'LC': return '🟢'; // Préoccupation mineure
+            case 'DD': return '⚪'; // Données insuffisantes
+            default: return '';
+        }
+    }
 
     // ============ VARIABLES ============
     let map, layerGroup, tileLayer;
@@ -388,7 +413,6 @@
             if (data.error) { log("Erreur: " + data.error, "error"); alert(data.error); return; }
 
             if (!code) {
-                // Scan général
                 generalDataset = data;
                 dataset = data;
                 speciesScan = false;
@@ -404,7 +428,6 @@
                 }
                 document.getElementById('sidebarTitle').textContent = viewMode === 'species' ? 'Espèces' : 'Observations';
             } else {
-                // Scan spécifique
                 dataset = data;
                 speciesScan = true;
                 selectedSpeciesCode = code;
@@ -492,7 +515,7 @@
         render();
     }
 
-    // ============ RENDU (adapté selon viewMode) ============
+    // ============ RENDU (avec pastille UICN) ============
     function render(favOnly = false) {
         const filter = document.getElementById('filterInput').value.toLowerCase();
         const container = document.getElementById('birds-list-viewport');
@@ -542,8 +565,10 @@
                 const div = document.createElement('div');
                 div.className = 'species-item';
                 const isRare = RARE_SPECIES_CODES.has(sp.speciesCode);
+                const iucnEmoji = getIucnEmoji(sp.speciesCode);
                 div.innerHTML = `
                     <span class="species-name">${sp.comName} <span style="color:var(--grey); font-size:0.7rem;">${sp.sciName}</span></span>
+                    ${iucnEmoji ? `<span class="iucn-badge" title="${UICN_STATUS[sp.speciesCode] || ''}">${iucnEmoji}</span>` : ''}
                     ${isRare ? '<span class="rare-flag active">🚩</span>' : ''}
                     <span class="species-count">${sp.count} obs</span>
                     <span class="species-count">${formatTime(sp.lastObs)}</span>
@@ -607,8 +632,10 @@
                 if (compareMode && compareSpecies.includes(code)) card.classList.add('compare-selected');
                 const isFav = favorites.has(code);
                 const isRare = RARE_SPECIES_CODES.has(code);
+                const iucnEmoji = getIucnEmoji(code);
                 card.innerHTML = `
                     <span class="fav-star ${isFav ? 'active' : ''}" data-code="${code}">★</span>
+                    ${iucnEmoji ? `<span class="iucn-badge">${iucnEmoji}</span>` : ''}
                     ${isRare ? '<span class="rare-flag active">🚩</span>' : ''}
                     <div class="bird-card-info">
                         <div class="card-bird-name">${name} (x${count})</div>
@@ -624,7 +651,6 @@
                     localStorage.setItem('favSpecies', JSON.stringify([...favorites]));
                     if (document.getElementById('favFilterBtn').classList.contains('active')) render(true);
                 });
-                // Plus de toggle sur le drapeau, il est indicatif
                 card.addEventListener('click', () => {
                     if (compareMode) {
                         if (compareSpecies.includes(code)) compareSpecies = compareSpecies.filter(c => c !== code);
