@@ -15,16 +15,25 @@ module.exports = async (req, res) => {
     const lat = req.query.lat || '47.3941';
     const lng = req.query.lng || '0.6848';
     const dist = req.query.dist || '25';
-    const back = req.query.back || '14';
-    const species = req.query.species || '';
+    const start = req.query.start;   // format YYYY-MM-DD
+    const end = req.query.end;       // format YYYY-MM-DD
 
-    // Construction de l'URL eBird [https://ebird.org]
-    let url = `https://api.ebird.org/v2/data/obs/geo/recent`;
-    if (species !== '') {
-        url += `/${species}`;
+    // Vérifier que les dates sont fournies (le frontend les envoie toujours maintenant)
+    if (!start || !end) {
+        return res.status(400).json({ error: 'Paramètres start et end requis.' });
     }
-    
-    url += `?lat=${lat}&lng=${lng}&dist=${dist}&back=${back}&sppLocale=fr`;
+
+    // Transformer les dates pour l'URL eBird : "YYYY-MM-DD" → "YYYY/MM/DD"
+    const startPath = start.replace(/-/g, '/');
+    const endPath   = end.replace(/-/g, '/');
+
+    // URL de l'endpoint historique eBird
+    let url = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
+              `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
+
+    // Note : l'endpoint historique ne supporte pas le filtre par espèce.
+    // Si tu souhaites filtrer par espèce, il faudrait le faire manuellement après coup.
+    // Pour l'instant, on ignore le paramètre `species`.
 
     try {
         const reponse = await fetch(url, { headers: { 'x-ebirdapitoken': apiKey } });
