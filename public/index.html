@@ -32,7 +32,6 @@ body.light-mode {
   --bg-input: rgba(255,255,255,0.8);
   --card-bg: rgba(0,0,0,0.03);
 }
-/* ... (tous les styles light-mode déjà présents) ... */
 body.light-mode .auth-container { background: rgba(255,255,255,0.9); border-color: #10b981; box-shadow: 0 0 35px rgba(16,185,129,0.4); }
 body.light-mode .auth-container h1 { color: #064e3b; text-shadow: 0 0 5px #10b981; }
 body.light-mode .auth-container p { color: #047857; }
@@ -227,28 +226,28 @@ let currentSort = 'date';
 let favoriteSpecies = new Set(JSON.parse(localStorage.getItem('favSpecies') || '[]'));
 let ambientAudio = null;
 
-// Silhouettes par groupe
+// Silhouettes par groupe (simplifiées)
 const birdSilhouettes = {
-  rapace: '<path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8zm0 2c2.2 0 4 1.8 4 4 0 2.5-4 8-4 8s-4-5.5-4-8c0-2.2 1.8-4 4-4zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>', // rapace stylisé
-  passereau: '<circle cx="12" cy="12" r="8"/>', // simple
-  echassier: '<ellipse cx="12" cy="12" rx="6" ry="10"/>',
-  default: '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>'
+  rapace: 'M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8zm0 2c2.2 0 4 1.8 4 4 0 2.5-4 8-4 8s-4-5.5-4-8c0-2.2 1.8-4 4-4zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+  passereau: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4 1.79-4 4-4z',
+  echassier: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v2h-2zm0-8h2v6h-2z',
+  default: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'
 };
 
 function getBirdGroup(comName) {
-  const name = comName.toLowerCase();
-  if (/faucon|buse|aigle|milan|épervier|busard/.test(name)) return 'rapace';
-  if (/mésange|roitelet|pinson|bruant|verdier|chardonneret|linotte|pouillot|fauvette|grive|merle|rougegorge|accenteur/.test(name)) return 'passereau';
-  if (/héron|cigogne|aigrette|grue|ibis/.test(name)) return 'echassier';
+  const name = (comName || '').toLowerCase();
+  if (/faucon|buse|aigle|milan|épervier|busard|circaète|balbuzard/.test(name)) return 'rapace';
+  if (/mésange|roitelet|pinson|bruant|verdier|chardonneret|linotte|pouillot|fauvette|grive|merle|rougegorge|accenteur|moineau|étourneau|corneille|pie|geai/.test(name)) return 'passereau';
+  if (/héron|cigogne|aigrette|grue|ibis|spatule|bécasse|bécassine|courlis|vanneau|pluvier|chevalier|barge|huîtrier/.test(name)) return 'echassier';
   return 'default';
 }
 
 function getCustomIcon(comName) {
   const group = getBirdGroup(comName);
-  const svg = birdSilhouettes[group];
+  const svgPath = birdSilhouettes[group];
   return L.divIcon({
     className: 'maps-icon-container',
-    html: `<svg class="maps-icon-svg" viewBox="0 0 24 24">${svg}</svg>`,
+    html: `<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="${svgPath}"/></svg>`,
     iconSize: [30,30],
     iconAnchor: [15,30],
     popupAnchor: [0,-30]
@@ -288,7 +287,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setMapTiles(isLight);
     mapLayerGroup = L.layerGroup().addTo(globalLeafletMap);
 
-    // Clé stockée
     const savedToken = localStorage.getItem('ebird_secure_token');
     if (savedToken) {
       document.getElementById('tokenField').value = savedToken;
@@ -304,7 +302,6 @@ document.addEventListener("DOMContentLoaded", () => {
       executerScanServeur();
     });
 
-    // Hamburger
     document.getElementById('hamburgerToggle').addEventListener('click', () => {
       document.getElementById('filtersPanel').classList.toggle('open');
     });
@@ -330,7 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
           radarCenterCoordinates = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           globalLeafletMap.setView([radarCenterCoordinates.lat, radarCenterCoordinates.lng], 12);
           executerScanServeur();
-        }, err => alert("Géolocalisation refusée."));
+        }, () => alert("Géolocalisation refusée."));
       } else alert("Géolocalisation non supportée.");
     });
 
@@ -341,15 +338,15 @@ document.addEventListener("DOMContentLoaded", () => {
       else document.exitFullscreen();
     });
 
-    // Son ambiant
+    // Son ambiant (exemple)
     const soundBtn = document.getElementById('soundToggle');
     soundBtn.addEventListener('click', () => {
       if (!ambientAudio) {
-        ambientAudio = new Audio('https://www.soundjay.com/nature/sounds/forest-1.mp3'); // fichier libre de droits exemple
+        ambientAudio = new Audio('https://www.soundjay.com/nature/sounds/forest-1.mp3');
         ambientAudio.loop = true;
       }
       if (ambientAudio.paused) {
-        ambientAudio.play();
+        ambientAudio.play().catch(()=>{});
         soundBtn.innerHTML = '🔊';
       } else {
         ambientAudio.pause();
@@ -359,10 +356,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Favoris filtre
     document.getElementById('favFilterBtn').addEventListener('click', () => {
-      const active = document.getElementById('favFilterBtn').classList.toggle('active');
-      if (active) {
-        document.getElementById('filterInput').value = '';
-        filtrerEtAfficherOiseaux(true); // mode favoris
+      const btn = document.getElementById('favFilterBtn');
+      btn.classList.toggle('active');
+      document.getElementById('filterInput').value = '';
+      if (btn.classList.contains('active')) {
+        filtrerEtAfficherOiseaux(true);
       } else {
         filtrerEtAfficherOiseaux(false);
       }
@@ -405,9 +403,7 @@ function initialiserRadarComplet() {
 function handleCustomDate() {
   const start = document.getElementById('startDate').value;
   const end = document.getElementById('endDate').value;
-  if (start && end) {
-    executerScanServeur(); // relance avec dates
-  }
+  if (start && end) executerScanServeur();
 }
 function clearDates() {
   document.getElementById('startDate').value = '';
@@ -415,7 +411,7 @@ function clearDates() {
   executerScanServeur();
 }
 
-// ==================== SCAN API ====================
+// ==================== SCAN API (CORRIGÉ : speciesCode) ====================
 async function executerScanServeur(speciesCode = null) {
   if (!secureUserToken) return;
 
@@ -450,7 +446,9 @@ async function executerScanServeur(speciesCode = null) {
       url += `&back=${back}`;
     }
     if (speciesCode) {
-      url += `&speciesCode=${speciesCode}`; // le serveur doit appeler l'endpoint /recent/{speciesCode}
+      // Envoyer le code espèce (ex: tinfal) – le serveur doit appeler /recent/{speciesCode}
+      url += `&speciesCode=${encodeURIComponent(speciesCode)}`;
+      loggerDiagnostic(`Scan spécifique pour le code : ${speciesCode}`);
     }
 
     const response = await fetch(url, { headers: { 'x-user-ebird-key': secureUserToken } });
@@ -469,7 +467,7 @@ async function executerScanServeur(speciesCode = null) {
   }
 }
 
-// ==================== AUTOCOMPLÉTION (corrigée avec speciesCode) ====================
+// ==================== AUTOCOMPLÉTION (utilise speciesCode) ====================
 function gererAutocompletion() {
   if (autocompleteSelectionInProgress) {
     autocompleteSelectionInProgress = false;
@@ -483,6 +481,7 @@ function gererAutocompletion() {
   if (!query) {
     box.style.display = 'none';
     if (isSpeciesScan) {
+      // On revient au scan général
       input.value = '';
       executerScanServeur();
     } else {
@@ -498,7 +497,8 @@ function gererAutocompletion() {
   }
 
   const matching = [...new Set(
-    ebirdRawDataset.filter(item => item.comName && item.comName.toLowerCase().includes(query.toLowerCase()))
+    ebirdRawDataset
+      .filter(item => item.comName && item.comName.toLowerCase().includes(query.toLowerCase()))
       .map(item => item.comName)
   )].slice(0,5);
 
@@ -517,10 +517,12 @@ function gererAutocompletion() {
       autocompleteSelectionInProgress = true;
       input.value = name;
       box.style.display = 'none';
+      // Chercher l'espèce pour récupérer le speciesCode
       const found = ebirdRawDataset.find(item => item.comName === name);
       if (found && found.speciesCode) {
-        executerScanServeur(found.speciesCode); // scan par espèce
+        executerScanServeur(found.speciesCode); // ← code eBird officiel
       } else {
+        loggerDiagnostic(`Pas de code espèce pour ${name}, impossible de charger toutes les obs.`, "warning");
         filtrerEtAfficherOiseaux();
       }
     };
@@ -546,7 +548,7 @@ function setSort(mode) {
   filtrerEtAfficherOiseaux();
 }
 
-// ==================== RENDU (avec favoris, silhouette, tri) ====================
+// ==================== RENDU (avec favoris, tri, silhouette) ====================
 function filtrerEtAfficherOiseaux(favOnly = false) {
   const filter = document.getElementById('filterInput').value.toLowerCase();
   const container = document.getElementById('birds-list-viewport');
@@ -594,7 +596,7 @@ function filtrerEtAfficherOiseaux(favOnly = false) {
     const locName = bird.locName || 'Localisation non précisée';
     const speciesCode = bird.speciesCode || '';
 
-    // Icône personnalisée
+    // Icône personnalisée selon le nom commun
     const icon = getCustomIcon(frenchName);
     const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(`
       <div style="background:#091710; color:#fff; padding:5px; min-width:220px;">
@@ -634,6 +636,7 @@ function filtrerEtAfficherOiseaux(favOnly = false) {
         e.target.classList.add('active');
       }
       localStorage.setItem('favSpecies', JSON.stringify([...favoriteSpecies]));
+      // Si le filtre favoris est actif, on réaffiche
       if (document.getElementById('favFilterBtn').classList.contains('active')) {
         filtrerEtAfficherOiseaux(true);
       }
