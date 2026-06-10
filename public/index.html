@@ -207,6 +207,21 @@
             color: var(--text-light);
         }
         .species-detail .qte { color: var(--neon-green); font-weight: bold; }
+        .checklist-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--neon-green);
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border: 1px solid var(--border-line);
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .checklist-link:hover {
+            background: rgba(16, 185, 129, 0.15);
+        }
 
         .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
         .maps-icon-svg { width: 28px; height: 28px; fill: var(--neon-green); animation: mapsPinBounce 1.5s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
@@ -420,7 +435,8 @@
                         dateDerniere: obs.obsDt,
                         dateObj: new Date(obs.obsDt),
                         oiseaux: [],
-                        totalOiseaux: 0
+                        totalOiseaux: 0,
+                        checklistSubId: obs.subId || null   // on conserve le premier subId rencontré
                     };
                 }
 
@@ -572,6 +588,11 @@
                     speciesListHtml += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
                 });
 
+                // Lien vers la checklist eBird si disponible
+                const checklistLinkHtml = lieu.checklistSubId 
+                    ? `<a href="https://ebird.org/checklist/${lieu.checklistSubId}" target="_blank" class="checklist-link">🔗 Voir la checklist eBird</a>`
+                    : '';
+
                 card.innerHTML = `
                     <div class="card-list-name">${lieu.nomLieu}</div>
                     <div class="card-list-sub">
@@ -580,6 +601,7 @@
                     </div>
                     <div class="species-detail">
                         <ul>${speciesListHtml}</ul>
+                        ${checklistLinkHtml}
                     </div>
                 `;
 
