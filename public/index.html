@@ -451,11 +451,12 @@ body {
 // ==================== VARIABLES GLOBALES ====================
 let globalLeafletMap;
 let mapLayerGroup;
-let currentTileLayer; // pour changer le fond de carte
+let currentTileLayer;
 let radarCenterCoordinates = { lat: 47.3941, lng: 0.6848 };
 let ebirdRawDataset = [];
 let secureUserToken = "";
 let autocompleteSelectionInProgress = false;
+let isSpeciesScan = false; // indique si le dataset actuel correspond à une espèce spécifique
 
 // ==================== LOGGER ====================
 function loggerDiagnostic(texte, statut = 'info') {
@@ -471,15 +472,11 @@ function loggerDiagnostic(texte, statut = 'info') {
 
 // ==================== GESTION DU FOND DE CARTE JOUR/NUIT ====================
 function setMapTiles(isLight) {
-  if (currentTileLayer) {
-    globalLeafletMap.removeLayer(currentTileLayer);
-  }
+  if (currentTileLayer) globalLeafletMap.removeLayer(currentTileLayer);
   const tileUrl = isLight
     ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
     : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
-  currentTileLayer = L.tileLayer(tileUrl, {
-    attribution: '&copy; CartoDB'
-  }).addTo(globalLeafletMap);
+  currentTileLayer = L.tileLayer(tileUrl, { attribution: '&copy; CartoDB' }).addTo(globalLeafletMap);
 }
 
 // ==================== INITIALISATION CARTE ====================
@@ -491,7 +488,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     L.control.zoom({ position: 'bottomright' }).addTo(globalLeafletMap);
 
-    // Détection du thème stocké
     const storedTheme = localStorage.getItem('radar-theme');
     const isLight = storedTheme === 'light';
     setMapTiles(isLight);
@@ -520,15 +516,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ---- BOUTON HAMBURGER (filtres) ----
-    const hamburgerBtn = document.getElementById('hamburgerToggle');
-    const filtersPanel = document.getElementById('filtersPanel');
-    hamburgerBtn.addEventListener('click', () => {
-      filtersPanel.classList.toggle('open');
+    document.getElementById('hamburgerToggle').addEventListener('click', () => {
+      document.getElementById('filtersPanel').classList.toggle('open');
     });
 
     // ---- BOUTON THEME JOUR/NUIT ----
     const themeBtn = document.getElementById('themeToggle');
-    // Appliquer le thème visuel et icône
     if (isLight) {
       document.body.classList.add('light-mode');
       themeBtn.innerHTML = '☀️';
@@ -538,7 +531,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const nowLight = document.body.classList.contains('light-mode');
       themeBtn.innerHTML = nowLight ? '☀️' : '🌙';
       localStorage.setItem('radar-theme', nowLight ? 'light' : 'dark');
-      // Changer le fond de carte
       setMapTiles(nowLight);
     });
 
@@ -559,14 +551,10 @@ const mapsCustomPin = L.divIcon({
 // ==================== FORMATAGE HEURE PARIS ====================
 function formatParisTime(obsDtString) {
   if (!obsDtString) return "Heure inconnue";
-  // eBird donne "YYYY-MM-DD HH:MM" (heure locale de l'observation)
-  // On suppose que c'est déjà en Europe/Paris (France).
   const parts = obsDtString.split(' ');
   if (parts.length !== 2) return obsDtString;
-  const datePart = parts[0]; // YYYY-MM-DD
-  const timePart = parts[1]; // HH:MM
-  const [year, month, day] = datePart.split('-');
-  return `${day}/${month}/${year} ${timePart}`;
+  const [year, month, day] = parts[0].split('-');
+  return `${day}/${month}/${year} ${parts[1]}`;
 }
 
 // ==================== AUTH ====================
@@ -584,12 +572,12 @@ function initialiserRadarComplet() {
   document.getElementById('authOverlay').classList.add('hidden');
   setTimeout(() => {
     if (globalLeafletMap) globalLeafletMap.invalidateSize();
-    executerScanServeur();
+    executerScanServeur(); // scan général
   }, 350);
 }
 
-// ==================== SCAN API ====================
-async function executerScanServeur() {
+// ==================== SCAN API (avec espèce optionnelle) ====================
+async function executerScanServeur(speciesSciName = null) {
   if (!secureUserToken) return;
 
   const amount = parseInt(document.getElementById('timeAmountInput').value) || 1;
@@ -602,7 +590,11 @@ async function executerScanServeur() {
   }
 
   mapLayerGroup.clearLayers();
-  loggerDiagnostic(`Scan : Rayon ${radius} km, ${computedDays} jours...`);
+  if (speciesSciName) {
+    loggerDiagnostic(`Scan spécifique : ${speciesSciName}, Rayon ${radius} km, ${computedDays} jours...`);
+  } else {
+    loggerDiagnostic(`Scan général : Rayon ${radius} km, ${computedDays} jours...`);
+  }
 
   L.circle([radarCenterCoordinates.lat, radarCenterCoordinates.lng], {
     color: '#10b981', fillColor: '#10b981', fillOpacity: 0.04,
@@ -610,7 +602,11 @@ async function executerScanServeur() {
   }).addTo(mapLayerGroup);
 
   try {
-    const queryUrl = `/api/ebird?lat=${radarCenterCoordinates.lat}&lng=${radarCenterCoordinates.lng}&dist=${radius}&back=${computedDays}`;
+    let queryUrl = `/api/ebird?lat=${radarCenterCoordinates.lat}&lng=${radarCenterCoordinates.lng}&dist=${radius}&back=${computedDays}`;
+    if (speciesSciName) {
+      queryUrl += `&species=${encodeURIComponent(speciesSciName)}`;
+    }
+
     const response = await fetch(queryUrl, {
       headers: { 'x-user-ebird-key': secureUserToken }
     });
@@ -620,7 +616,9 @@ async function executerScanServeur() {
       alert(content.error);
       return;
     }
+
     ebirdRawDataset = content;
+    isSpeciesScan = !!speciesSciName;
     loggerDiagnostic(`${ebirdRawDataset.length} observations reçues.`, "success");
     filtrerEtAfficherOiseaux();
   } catch (e) {
@@ -628,24 +626,47 @@ async function executerScanServeur() {
   }
 }
 
-// ==================== AUTOCOMPLÉTION ====================
+// ==================== AUTOCOMPLÉTION (améliorée : déclenche scan spécifique) ====================
 function gererAutocompletion() {
+  // Si un flag de sélection est actif, on l'ignore (évite la réouverture)
   if (autocompleteSelectionInProgress) {
     autocompleteSelectionInProgress = false;
     return;
   }
-  const query = document.getElementById('filterInput').value.toLowerCase();
-  const box = document.getElementById('suggestionsBox');
-  box.innerHTML = '';
 
+  const inputField = document.getElementById('filterInput');
+  const query = inputField.value.trim();
+  const box = document.getElementById('suggestionsBox');
+
+  // Si le champ est vidé, on revient au scan général (toutes les espèces)
   if (!query) {
+    box.style.display = 'none';
+    if (isSpeciesScan) {
+      // On était en mode espèce spécifique, on relance un scan général
+      inputField.value = '';
+      executerScanServeur(); // pas de paramètre = général
+    } else {
+      // Sinon on affiche simplement le dataset actuel (qui est déjà général)
+      filtrerEtAfficherOiseaux();
+    }
+    return;
+  }
+
+  // Si on est en mode espèce spécifique, le dataset ne contient qu'une seule espèce.
+  // L'autocomplétion ne servirait à rien, on pourrait cacher les suggestions et filtrer localement.
+  if (isSpeciesScan) {
     box.style.display = 'none';
     filtrerEtAfficherOiseaux();
     return;
   }
 
-  const names = [...new Set(ebirdRawDataset.map(item => item.comName).filter(n => n && n.toLowerCase().includes(query)))];
-  const limited = names.slice(0, 5);
+  // Mode normal (dataset multi-espèces) : on construit les suggestions
+  const matchingNames = [...new Set(
+    ebirdRawDataset
+      .map(item => item.comName)
+      .filter(name => name && name.toLowerCase().includes(query.toLowerCase()))
+  )];
+  const limited = matchingNames.slice(0, 5);
 
   if (limited.length === 0) {
     box.style.display = 'none';
@@ -653,24 +674,33 @@ function gererAutocompletion() {
     return;
   }
 
-  box.style.display = 'block';
+  box.innerHTML = '';
   limited.forEach(name => {
     const row = document.createElement('div');
     row.className = 'autocomplete-row-item';
     row.innerText = name;
     row.onclick = () => {
       autocompleteSelectionInProgress = true;
-      document.getElementById('filterInput').value = name;
+      inputField.value = name;
       box.style.display = 'none';
-      filtrerEtAfficherOiseaux();
+
+      // Récupérer le nom scientifique correspondant pour le scan spécifique
+      const found = ebirdRawDataset.find(item => item.comName === name);
+      if (found && found.sciName) {
+        executerScanServeur(found.sciName);
+      } else {
+        // Fallback : filtrer localement (ne devrait pas arriver)
+        filtrerEtAfficherOiseaux();
+      }
     };
     box.appendChild(row);
   });
 
-  filtrerEtAfficherOiseaux();
+  box.style.display = 'block';
+  filtrerEtAfficherOiseaux(); // filtre local en attendant le scan
 }
 
-// Fermer suggestions si clic ailleurs
+// Fermer les suggestions si clic ailleurs
 document.addEventListener('click', (e) => {
   const box = document.getElementById('suggestionsBox');
   if (!box) return;
