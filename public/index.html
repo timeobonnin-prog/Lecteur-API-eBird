@@ -6,7 +6,7 @@
     <title>Lecteur API eBird – Sécurisé par Vercel</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="icon" type="image/svg+xml" href="ebird.svg">
+    <link rel="icon" type="image/png" href="API Ebird.png">
     
     <style>
         :root {
@@ -46,7 +46,7 @@
         .auth-container h1 { font-size: 1.9rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; color: var(--text-light); }
         .auth-container p { color: var(--neon-green); margin-bottom: 32px; text-transform: uppercase; font-size: 0.85rem; }
         
-        /* Logo eBird sur l'écran de connexion */
+        /* Logo eBird sur l'écran de connexion (inchangé, déjà 64px) */
         .auth-logo-link {
             display: inline-block;
             margin-bottom: 20px;
@@ -79,12 +79,15 @@
         .bar-first-row { display: flex; justify-content: space-between; align-items: center; }
         .brand-block { display: flex; align-items: center; gap: 10px; }
         
-        /* Icône SVG décorative (pas de lien) */
-        .brand-bird-svg {
-            width: 28px; height: 28px;
-            fill: var(--neon-green);
+        /* Logo du site (API Ebird.png) – maintenant deux fois plus gros */
+        .brand-logo-img {
+            width: 64px;   /* était 32px, maintenant doublé */
+            height: 64px;
+            object-fit: contain;
             filter: drop-shadow(0 0 6px var(--neon-green));
+            transition: filter 0.2s;
         }
+        /* Pas de lien sur ce logo (le lien ebird est sur l'écran d'auth) */
         .brand-title-text { font-size: 1.05rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
 
         .control-buttons { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -211,7 +214,7 @@
     <!-- ÉCRAN DE CONNEXION AVEC LOGO eBIRD -->
     <div id="authOverlay">
         <div class="auth-container">
-            <!-- Logo eBird cliquable pour obtenir une clé API -->
+            <!-- Logo eBird cliquable pour obtenir une clé API (inchangé) -->
             <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo-link" title="Obtenir une clé API eBird">
                 <img src="ebird.svg" alt="eBird" class="auth-logo-img" />
             </a>
@@ -222,12 +225,12 @@
         </div>
     </div>
 
-    <!-- BARRE D'EN-TÊTE (après connexion) avec l'icône SVG d'origine -->
+    <!-- BARRE D'EN-TÊTE (après connexion) avec logo API Ebird.png agrandi -->
     <header class="top-command-bar">
         <div class="bar-first-row">
             <div class="brand-block">
-                <!-- Icône SVG décorative (pas de lien) -->
-                <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
+                <!-- Logo du site : API Ebird.png (deux fois plus gros) -->
+                <img src="API Ebird.png" alt="Lecteur API eBird" class="brand-logo-img" />
                 <span class="brand-title-text">Lecteur API eBird</span>
             </div>
             <div class="control-buttons">
@@ -284,7 +287,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Fonction de normalisation pour la recherche (insensible aux accents)
+        // Normalisation pour la recherche insensible aux accents
         function normalize(str) {
             return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         }
@@ -292,7 +295,7 @@
         let map, layerGroup, currentTile;
         let radarCenter = [47.3941, 0.6848];
         let ebirdRawData = [];
-        let listesData = {};   // indexé par subId (checklist)
+        let listesData = {};
         let markersList = {};
         let cardElements = {};
         let isNightMode = true;
@@ -361,7 +364,7 @@
             let startDate = document.getElementById('startDate').value;
             let endDate = document.getElementById('endDate').value;
 
-            // Si aucune date, prendre les 30 derniers jours par défaut
+            // Si aucune date, utiliser les 30 derniers jours par défaut
             if (!startDate || !endDate) {
                 const today = new Date();
                 const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
