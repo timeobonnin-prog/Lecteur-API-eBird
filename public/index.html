@@ -97,7 +97,7 @@
         .github-popup {
             position: absolute;
             top: 100%; right: 0;
-            margin-top: 8px;
+            margin-top: 4px; /* Réduit pour éviter un trop grand espace */
             background: var(--panel-bg);
             border: 1px solid var(--border-line);
             border-radius: 12px;
@@ -342,11 +342,28 @@
                 executerScan();   // relance un scan autour du nouveau centre
             });
 
-            // Gestion du pop-up GitHub
+            // Gestion améliorée du pop-up GitHub (délai pour éviter la fermeture intempestive)
             const githubContainer = document.getElementById('githubContainer');
             const githubPopup = document.getElementById('githubPopup');
-            githubContainer.addEventListener('mouseenter', () => { githubPopup.style.display = 'block'; });
-            githubContainer.addEventListener('mouseleave', () => { githubPopup.style.display = 'none'; });
+            let githubTimeout;
+
+            githubContainer.addEventListener('mouseenter', () => {
+                clearTimeout(githubTimeout);
+                githubPopup.style.display = 'block';
+            });
+            githubContainer.addEventListener('mouseleave', () => {
+                githubTimeout = setTimeout(() => {
+                    githubPopup.style.display = 'none';
+                }, 200); // 200ms de délai
+            });
+            githubPopup.addEventListener('mouseenter', () => {
+                clearTimeout(githubTimeout); // annuler la fermeture quand on entre dans le popup
+            });
+            githubPopup.addEventListener('mouseleave', () => {
+                githubTimeout = setTimeout(() => {
+                    githubPopup.style.display = 'none';
+                }, 200);
+            });
         });
 
         function initialiserRadar() {
