@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="API Ebird.png">
     
     <style>
-        /* --- VARIABLES GLOBALES (MODE NUIT) --- */
+        /* --- VARIABLES (mode nuit par défaut) --- */
         :root {
             --neon-green: #10b981;
             --neon-glow: rgba(16, 185, 129, 0.3);
@@ -21,7 +21,7 @@
             --popup-bg: #091710;
         }
 
-        /* --- VARIABLES GLOBALES (MODE JOUR) --- */
+        /* --- Mode jour --- */
         body.day-mode {
             --neon-green: #059669;
             --neon-glow: rgba(5, 150, 105, 0.2);
@@ -40,7 +40,7 @@
             height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.4s;
         }
 
-        /* --- ÉCRAN DE DÉMARRAGE --- */
+        /* --- Écran d'authentification --- */
         #authOverlay {
             position: fixed; inset: 0; background: var(--dark-bg);
             display: flex; justify-content: center; align-items: center; z-index: 99999;
@@ -64,7 +64,7 @@
             border: none; border-radius: 30px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
         }
 
-        /* --- BARRE SUPÉRIEURE --- */
+        /* --- Barre supérieure --- */
         .top-command-bar {
             background: var(--panel-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-line);
             padding: 10px 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px;
@@ -97,7 +97,7 @@
             padding: 6px; border-radius: 8px; width: 130px; font-size: 0.85rem;
         }
 
-        /* --- CARTE ET BARRE LATÉRALE --- */
+        /* --- Carte + Sidebar --- */
         .workspace-area { flex: 1; position: relative; display: flex; }
         #live-map-viewport { position: absolute; inset: 0; background: var(--dark-bg); z-index: 1; }
 
@@ -130,15 +130,23 @@
         .card-list-name { font-weight: bold; color: var(--text-light); font-size: 0.9rem; }
         .card-list-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 4px; }
 
+        /* Icônes des marqueurs */
         .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
         .maps-icon-svg { width: 28px; height: 28px; fill: var(--neon-green); animation: mapsPinBounce 1.5s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
         @keyframes mapsPinBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
 
-        .custom-popup-box { background: var(--popup-bg); color: var(--text-light); padding: 5px; min-width: 240px; font-size: 0.85rem; }
-        .custom-popup-title { color: var(--neon-green); font-weight: bold; margin-bottom: 4px; }
-        .custom-popup-meta { font-size: 0.75rem; color: var(--text-gray); margin-bottom: 6px; border-bottom: 1px solid var(--border-line); padding-bottom: 6px; }
-        .custom-popup-list { max-height: 150px; overflow-y: auto; }
-        .custom-popup-item { margin-bottom: 4px; }
+        /* Popups simplifiées */
+        .custom-popup-box {
+            background: var(--popup-bg); color: var(--text-light); padding: 8px;
+            min-width: 200px; font-size: 0.85rem; line-height: 1.4;
+        }
+        .custom-popup-title {
+            color: var(--neon-green); font-weight: bold; font-size: 0.95rem;
+            margin-bottom: 4px; border-bottom: 1px solid var(--border-line); padding-bottom: 4px;
+        }
+        .custom-popup-date { font-size: 0.75rem; color: var(--text-gray); margin-bottom: 6px; }
+        .custom-popup-species { margin: 0; padding: 0; list-style: none; }
+        .custom-popup-species li { margin-bottom: 2px; }
 
         @media (max-width: 767px) {
             #radar-sidebar-panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 200px; }
@@ -149,7 +157,7 @@
 </head>
 <body>
 
-    <!-- ÉCRAN D'ACTIVATION -->
+    <!-- AUTH -->
     <div id="authOverlay">
         <div class="auth-container">
             <h1>Radar Aviaire</h1>
@@ -159,7 +167,7 @@
         </div>
     </div>
 
-    <!-- EN-TÊTE -->
+    <!-- HEADER -->
     <header class="top-command-bar">
         <div class="bar-first-row">
             <div class="brand-block">
@@ -171,7 +179,7 @@
                 <button class="icon-btn" onclick="executerScan()" title="Lancer le scan">🔄</button>
             </div>
         </div>
-        <!-- Filtres : période, rayon, dates personnalisées -->
+        <!-- Filtres -->
         <div class="filters-row">
             <input type="number" id="timeAmount" class="tactical-input-number" value="14" min="1">
             <select id="timeUnit" class="tactical-dropdown">
@@ -190,7 +198,7 @@
         </div>
     </header>
 
-    <!-- CARTE ET RÉSULTATS -->
+    <!-- MAIN -->
     <main class="workspace-area">
         <div id="live-map-viewport"></div>
 
@@ -217,14 +225,14 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map, layerGroup, currentTile;
-        let radarCenter = [47.3941, 0.6848]; // Indre-et-Loire
+        let radarCenter = [47.3941, 0.6848]; // Centre Indre-et-Loire
         let ebirdRawData = [];
         let lieuxData = {};
         let markersList = {};
         let isNightMode = true;
         let savedToken = localStorage.getItem('ebirdToken');
 
-        // --- GESTION DU THÈME ---
+        // --- THÈME ---
         function basculerTheme(forceNight = null) {
             isNightMode = forceNight !== null ? forceNight : !isNightMode;
             document.body.className = isNightMode ? '' : 'day-mode';
@@ -262,7 +270,7 @@
             setTimeout(() => { map.invalidateSize(); executerScan(); }, 400);
         }
 
-        // --- REQUÊTE SATELLITE ---
+        // --- SCAN ---
         async function executerScan() {
             if (!savedToken) return;
 
@@ -289,7 +297,6 @@
             try {
                 const rep = await fetch(url, { headers: { 'x-user-ebird-key': savedToken } });
                 const data = await rep.json();
-
                 if (data.error) throw new Error(data.error);
                 
                 ebirdRawData = data;
@@ -299,7 +306,7 @@
             }
         }
 
-        // --- REGROUPEMENT PAR LIEU (LISTE) ---
+        // --- REGROUPEMENT PAR LIEU ---
         function traiterDonnees() {
             lieuxData = {};
             ebirdRawData.forEach(obs => {
@@ -319,14 +326,14 @@
                     };
                 }
 
-                // Ajouter ou mettre à jour les oiseaux (on somme les quantités si même nom commun)
-                const existing = lieuxData[locId].oiseaux.find(o => o.nom === (obs.comName || "Inconnu"));
-                if (existing) {
-                    existing.qte += (obs.howMany || 1);
+                // On évite les doublons de la même espèce en sommant les quantités
+                const existant = lieuxData[locId].oiseaux.find(o => o.nom === (obs.comName || "Inconnu"));
+                if (existant) {
+                    existant.qte += (obs.howMany || 1);
                 } else {
                     lieuxData[locId].oiseaux.push({
                         nom: obs.comName || "Inconnu",
-                        sci: obs.sciName,
+                        sci: obs.sciName || '',
                         qte: obs.howMany || 1
                     });
                 }
@@ -340,7 +347,7 @@
                 }
             });
 
-            // Ajouter un cercle de rayon
+            // Cercle de rayon
             layerGroup.clearLayers();
             const radius = document.getElementById('radiusSelect').value;
             L.circle(radarCenter, {
@@ -360,8 +367,12 @@
             iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28]
         });
 
-        // --- AFFICHAGE DE LA CARTE ET DU MENU ---
+        // --- AFFICHAGE ---
         function afficherInterface() {
+            // On supprime uniquement les marqueurs ajoutés par cette fonction (pas le cercle)
+            layerGroup.eachLayer(layer => {
+                if (layer instanceof L.Marker) layerGroup.removeLayer(layer);
+            });
             markersList = {};
             const listContainer = document.getElementById('birds-list-viewport');
             listContainer.innerHTML = '';
@@ -388,40 +399,37 @@
             } else if (methodeTri === 'nombre') {
                 lieuxFiltres.sort((a, b) => b.totalOiseaux - a.totalOiseaux);
             } else if (methodeTri === 'date') {
-                lieuxFiltres.sort((a, b) => b.dateObj - a.dateObj); // le plus récent d'abord
+                lieuxFiltres.sort((a, b) => b.dateObj - a.dateObj);
             }
 
             // Marqueurs et popups
             lieuxFiltres.forEach(lieu => {
                 const dateFormatee = formatDate(lieu.dateDerniere);
 
+                // POPUP SIMPLIFIÉE : lieu, date, liste des espèces
                 let htmlPopup = `
                     <div class="custom-popup-box">
-                        <div class="custom-popup-title">📍 ${lieu.nomLieu}</div>
-                        <div class="custom-popup-meta">
-                            👤 <b>${lieu.observateur}</b><br>
-                            🕒 ${dateFormatee}<br>
-                            🔢 Total : ${lieu.totalOiseaux} oiseaux
-                        </div>
-                        <div class="custom-popup-list">
+                        <div class="custom-popup-title">${lieu.nomLieu}</div>
+                        <div class="custom-popup-date">🕒 ${dateFormatee}</div>
+                        <ul class="custom-popup-species">
                 `;
                 lieu.oiseaux.forEach(o => {
-                    htmlPopup += `<div class="custom-popup-item"><strong>${o.nom}</strong> (x${o.qte})</div>`;
+                    htmlPopup += `<li>• ${o.nom} (x${o.qte})</li>`;
                 });
-                htmlPopup += `</div></div>`;
+                htmlPopup += `</ul></div>`;
 
                 const marker = L.marker([lieu.lat, lieu.lng], { icon: iconeRadar })
                                 .bindPopup(htmlPopup)
                                 .addTo(layerGroup);
                 markersList[lieu.id] = marker;
 
-                // Carte dans le menu
+                // Carte dans le menu latéral
                 const card = document.createElement('div');
                 card.className = 'bird-card-item';
                 card.innerHTML = `
                     <div class="card-list-name">${lieu.nomLieu}</div>
                     <div class="card-list-sub">
-                        🕒 ${dateFormatee} · 👤 ${lieu.observateur}<br>
+                        🕒 ${dateFormatee}<br>
                         🦅 ${lieu.oiseaux.length} espèce(s) · 🔢 ${lieu.totalOiseaux} indiv.
                     </div>
                 `;
