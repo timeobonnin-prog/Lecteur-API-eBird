@@ -66,57 +66,51 @@
         /* --- BARRE SUPÉRIEURE --- */
         .top-command-bar {
             background: var(--panel-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-line);
-            padding: 14px 20px; z-index: 2000; display: flex; flex-direction: column; gap: 12px;
+            padding: 14px 20px; z-index: 2000; display: flex; align-items: center; justify-content: space-between;
         }
-        .bar-first-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .brand-block { display: flex; align-items: center; gap: 10px; }
-        
-        /* Animation de l'oiseau */
         .brand-bird-svg { width: 32px; height: 32px; fill: var(--neon-green); filter: drop-shadow(0 0 6px var(--neon-green)); animation: birdFloat 3s infinite ease-in-out; }
         @keyframes birdFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        
         .brand-title-text { font-size: 1.05rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
         
         .interactive-selectors { display: flex; gap: 6px; flex-wrap: wrap; }
-        .tactical-dropdown, .search-input-box {
+        .tactical-dropdown {
             background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light);
-            padding: 8px 12px; border-radius: 10px; outline: none;
+            padding: 8px 12px; border-radius: 10px; outline: none; cursor: pointer;
         }
-        .search-block { position: relative; width: 100%; }
-        .search-input-box { width: 100%; padding: 12px 18px; border-radius: 14px; }
-        .search-input-box:focus { border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-glow); }
 
-        /* --- AUTOCOMPLÉTION --- */
-        .autocomplete-dropdown-panel {
-            position: absolute; top: 100%; left: 0; right: 0; background: var(--panel-bg);
-            border: 1px solid var(--neon-green); border-radius: 0 0 14px 14px; z-index: 3000;
-            max-height: 200px; overflow-y: auto; display: none;
-        }
-        .autocomplete-row-item { padding: 12px 18px; cursor: pointer; border-bottom: 1px solid var(--border-line); }
-        .autocomplete-row-item:hover { background: var(--neon-glow); color: var(--neon-green); }
-
-        /* --- CARTE ET BARRE LATÉRALE --- */
+        /* --- CARTE ET BARRE LATÉRALE TACTIQUE --- */
         .workspace-area { flex: 1; position: relative; display: flex; }
         #live-map-viewport { position: absolute; inset: 0; background: var(--dark-bg); z-index: 1; }
 
         #radar-sidebar-panel {
-            position: absolute; top: 16px; right: 16px; bottom: 16px; width: 300px;
+            position: absolute; top: 16px; right: 16px; bottom: 16px; width: 320px;
             background: var(--panel-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-line);
             border-radius: 20px; z-index: 999; display: flex; flex-direction: column; overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .panel-header-title {
             padding: 14px; background: rgba(0, 0, 0, 0.1); border-bottom: 1px solid var(--border-line);
-            font-weight: 800; color: var(--neon-green); text-transform: uppercase; display: flex; justify-content: space-between;
+            display: flex; flex-direction: column; gap: 10px;
         }
+        .header-top-row { display: flex; justify-content: space-between; align-items: center; font-weight: 800; color: var(--neon-green); text-transform: uppercase; }
+        
+        /* Outils de recherche et tri dans le menu */
+        .sidebar-input, .sidebar-select {
+            width: 100%; padding: 10px; border-radius: 10px; background: var(--dark-bg);
+            border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.85rem;
+        }
+        .sidebar-input:focus { border-color: var(--neon-green); }
+
         .birds-scroller { flex: 1; overflow-y: auto; padding: 8px; }
         .bird-card-item {
             padding: 12px; border-radius: 10px; margin-bottom: 8px; cursor: pointer;
             background: rgba(128, 128, 128, 0.05); transition: 0.2s; border-left: 4px solid transparent;
         }
         .bird-card-item:hover { background: var(--neon-glow); border-left-color: var(--neon-green); }
-        .card-bird-name { font-weight: bold; color: var(--text-light); }
-        .card-bird-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 4px; }
+        .card-list-name { font-weight: bold; color: var(--text-light); font-size: 0.95rem; }
+        .card-list-sub { font-size: 0.8rem; color: var(--text-gray); margin-top: 4px; }
+        .rare-badge { background: #fb923c; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7rem; font-weight: bold; margin-left: 5px; }
 
         /* Animation des puces GPS */
         .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
@@ -124,18 +118,18 @@
         @keyframes mapsPinBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
 
         /* Popups de la carte */
-        .custom-popup-box { background: var(--popup-bg); color: var(--text-light); padding: 5px; min-width: 220px; }
-        .custom-popup-title { color: var(--neon-green); font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid var(--border-line); padding-bottom: 5px; }
+        .custom-popup-box { background: var(--popup-bg); color: var(--text-light); padding: 5px; min-width: 240px; }
+        .custom-popup-title { color: var(--neon-green); font-weight: bold; margin-bottom: 5px; font-size: 1rem; }
+        .custom-popup-meta { font-size: 0.8rem; color: var(--text-gray); margin-bottom: 8px; border-bottom: 1px solid var(--border-line); padding-bottom: 8px; }
         .custom-popup-list { max-height: 150px; overflow-y: auto; }
-        .custom-popup-item { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--border-line); font-size: 0.9rem; }
-        .custom-popup-item:last-child { border: none; margin: 0; padding: 0; }
-        .custom-popup-sci { color: var(--text-gray); font-size: 0.75rem; display: block; }
+        .custom-popup-item { margin-bottom: 6px; font-size: 0.9rem; }
+        .custom-popup-item strong { color: var(--text-light); }
 
         /* Adaptatif Smartphone */
         @media (max-width: 767px) {
-            #radar-sidebar-panel { top: auto; left: 10px; right: 10px; bottom: 16px; width: auto; height: 160px; }
+            #radar-sidebar-panel { top: auto; left: 10px; right: 10px; bottom: 16px; width: auto; height: 250px; }
             .birds-scroller { display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; }
-            .bird-card-item { flex: 0 0 230px; border-left: none; border-bottom: 4px solid transparent; }
+            .bird-card-item { flex: 0 0 250px; border-left: none; border-bottom: 4px solid transparent; }
         }
     </style>
 </head>
@@ -153,19 +147,13 @@
 
     <!-- EN-TÊTE -->
     <header class="top-command-bar">
-        <div class="bar-first-row">
-            <div class="brand-block">
-                <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
-                <span class="brand-title-text">Radar Tactique</span>
-            </div>
-            <div class="interactive-selectors">
-                <button id="themeToggleBtn" onclick="basculerTheme()" class="tactical-dropdown">🌙</button>
-                <button onclick="relancerScanGeneral()" class="tactical-dropdown">🔄 Scan Général</button>
-            </div>
+        <div class="brand-block">
+            <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
+            <span class="brand-title-text">Radar Tactique</span>
         </div>
-        <div class="search-block">
-            <input type="text" id="filterInput" class="search-input-box" placeholder="🔍 Cible une espèce pour analyser TOUTES ses positions..." oninput="chercherEspece()" />
-            <div id="suggestionsBox" class="autocomplete-dropdown-panel"></div>
+        <div class="interactive-selectors">
+            <button id="themeToggleBtn" onclick="basculerTheme()" class="tactical-dropdown">🌙</button>
+            <button onclick="executerScan()" class="tactical-dropdown">🔄 Scan eBird</button>
         </div>
     </header>
 
@@ -175,9 +163,19 @@
 
         <div id="radar-sidebar-panel">
             <div class="panel-header-title">
-                <span>Cibles Identifiées</span>
-                <span id="counter-badge" style="color:white; background:var(--neon-green); padding:2px 8px; border-radius:12px;">0</span>
+                <div class="header-top-row">
+                    <span>Listes (Lieux)</span>
+                    <span id="counter-badge" style="color:white; background:var(--neon-green); padding:2px 8px; border-radius:12px;">0</span>
+                </div>
+                <!-- NOUVEAU : Zone de recherche et de tri dans le menu -->
+                <input type="text" id="searchInput" class="sidebar-input" placeholder="🔍 Chercher un lieu ou une espèce..." oninput="afficherInterface()" />
+                <select id="sortSelect" class="sidebar-select" onchange="afficherInterface()">
+                    <option value="alphabet">🔤 Tri : Ordre Alphabétique</option>
+                    <option value="nombre">🔢 Tri : Nombre d'oiseaux</option>
+                    <option value="rarete">⭐ Tri : Rareté Max</option>
+                </select>
             </div>
+            
             <div id="birds-list-viewport" class="birds-scroller">
                 <div style="padding:15px; text-align:center; color:var(--text-gray); font-size:0.85rem;">En attente de connexion radar...</div>
             </div>
@@ -186,14 +184,14 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- VARIABLES DU MOTEUR ---
         let map, layerGroup, currentTile;
-        let radarCenter = [47.3941, 0.6848]; // Centre sur l'Indre-et-Loire par défaut
-        let ebirdData = [];
+        let radarCenter = [47.3941, 0.6848]; // Ton QG en Indre-et-Loire
+        let ebirdRawData = [];
+        let lieuxData = {}; // Base de données organisée par Listes (Lieux)
         let isNightMode = true;
         let markersList = {};
 
-        // --- GESTION DU THÈME VISUEL ---
+        // --- GESTION DU THÈME ---
         function basculerTheme(forceNight = null) {
             isNightMode = forceNight !== null ? forceNight : !isNightMode;
             document.body.className = isNightMode ? '' : 'day-mode';
@@ -206,808 +204,176 @@
             currentTile = L.tileLayer(tileUrl).addTo(map);
         }
 
-        // --- INITIALISATION AU CHARGEMENT ---
         document.addEventListener("DOMContentLoaded", () => {
-            // Création de la carte
             map = L.map('live-map-viewport', { zoomControl: false }).setView(radarCenter, 10);
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
             layerGroup = L.layerGroup().addTo(map);
             
-            // Thème automatique selon l'heure
             const heure = new Date().getHours();
             basculerTheme(heure >= 21 || heure < 8);
 
-            // Vérification de la clé sauvegardée
             const savedToken = localStorage.getItem('ebirdToken');
             if (savedToken) document.getElementById('tokenField').value = savedToken;
 
-            // Touche "Entrée" pour le mot de passe
             document.getElementById('tokenField').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') initialiserRadar();
             });
         });
 
-        // --- DÉMARRAGE DU RADAR ---
         function initialiserRadar() {
             const token = document.getElementById('tokenField').value.trim();
             if (!token) return alert("Saisis ta clé eBird !");
             
             localStorage.setItem('ebirdToken', token);
             document.getElementById('authOverlay').classList.add('hidden');
-            
-            // Petite pause pour laisser l'animation se faire avant de charger la carte
             setTimeout(() => { map.invalidateSize(); executerScan(); }, 400);
         }
 
-        function relancerScanGeneral() {
-            document.getElementById('filterInput').value = "";
-            executerScan(); // Scan sans ciblage = 1 observation max par espèce
-        }
-
-        // --- REQUÊTE SATELLITE (API) ---
-        async function executerScan(speciesCode = '') {
+        // --- REQUÊTE SATELLITE ---
+        async function executerScan() {
             const token = localStorage.getItem('ebirdToken');
             if (!token) return;
 
-            layerGroup.clearLayers();
-            markersList = {};
-            document.getElementById('suggestionsBox').style.display = 'none';
             document.getElementById('birds-list-viewport').innerHTML = `<div style="padding:15px; text-align:center; color:var(--neon-green); font-size:0.85rem;">Balayage en cours...</div>`;
 
             try {
-                // Si on a un speciesCode, on récupère toutes ses observations. Sinon, scan général.
-                const url = `/api/ebird?lat=${radarCenter[0]}&lng=${radarCenter[1]}&dist=25&back=14` + (speciesCode ? `&species=${speciesCode}` : '');
-                
+                // Scan sur 25km pendant 14 jours
+                const url = `/api/ebird?lat=${radarCenter[0]}&lng=${radarCenter[1]}&dist=25&back=14`;
                 const rep = await fetch(url, { headers: { 'x-user-ebird-key': token } });
                 const data = await rep.json();
 
                 if (data.error) throw new Error(data.error);
                 
-                ebirdData = data;
-                afficherResultats();
+                ebirdRawData = data;
+                traiterDonnees();
             } catch (e) {
                 document.getElementById('birds-list-viewport').innerHTML = `<div style="padding:15px; color:#f87171;">Erreur: ${e.message}</div>`;
             }
         }
 
-        // --- AFFICHAGE ET REGROUPEMENT GPS ---
+        // --- REGROUPEMENT PAR LIEU (LISTE) ---
+        function traiterDonnees() {
+            lieuxData = {};
+            ebirdRawData.forEach(obs => {
+                // Utilise l'ID du lieu eBird, ou les coordonnées exactes si l'ID manque
+                const locId = obs.locId || `${obs.lat}_${obs.lng}`;
+                
+                if (!lieuxData[locId]) {
+                    lieuxData[locId] = {
+                        id: locId,
+                        nomLieu: obs.locName || "Lieu inconnu",
+                        lat: obs.lat,
+                        lng: obs.lng,
+                        observateur: obs.userDisplayName || "Anonyme",
+                        dateObj: new Date(obs.obsDt), // Pour trouver la date la plus récente
+                        dateAffichage: obs.obsDt,
+                        oiseaux: [],
+                        totalOiseaux: 0,
+                        rareteMax: 0
+                    };
+                }
+
+                // eBird marque obsValid = false quand l'observation demande une vérification (souvent une rareté locale)
+                const estRare = (obs.obsValid === false || obs.obsReviewed === false) ? 1 : 0;
+
+                lieuxData[locId].oiseaux.push({
+                    nom: obs.comName || "Inconnu",
+                    sci: obs.sciName,
+                    qte: obs.howMany || 1,
+                    rare: estRare
+                });
+
+                lieuxData[locId].totalOiseaux += (obs.howMany || 1);
+                lieuxData[locId].rareteMax = Math.max(lieuxData[locId].rareteMax, estRare);
+            });
+
+            afficherInterface();
+        }
+
         const iconeRadar = L.divIcon({
             className: 'maps-icon-container',
             html: `<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
             iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30]
         });
 
-        function afficherResultats() {
+        // --- AFFICHAGE DE LA CARTE ET DU MENU ---
+        function afficherInterface() {
+            layerGroup.clearLayers();
+            markersList = {};
             const listContainer = document.getElementById('birds-list-viewport');
-            document.getElementById('counter-badge').innerText = ebirdData.length;
             listContainer.innerHTML = '';
 
-            if (ebirdData.length === 0) {
-                listContainer.innerHTML = `<div style="padding:15px; text-align:center; color:var(--text-gray);">Rien sur les radars.</div>`;
+            const recherche = document.getElementById('searchInput').value.toLowerCase();
+            const methodeTri = document.getElementById('sortSelect').value;
+
+            // 1. Filtrer selon la recherche (Cherche dans le nom du lieu OU dans les espèces présentes)
+            let lieuxFiltres = Object.values(lieuxData).filter(lieu => {
+                const matchLieu = lieu.nomLieu.toLowerCase().includes(recherche);
+                const matchEspece = lieu.oiseaux.some(o => o.nom.toLowerCase().includes(recherche));
+                return matchLieu || matchEspece;
+            });
+
+            document.getElementById('counter-badge').innerText = lieuxFiltres.length;
+
+            if (lieuxFiltres.length === 0) {
+                listContainer.innerHTML = `<div style="padding:15px; text-align:center; color:var(--text-gray);">Aucune liste trouvée.</div>`;
                 return;
             }
 
-            // 1. Algorithme de regroupement par coordonnées exactes
-            const pointsGPS = {};
-            ebirdData.forEach(oiseau => {
-                const coordKey = `${oiseau.lat}_${oiseau.lng}`;
-                if (!pointsGPS[coordKey]) {
-                    pointsGPS[coordKey] = { lat: oiseau.lat, lng: oiseau.lng, lieu: oiseau.locName, oiseaux: [] };
-                }
-                pointsGPS[coordKey].oiseaux.push(oiseau);
-            });
+            // 2. Trier le tableau de Lieux
+            if (methodeTri === 'alphabet') {
+                lieuxFiltres.sort((a, b) => a.nomLieu.localeCompare(b.nomLieu));
+            } else if (methodeTri === 'nombre') {
+                lieuxFiltres.sort((a, b) => b.totalOiseaux - a.totalOiseaux);
+            } else if (methodeTri === 'rarete') {
+                lieuxFiltres.sort((a, b) => b.rareteMax - a.rareteMax);
+            }
 
-            // 2. Création des puces GPS et des infobulles (Listes)
-            Object.values(pointsGPS).forEach(point => {
+            // 3. Dessiner l'interface
+            lieuxFiltres.forEach(lieu => {
+                // Trouver l'espèce la plus rare pour l'afficher dans le popup
+                let especePlusRare = lieu.oiseaux.reduce((prev, current) => (prev.rare > current.rare) ? prev : current);
+                
+                // POPUP CARTE (Lieu + Date + Personne + Espèce Rare + Liste)
                 let htmlPopup = `
                     <div class="custom-popup-box">
-                        <div class="custom-popup-title">📍 ${point.lieu}</div>
+                        <div class="custom-popup-title">📍 ${lieu.nomLieu}</div>
+                        <div class="custom-popup-meta">
+                            👤 <b>${lieu.observateur}</b><br>
+                            🕒 ${lieu.dateAffichage}<br>
+                            ⭐ Plus rare : <span style="color:var(--neon-green)">${especePlusRare.nom}</span>
+                        </div>
                         <div class="custom-popup-list">
                 `;
-                
-                point.oiseaux.forEach(o => {
-                    htmlPopup += `
-                        <div class="custom-popup-item">
-                            <b>${o.comName || "Inconnu"}</b> (x${o.howMany || 1})
-                            <i class="custom-popup-sci">${o.sciName}</i>
-                            <span style="color:var(--text-gray); font-size:0.75rem;">🕒 ${o.obsDt}</span>
-                        </div>`;
+                lieu.oiseaux.forEach(o => {
+                    let rareTag = o.rare ? `<span style="color:#fb923c; font-size:0.75rem;">(⚠️ Rare)</span>` : ``;
+                    htmlPopup += `<div class="custom-popup-item"><strong>${o.nom}</strong> (x${o.qte}) ${rareTag}</div>`;
                 });
-                
                 htmlPopup += `</div></div>`;
 
-                const marker = L.marker([point.lat, point.lng], { icon: iconeRadar })
+                const marker = L.marker([lieu.lat, lieu.lng], { icon: iconeRadar })
                                 .bindPopup(htmlPopup)
                                 .addTo(layerGroup);
-                
-                // Associer le marqueur à l'oiseau pour l'ouvrir depuis le menu
-                point.oiseaux.forEach(o => { markersList[o.subId] = marker; });
-            });
+                markersList[lieu.id] = marker;
 
-            // 3. Création des cartes dans le menu latéral
-            ebirdData.forEach(oiseau => {
+                // MENU LATÉRAL
+                const rareBadge = lieu.rareteMax > 0 ? `<span class="rare-badge">⭐ Rareté Signalée</span>` : '';
                 const card = document.createElement('div');
                 card.className = 'bird-card-item';
                 card.innerHTML = `
-                    <div class="card-bird-name">${oiseau.comName || "Inconnu"} (x${oiseau.howMany || 1})</div>
-                    <div class="card-bird-sub">📍 ${oiseau.locName}</div>
-                    <div class="card-bird-sub">🕒 ${oiseau.obsDt}</div>
+                    <div class="card-list-name">${lieu.nomLieu}</div>
+                    <div class="card-list-sub">
+                        🦅 Espèces uniques : ${lieu.oiseaux.length} <br>
+                        🔢 Total individus : ${lieu.totalOiseaux} ${rareBadge}
+                    </div>
                 `;
                 card.onclick = () => {
-                    map.setView([oiseau.lat, oiseau.lng], 14);
-                    if (markersList[oiseau.subId]) markersList[oiseau.subId].openPopup();
+                    map.setView([lieu.lat, lieu.lng], 14);
+                    markersList[lieu.id].openPopup();
                 };
                 listContainer.appendChild(card);
             });
         }
-
-        // --- SYSTÈME DE SUGGESTION CIBLÉE ---
-        function chercherEspece() {
-            const texte = document.getElementById('filterInput').value.toLowerCase();
-            const box = document.getElementById('suggestionsBox');
-            box.innerHTML = '';
-            
-            if (!texte) {
-                box.style.display = 'none';
-                return;
-            }
-
-            // Recherche les espèces uniques dans les données actuelles
-            const resultats = [];
-            ebirdData.forEach(o => {
-                if (o.comName && o.comName.toLowerCase().includes(texte) && !resultats.find(r => r.code === o.speciesCode)) {
-                    resultats.push({ nom: o.comName, code: o.speciesCode });
-                }
-            });
-
-            if (resultats.length > 0) {
-                box.style.display = 'block';
-                resultats.slice(0, 5).forEach(res => {
-                    const ligne = document.createElement('div');
-                    ligne.className = 'autocomplete-row-item';
-                    ligne.innerText = res.nom;
-                    ligne.onclick = () => {
-                        document.getElementById('filterInput').value = res.nom;
-                        box.style.display = 'none';
-                        // On lance le scan ciblé sur CETTE espèce précise (récupère toutes les données)
-                        executerScan(res.code);
-                    };
-                    box.appendChild(ligne);
-                });
-            } else {
-                box.style.display = 'none';
-            }
-        }
     </script>
-</body>
-</html>
-        .species-item .species-name { font-weight:700; flex:1; }
-        .species-item .species-count { font-size:0.75rem; color:var(--grey); }
-        .bird-card-info { flex:1; }
-        .card-bird-name { font-size:0.85rem; font-weight:700; }
-        .card-bird-sub { font-size:0.7rem; color:var(--grey); margin-top:2px; }
-        .fav-star, .rare-flag, .iucn-badge { font-size:1.2rem; margin-left:4px; }
-        .fav-star { color:#555; cursor:pointer; }
-        .fav-star.active { color:#facc15; }
-        .rare-flag { color:#ef4444; }
-        .rare-flag:not(.active) { display:none; }
-        .iucn-badge { font-size:1rem; }
-
-        #backToSpeciesBtn { display:none; margin:4px; background:transparent; border:1px solid var(--border); color:var(--text); padding:2px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer; }
-
-        #compare-legend { display:none; padding:4px 8px; background:var(--panel); border-top:1px solid var(--border); font-size:0.7rem; color:var(--text); }
-        #compare-legend span { display:inline-block; width:10px; height:10px; border-radius:50%; margin:0 4px; }
-
-        #mobile-diagnostic-terminal { position:absolute; bottom:10px; left:10px; right:10px; height:45px; background:rgba(1,4,2,0.95); border:1px solid var(--neon); border-radius:10px; z-index:1000; padding:6px 10px; font-family:'Courier New', monospace; font-size:0.65rem; overflow-y:auto; color:#a7f3d0; }
-
-        .maps-icon-container { display:flex; justify-content:center; align-items:center; transform:translate(-50%,-100%); }
-        .maps-icon-svg { width:26px; height:26px; fill:var(--neon); filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7)); animation:bounce 1.8s infinite alternate; }
-        @keyframes bounce { 0%{transform:translateY(0);} 100%{transform:translateY(-2px);} }
-
-        @media (max-width:767px) {
-            #radar-sidebar-panel { top:auto; left:8px; right:8px; bottom:80px; width:auto; height:120px; }
-            .birds-scroller { display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; padding:6px; }
-            .bird-card-item, .species-item { flex:0 0 200px; }
-        }
-    </style>
-</head>
-<body>
-<div id="authOverlay">
-    <div class="auth-container">
-        <h1>Décrypteur Aviaire</h1>
-        <p>Indre-et-Loire</p>
-        <input type="password" id="tokenField" class="key-input-field" placeholder="Clé API eBird..." />
-        <button class="submit-scan-btn" onclick="initScan()">Activer le Scanner</button>
-    </div>
-</div>
-
-<header class="top-command-bar">
-    <div class="bar-first-row">
-        <div class="brand-block">
-            <img src="API Ebird.png" class="header-logo" alt="Logo">
-            <span class="brand-title-text">Décrypteur eBird</span>
-        </div>
-        <div class="control-buttons">
-            <button class="icon-btn" id="themeToggle" title="Mode jour/nuit">🌙</button>
-            <button class="icon-btn" id="hamburgerToggle" title="Filtres">☰</button>
-            <button class="icon-btn" id="geolocBtn" title="Position">📍</button>
-            <button class="icon-btn" id="compareBtn" title="Comparer espèces">🔄</button>
-            <button class="icon-btn" id="fullscreenBtn" title="Plein écran">⛶</button>
-            <button class="icon-btn" id="soundToggle" title="Son">🔇</button>
-            <button class="icon-btn" id="favFilterBtn" title="Favoris">⭐</button>
-            <button class="icon-btn" id="rareFilterBtn" title="Espèces rares">🚩<span class="badge" id="rareBadge">!</span></button>
-            <button class="icon-btn" id="shareBtn" title="Partager la vue">🔗</button>
-        </div>
-    </div>
-    <div id="filtersPanel" class="filters-collapsible">
-        <div class="interactive-selectors">
-            <input type="number" id="timeAmountInput" class="tactical-input-number" value="14" min="1" onchange="runScan()">
-            <select id="timeUnitDropdown" class="tactical-dropdown" onchange="runScan()">
-                <option value="1" selected>Jours</option>
-                <option value="30">Mois</option>
-                <option value="365">Années</option>
-            </select>
-            <select id="radiusDropdown" class="tactical-dropdown" onchange="runScan()">
-                <option value="10">10 km</option>
-                <option value="25" selected>25 km</option>
-                <option value="50">50 km</option>
-            </select>
-        </div>
-        <div class="date-group">
-            <input type="date" id="startDate" class="date-input" onchange="handleCustomDate()"> <span>→</span>
-            <input type="date" id="endDate" class="date-input" onchange="handleCustomDate()">
-            <button class="icon-btn" onclick="clearDates()" style="font-size:0.8rem;">✕</button>
-        </div>
-        <div class="search-block">
-            <input type="text" id="filterInput" class="search-input-box" placeholder="🔍 Recherche espèce..." oninput="autocomplete()" />
-            <div id="suggestionsBox" class="autocomplete-dropdown-panel"></div>
-        </div>
-    </div>
-</header>
-
-<main class="workspace-area">
-    <div id="live-map-viewport"></div>
-    <div id="radar-sidebar-panel">
-        <div class="panel-header-title">
-            <span id="sidebarTitle">Espèces</span>
-            <div class="sort-controls" id="sortControls">
-                <button class="sort-btn active" onclick="setSort('date')">📅</button>
-                <button class="sort-btn" onclick="setSort('count')">🔢</button>
-                <button class="sort-btn" onclick="setSort('alpha')">🔤</button>
-            </div>
-            <span id="counter-badge" style="color:#fff; background:rgba(16,185,129,0.3); padding:0 6px; border-radius:8px; font-size:0.7rem;">0</span>
-        </div>
-        <button id="backToSpeciesBtn" onclick="backToSpeciesList()">← Retour</button>
-        <div id="birds-list-viewport" class="birds-scroller"></div>
-        <div id="compare-legend"></div>
-        <button id="exportBtn" style="margin:4px; background:var(--neon); border:none; border-radius:6px; padding:4px; cursor:pointer; font-size:0.7rem; text-transform:uppercase;">↓ CSV</button>
-    </div>
-    <div id="mobile-diagnostic-terminal">> En attente...</div>
-</main>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    // ============ LISTES ============
-    const RARE_SPECIES_CODES = new Set(['tinfal', 'aegmon', 'circya', 'bubvir']); // à compléter
-    const UICN_STATUS = {
-        'tinfal': 'VU',
-        'aegmon': 'EN',
-        'circya': 'NT',
-        'bubvir': 'LC'
-    };
-
-    function getIucnEmoji(code) {
-        const status = UICN_STATUS[code];
-        if (!status) return '';
-        switch (status) {
-            case 'CR': return '🔴';
-            case 'EN': return '🟠';
-            case 'VU': return '🟡';
-            case 'NT': return '🔵';
-            case 'LC': return '🟢';
-            case 'DD': return '⚪';
-            default: return '';
-        }
-    }
-
-    // ============ VARIABLES ============
-    let map, layerGroup, tileLayer;
-    let center = { lat: 47.3941, lng: 0.6848 };
-    let dataset = [];
-    let generalDataset = [];
-    let token = "";
-    let autocompleteFlag = false;
-    let speciesScan = false;
-    let sortMode = 'date';
-    let favorites = new Set(JSON.parse(localStorage.getItem('favSpecies') || '[]'));
-    let compareMode = false;
-    let compareSpecies = [];
-    let audio = null, rareAudio = null;
-    let currentZoom = 10;
-    let viewMode = 'species';
-    let selectedSpeciesCode = null;
-    let markersBySpecies = {};
-    let favFilterActive = false;
-    let rareFilterActive = false;
-
-    // Silhouettes + icône
-    const silhouettes = {
-        rapace: 'M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8zm0 2c2.2 0 4 1.8 4 4 0 2.5-4 8-4 8s-4-5.5-4-8c0-2.2 1.8-4 4-4zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
-        passereau: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4 1.79-4 4-4z',
-        echassier: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v2h-2zm0-8h2v6h-2z',
-        default: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'
-    };
-    function getGroup(name) {
-        const n = name.toLowerCase();
-        if (/faucon|buse|aigle|milan|épervier|busard|circaète|balbuzard/.test(n)) return 'rapace';
-        if (/mésange|roitelet|pinson|bruant|verdier|chardonneret|linotte|pouillot|fauvette|grive|merle|rougegorge|accenteur|moineau|étourneau|corneille|pie|geai/.test(n)) return 'passereau';
-        if (/héron|cigogne|aigrette|grue|ibis|spatule|bécasse|bécassine|courlis|vanneau|pluvier|chevalier|barge|huîtrier/.test(n)) return 'echassier';
-        return 'default';
-    }
-    function customIcon(name, color = 'var(--neon)') {
-        const path = silhouettes[getGroup(name)];
-        return L.divIcon({
-            className: 'maps-icon-container',
-            html: `<svg class="maps-icon-svg" viewBox="0 0 24 24" style="fill:${color};"><path d="${path}"/></svg>`,
-            iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -26]
-        });
-    }
-
-    // Logger
-    function log(msg, status = 'info') {
-        const t = document.getElementById('mobile-diagnostic-terminal');
-        if (!t) return;
-        let c = '';
-        if (status === 'success') c = 'color:#34d399;';
-        if (status === 'warning') c = 'color:#fb923c;';
-        if (status === 'error') c = 'color:#f87171;';
-        t.innerHTML += `<br><span style="${c}">[${new Date().toLocaleTimeString('fr-FR')}] ${msg}</span>`;
-        t.scrollTop = t.scrollHeight;
-    }
-
-    function setTiles(light) {
-        if (tileLayer) map.removeLayer(tileLayer);
-        tileLayer = L.tileLayer(light
-            ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
-            : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            { attribution: '&copy; CartoDB' }
-        ).addTo(map);
-    }
-
-    // ============ INIT ============
-    document.addEventListener("DOMContentLoaded", () => {
-        try {
-            map = L.map('live-map-viewport', { zoomControl: false }).setView([center.lat, center.lng], 10);
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
-            const storedTheme = localStorage.getItem('radar-theme');
-            const isLight = storedTheme === 'light';
-            setTiles(isLight);
-            layerGroup = L.layerGroup().addTo(map);
-
-            const savedToken = localStorage.getItem('ebird_secure_token');
-            if (savedToken) { token = savedToken; document.getElementById('tokenField').value = token; }
-
-            document.getElementById('tokenField').addEventListener('keypress', e => { if (e.key === 'Enter') initScan(); });
-            map.on('click', e => { center = { lat: e.latlng.lat, lng: e.latlng.lng }; runScan(); });
-            map.on('zoomend', () => { currentZoom = map.getZoom(); });
-
-            document.getElementById('hamburgerToggle').addEventListener('click', () => document.getElementById('filtersPanel').classList.toggle('open'));
-
-            const themeBtn = document.getElementById('themeToggle');
-            if (isLight) { document.body.classList.add('light-mode'); themeBtn.innerHTML = '☀️'; }
-            themeBtn.addEventListener('click', () => {
-                document.body.classList.toggle('light-mode');
-                const nowLight = document.body.classList.contains('light-mode');
-                themeBtn.innerHTML = nowLight ? '☀️' : '🌙';
-                localStorage.setItem('radar-theme', nowLight ? 'light' : 'dark');
-                setTiles(nowLight);
-            });
-
-            document.getElementById('geolocBtn').addEventListener('click', () => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(pos => {
-                        center = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                        map.setView([center.lat, center.lng], 12);
-                        runScan();
-                    }, () => alert("Géolocalisation refusée."));
-                }
-            });
-
-            document.getElementById('compareBtn').addEventListener('click', function () {
-                compareMode = !compareMode;
-                this.style.background = compareMode ? 'var(--neon)' : 'transparent';
-                if (!compareMode) { compareSpecies = []; document.getElementById('compare-legend').style.display = 'none'; }
-                else log("Mode comparaison : cliquez sur les fiches (max 3).", "info");
-                render();
-            });
-
-            document.getElementById('fullscreenBtn').addEventListener('click', () => {
-                if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-                else document.exitFullscreen();
-            });
-
-            const soundBtn = document.getElementById('soundToggle');
-            soundBtn.addEventListener('click', () => {
-                if (!audio) { audio = new Audio('https://www.soundjay.com/nature/sounds/forest-1.mp3'); audio.loop = true; }
-                if (audio.paused) { audio.play().catch(() => {}); soundBtn.innerHTML = '🔊'; }
-                else { audio.pause(); soundBtn.innerHTML = '🔇'; }
-            });
-
-            // Favoris
-            document.getElementById('favFilterBtn').addEventListener('click', function () {
-                favFilterActive = !favFilterActive;
-                this.style.background = favFilterActive ? 'var(--neon)' : 'transparent';
-                document.getElementById('filterInput').value = '';
-                render();
-            });
-
-            // Espèces rares
-            document.getElementById('rareFilterBtn').addEventListener('click', function () {
-                rareFilterActive = !rareFilterActive;
-                this.style.background = rareFilterActive ? '#ef4444' : 'transparent';
-                if (rareFilterActive) {
-                    viewMode = 'details';
-                    document.getElementById('sidebarTitle').textContent = 'Raretés';
-                    if (!speciesScan) dataset = generalDataset;
-                } else {
-                    if (!speciesScan && generalDataset.length) {
-                        const distinct = [...new Set(generalDataset.map(b => b.speciesCode).filter(Boolean))];
-                        viewMode = distinct.length <= 1 ? 'details' : 'species';
-                        dataset = generalDataset;
-                    }
-                    document.getElementById('sidebarTitle').textContent = viewMode === 'species' ? 'Espèces' : 'Observations';
-                }
-                render();
-            });
-
-            document.getElementById('shareBtn').addEventListener('click', () => {
-                const params = new URLSearchParams();
-                params.set('lat', center.lat); params.set('lng', center.lng); params.set('zoom', currentZoom);
-                if (document.getElementById('filterInput').value) params.set('filter', document.getElementById('filterInput').value);
-                if (compareMode && compareSpecies.length) params.set('compare', compareSpecies.join(','));
-                const url = window.location.origin + window.location.pathname + '?' + params.toString();
-                navigator.clipboard.writeText(url).then(() => log("Lien copié !", "success")).catch(() => prompt("Copiez ce lien :", url));
-            });
-
-            document.getElementById('exportBtn').addEventListener('click', exportCSV);
-            log("Prêt.", "success");
-        } catch (e) { log("Erreur: " + e.message, "error"); }
-    });
-
-    function formatTime(dt) {
-        if (!dt) return "?";
-        const [date, time] = dt.split(' ');
-        const [y, m, d] = date.split('-');
-        return `${d}/${m}/${y} ${time}`;
-    }
-
-    function initScan() {
-        const val = document.getElementById('tokenField').value.trim();
-        if (!val && !token) { alert("Clé eBird requise."); return; }
-        if (val) { token = val; localStorage.setItem('ebird_secure_token', token); }
-        document.getElementById('authOverlay').classList.add('hidden');
-        setTimeout(() => { if (map) map.invalidateSize(); runScan(); }, 300);
-    }
-
-    function handleCustomDate() { const s = document.getElementById('startDate').value, e = document.getElementById('endDate').value; if (s && e) runScan(); }
-    function clearDates() { document.getElementById('startDate').value = ''; document.getElementById('endDate').value = ''; runScan(); }
-
-    // ============ SCAN ============
-    async function runScan(code = null) {
-        if (!token) return;
-        const start = document.getElementById('startDate').value, end = document.getElementById('endDate').value;
-        const radius = document.getElementById('radiusDropdown').value;
-        let back = null;
-        if (!start || !end) {
-            const amount = parseInt(document.getElementById('timeAmountInput').value) || 1;
-            const unit = parseInt(document.getElementById('timeUnitDropdown').value) || 1;
-            back = Math.min(amount * unit, 30);
-            if (back === 30) log("Limite eBird: 30 jours max.", "warning");
-        }
-        layerGroup.clearLayers();
-        markersBySpecies = {};
-        L.circle([center.lat, center.lng], { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.04, radius: radius * 1000, weight: 1 }).addTo(layerGroup);
-
-        let url = `/api/ebird?lat=${center.lat}&lng=${center.lng}&dist=${radius}`;
-        if (start && end) url += `&start=${start}&end=${end}`;
-        else url += `&back=${back}`;
-        if (code) url += `&speciesCode=${encodeURIComponent(code)}`;
-
-        try {
-            const res = await fetch(url, { headers: { 'x-user-ebird-key': token } });
-            const data = await res.json();
-            if (data.error) { log("Erreur: " + data.error, "error"); alert(data.error); return; }
-
-            if (!code) {
-                generalDataset = data;
-                dataset = data;
-                speciesScan = false;
-                selectedSpeciesCode = null;
-                const distinct = [...new Set(data.map(b => b.speciesCode).filter(Boolean))];
-                if (distinct.length <= 1 || rareFilterActive) {
-                    viewMode = 'details';
-                    if (distinct.length === 1) selectedSpeciesCode = distinct[0];
-                    document.getElementById('backToSpeciesBtn').style.display = 'none';
-                } else {
-                    viewMode = 'species';
-                    document.getElementById('backToSpeciesBtn').style.display = 'none';
-                }
-                document.getElementById('sidebarTitle').textContent = rareFilterActive ? 'Raretés' : (viewMode === 'species' ? 'Espèces' : 'Observations');
-            } else {
-                dataset = data;
-                speciesScan = true;
-                selectedSpeciesCode = code;
-                viewMode = 'details';
-                document.getElementById('backToSpeciesBtn').style.display = generalDataset.length ? 'block' : 'none';
-                document.getElementById('sidebarTitle').textContent = 'Observations';
-                if (data.length <= 1) log("⚠️ Une seule observation reçue. Vérifiez le serveur proxy.", "warning");
-            }
-            log(`${dataset.length} observations reçues.`, "success");
-            checkRareSpecies();
-            render();
-        } catch (e) { log("Réseau: " + e.message, "error"); }
-    }
-
-    function backToSpeciesList() {
-        if (generalDataset.length) {
-            dataset = generalDataset;
-            speciesScan = false;
-            selectedSpeciesCode = null;
-            viewMode = 'species';
-            rareFilterActive = false;
-            document.getElementById('rareFilterBtn').style.background = 'transparent';
-            document.getElementById('backToSpeciesBtn').style.display = 'none';
-            document.getElementById('sidebarTitle').textContent = 'Espèces';
-            render();
-        }
-    }
-
-    function checkRareSpecies() {
-        const found = dataset.some(b => RARE_SPECIES_CODES.has(b.speciesCode));
-        document.getElementById('rareBadge').style.display = found ? 'block' : 'none';
-        if (found) {
-            if (!rareAudio) { rareAudio = new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3'); }
-            rareAudio.play().catch(() => {});
-            log("⚠️ Espèce rare détectée !", "warning");
-        }
-    }
-
-    function autocomplete() {
-        if (autocompleteFlag) { autocompleteFlag = false; return; }
-        const input = document.getElementById('filterInput');
-        const query = input.value.trim().toLowerCase();
-        const box = document.getElementById('suggestionsBox');
-        if (!query) { box.style.display = 'none'; if (speciesScan) { input.value = ''; backToSpeciesList(); } else render(); return; }
-        if (speciesScan || rareFilterActive) { box.style.display = 'none'; render(); return; }
-        const names = [...new Set(dataset.filter(i => i.comName && i.comName.toLowerCase().includes(query)).map(i => i.comName))].slice(0, 5);
-        if (!names.length) { box.style.display = 'none'; render(); return; }
-        box.innerHTML = '';
-        names.forEach(n => {
-            const row = document.createElement('div'); row.className = 'autocomplete-row-item'; row.textContent = n;
-            row.onclick = () => {
-                autocompleteFlag = true; input.value = n; box.style.display = 'none';
-                const found = dataset.find(i => i.comName === n);
-                if (found && found.speciesCode) runScan(found.speciesCode);
-                else { log(`Pas de code pour ${n}`, "warning"); render(); }
-            };
-            box.appendChild(row);
-        });
-        box.style.display = 'block';
-        render();
-    }
-    document.addEventListener('click', e => { const box = document.getElementById('suggestionsBox'); if (box && e.target.id !== 'filterInput') box.style.display = 'none'; });
-
-    function setSort(m) {
-        sortMode = m;
-        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-        if (m === 'date') document.querySelector('.sort-btn:nth-child(1)').classList.add('active');
-        else if (m === 'count') document.querySelector('.sort-btn:nth-child(2)').classList.add('active');
-        else if (m === 'alpha') document.querySelector('.sort-btn:nth-child(3)').classList.add('active');
-        render();
-    }
-
-    // ============ RENDU ============
-    function render() {
-        const filterText = document.getElementById('filterInput').value.toLowerCase();
-        const container = document.getElementById('birds-list-viewport');
-        const badge = document.getElementById('counter-badge');
-        const legend = document.getElementById('compare-legend');
-        container.innerHTML = '';
-        layerGroup.eachLayer(l => { if (!l.options.radius) layerGroup.removeLayer(l); });
-        markersBySpecies = {};
-
-        let filtered = dataset.filter(item => {
-            const matchFr = item.comName && item.comName.toLowerCase().includes(filterText);
-            const matchSci = item.sciName && item.sciName.toLowerCase().includes(filterText);
-            if (!matchFr && !matchSci) return false;
-            if (favFilterActive && !favorites.has(item.speciesCode)) return false;
-            if (rareFilterActive && !RARE_SPECIES_CODES.has(item.speciesCode)) return false;
-            return true;
-        });
-
-        const currentViewMode = rareFilterActive ? 'details' : viewMode;
-
-        // ----- Vue par espèces (groupée) -----
-        if (currentViewMode === 'species') {
-            const groups = {};
-            filtered.forEach(b => {
-                const code = b.speciesCode || '?';
-                if (!groups[code]) groups[code] = {
-                    comName: b.comName || 'Inconnu',
-                    sciName: b.sciName || '',
-                    speciesCode: code,
-                    count: 0,
-                    lastObs: b.obsDt || '',
-                    firstObs: b
-                };
-                groups[code].count += 1;
-                if (b.obsDt && b.obsDt > groups[code].lastObs) groups[code].lastObs = b.obsDt;
-            });
-            let speciesList = Object.values(groups);
-
-            if (sortMode === 'alpha') speciesList.sort((a, b) => a.comName.localeCompare(b.comName));
-            else if (sortMode === 'count') speciesList.sort((a, b) => b.count - a.count);
-            else if (sortMode === 'date') speciesList.sort((a, b) => b.lastObs.localeCompare(a.lastObs));
-
-            badge.textContent = speciesList.length;
-            if (!speciesList.length) {
-                container.innerHTML = '<div style="color:var(--grey); text-align:center; padding:10px;">Aucune espèce</div>';
-                return;
-            }
-
-            // Création des marqueurs pour toutes les observations
-            filtered.forEach(bird => {
-                const icon = customIcon(bird.comName || 'Oiseau');
-                const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(buildPopupContent(bird)).addTo(layerGroup);
-                const code = bird.speciesCode || '?';
-                if (!markersBySpecies[code]) markersBySpecies[code] = [];
-                markersBySpecies[code].push(marker);
-            });
-
-            // Liste des espèces
-            speciesList.forEach(sp => {
-                const div = document.createElement('div');
-                div.className = 'species-item';
-                if (RARE_SPECIES_CODES.has(sp.speciesCode)) div.classList.add('rare-item');
-                const isRare = RARE_SPECIES_CODES.has(sp.speciesCode);
-                const iucnEmoji = getIucnEmoji(sp.speciesCode);
-                div.innerHTML = `
-                    <span class="species-name">${sp.comName} <span style="color:var(--grey); font-size:0.7rem;">${sp.sciName}</span></span>
-                    ${iucnEmoji ? `<span class="iucn-badge">${iucnEmoji}</span>` : ''}
-                    ${isRare ? '<span class="rare-flag active">🚩</span>' : ''}
-                    <span class="species-count">${sp.count} obs</span>
-                    <span class="species-count">${formatTime(sp.lastObs)}</span>
-                `;
-                div.addEventListener('click', () => {
-                    const firstObs = sp.firstObs;
-                    if (firstObs) {
-                        map.setView([firstObs.lat, firstObs.lng], 13);
-                        const markers = markersBySpecies[sp.speciesCode];
-                        if (markers && markers.length) {
-                            markers[0].openPopup(); // ouvre le popup du premier marqueur
-                        }
-                    }
-                });
-                container.appendChild(div);
-            });
-
-        } else {
-            // ----- Vue détaillée (observations individuelles) -----
-            if (sortMode === 'date') filtered.sort((a, b) => (b.obsDt || '').localeCompare(a.obsDt || ''));
-            else if (sortMode === 'count') filtered.sort((a, b) => (b.howMany || 0) - (a.howMany || 0));
-            else if (sortMode === 'alpha') filtered.sort((a, b) => (a.comName || '').localeCompare(b.comName || ''));
-
-            badge.textContent = filtered.length;
-            if (!filtered.length) {
-                container.innerHTML = '<div style="color:var(--grey); text-align:center; padding:10px;">Aucune observation</div>';
-                return;
-            }
-
-            filtered.forEach(bird => {
-                const name = bird.comName || "Oiseau";
-                const code = bird.speciesCode || '';
-                let markerColor = 'var(--neon)';
-                if (compareMode) {
-                    const idx = compareSpecies.indexOf(code);
-                    if (idx >= 0) markerColor = ['#10b981', '#f59e0b', '#8b5cf6'][idx] || 'var(--neon)';
-                }
-                const icon = customIcon(name, markerColor);
-                const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(buildPopupContent(bird)).addTo(layerGroup);
-
-                const card = document.createElement('div');
-                card.className = 'bird-card-item';
-                if (compareMode && compareSpecies.includes(code)) card.classList.add('compare-selected');
-                if (RARE_SPECIES_CODES.has(code)) card.classList.add('rare-item');
-                const isFav = favorites.has(code);
-                const iucnEmoji = getIucnEmoji(code);
-                card.innerHTML = `
-                    <span class="fav-star ${isFav ? 'active' : ''}" data-code="${code}">★</span>
-                    ${iucnEmoji ? `<span class="iucn-badge">${iucnEmoji}</span>` : ''}
-                    ${RARE_SPECIES_CODES.has(code) ? '<span class="rare-flag active">🚩</span>' : ''}
-                    <div class="bird-card-info">
-                        <div class="card-bird-name">${name} (x${bird.howMany || 1})</div>
-                        <div class="card-bird-sub">🕒 ${formatTime(bird.obsDt)} · ${bird.userDisplayName || 'Anonyme'}</div>
-                        <div class="card-bird-sub" style="color:var(--neon);">📍 ${bird.locName || '?'}</div>
-                    </div>
-                `;
-                // Étoile favori
-                card.querySelector('.fav-star').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (favorites.has(code)) { favorites.delete(code); e.target.classList.remove('active'); }
-                    else { favorites.add(code); e.target.classList.add('active'); }
-                    localStorage.setItem('favSpecies', JSON.stringify([...favorites]));
-                    if (favFilterActive) render();
-                });
-                // Clic sur la fiche
-                card.addEventListener('click', () => {
-                    if (compareMode) {
-                        if (compareSpecies.includes(code)) compareSpecies = compareSpecies.filter(c => c !== code);
-                        else if (compareSpecies.length < 3) compareSpecies.push(code);
-                        else { log("Maximum 3 espèces.", "warning"); return; }
-                        render(); return;
-                    }
-                    map.setView([bird.lat, bird.lng], 14);
-                    marker.openPopup();
-                });
-                container.appendChild(card);
-            });
-        }
-
-        // Légende comparaison
-        if (compareMode && compareSpecies.length) {
-            legend.style.display = 'block';
-            const colors = ['#10b981', '#f59e0b', '#8b5cf6'];
-            legend.innerHTML = 'Comparaison: ' + compareSpecies.map((code, i) => {
-                const name = dataset.find(b => b.speciesCode === code)?.comName || code;
-                return `<span style="background:${colors[i]}"></span>${name}`;
-            }).join(' ');
-        } else legend.style.display = 'none';
-    }
-
-    // Construction du contenu de la popup (riche)
-    function buildPopupContent(bird) {
-        const name = bird.comName || "Oiseau";
-        const sci = bird.sciName || '';
-        const loc = bird.locName || 'Inconnu';
-        const obs = bird.userDisplayName || 'Anonyme';
-        const dt = formatTime(bird.obsDt);
-        const count = bird.howMany || 1;
-        const checklist = bird.subId ? `https://ebird.org/checklist/${bird.subId}` : '#';
-        const iucn = getIucnEmoji(bird.speciesCode);
-        const rare = RARE_SPECIES_CODES.has(bird.speciesCode) ? '🚩 Rare' : '';
-
-        return `
-            <div style="background:#091710; color:#fff; padding:8px; font-family:sans-serif; min-width:220px; border-radius:8px;">
-                <b style="color:#10b981; font-size:1rem;">${name}</b>
-                ${iucn ? `<span style="margin-left:4px;">${iucn}</span>` : ''}
-                ${rare ? `<span style="color:#f87171; margin-left:6px;">${rare}</span>` : ''}
-                <br>
-                <i style="color:#94a3b8; font-size:0.75rem;">${sci}</i>
-                <div style="font-size:0.75rem; border-top:1px solid rgba(16,185,129,0.2); margin-top:6px; padding-top:6px;">
-                    👤 ${obs}<br>
-                    🕒 ${dt}<br>
-                    🔢 ${count} individu(s)<br>
-                    📍 ${loc}<br>
-                    <a href="${checklist}" target="_blank" style="color:#34d399; font-weight:bold;">Checklist eBird</a>
-                    <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(sci)}" target="_blank" style="color:#60a5fa; margin-left:6px;">📷 Photos</a>
-                </div>
-            </div>
-        `;
-    }
-
-    function exportCSV() {
-        const filterText = document.getElementById('filterInput').value.toLowerCase();
-        const data = dataset.filter(i => {
-            const mf = i.comName && i.comName.toLowerCase().includes(filterText);
-            const ms = i.sciName && i.sciName.toLowerCase().includes(filterText);
-            return mf || ms;
-        });
-        const rows = [['Espèce', 'Nom scientifique', 'Nombre', 'Date', 'Observateur', 'Lieu', 'Checklist']];
-        data.forEach(b => rows.push([b.comName || '', b.sciName || '', b.howMany || 1, b.obsDt || '', b.userDisplayName || '', b.locName || '', b.subId ? `https://ebird.org/checklist/${b.subId}` : '']));
-        const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ebird_export.csv'; a.click();
-    }
-</script>
 </body>
 </html>
