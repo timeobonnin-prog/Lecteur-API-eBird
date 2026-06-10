@@ -10,7 +10,7 @@
 <link rel="icon" type="image/png" href="API Ebird.png">
 
 <style>
-/* ========== VARIABLES CYBER-NATURE (mode nuit par défaut) ========== */
+/* ========== VARIABLES (mode nuit par défaut) ========== */
 :root {
   --neon-green: #10b981;
   --neon-glow: rgba(16, 185, 129, 0.3);
@@ -23,7 +23,6 @@
   --card-bg: rgba(255,255,255,0.03);
 }
 
-/* mode jour */
 body.light-mode {
   --dark-bg: #f0f9f0;
   --panel-bg: rgba(255,255,255,0.92);
@@ -33,11 +32,8 @@ body.light-mode {
   --bg-input: rgba(255,255,255,0.8);
   --card-bg: rgba(0,0,0,0.03);
 }
-body.light-mode .auth-container {
-  background: rgba(255,255,255,0.9);
-  border-color: #10b981;
-  box-shadow: 0 0 35px rgba(16,185,129,0.4);
-}
+/* ... (tous les styles light-mode déjà présents) ... */
+body.light-mode .auth-container { background: rgba(255,255,255,0.9); border-color: #10b981; box-shadow: 0 0 35px rgba(16,185,129,0.4); }
 body.light-mode .auth-container h1 { color: #064e3b; text-shadow: 0 0 5px #10b981; }
 body.light-mode .auth-container p { color: #047857; }
 body.light-mode .key-input-field { background: #fff; color: #0f172a; border-color: #10b981; }
@@ -56,337 +52,88 @@ body.light-mode .bird-card-item:hover { background: #d1fae5; }
 body.light-mode #mobile-diagnostic-terminal { background: rgba(255,255,255,0.9); color: #065f46; border-color: #10b981; }
 
 /* ========== BASE ========== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  -webkit-tap-highlight-color: transparent;
-}
+* { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: var(--dark-bg); color: var(--text-light); height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden; transition: background 0.3s, color 0.3s; }
 
-body {
-  background-color: var(--dark-bg);
-  color: var(--text-light);
-  height: 100vh;
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: background-color 0.3s, color 0.3s;
-}
+/* ========== AUTH OVERLAY ========== */
+#authOverlay { position:fixed; inset:0; background: radial-gradient(circle at center, #041d10 0%, #010402 100%); display:flex; justify-content:center; align-items:center; z-index:99999; padding:24px; transition:0.5s; }
+#authOverlay.hidden { opacity:0; pointer-events:none; transform:scale(1.08); }
+.auth-container { background: var(--panel-bg); border:2px solid var(--neon-green); box-shadow:0 0 35px var(--neon-glow); border-radius:24px; padding:40px 30px; width:100%; max-width:440px; text-align:center; backdrop-filter:blur(12px); }
+.auth-container h1 { font-size:1.9rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; margin-bottom:8px; color:#fff; text-shadow:0 0 8px var(--neon-glow); }
+.auth-container p { font-size:0.85rem; color:var(--neon-green); margin-bottom:32px; text-transform:uppercase; letter-spacing:1px; }
+.key-input-field { width:100%; padding:16px; background:rgba(0,0,0,0.7); border:1px solid var(--border-line); border-radius:30px; color:#fff; font-size:1rem; text-align:center; outline:none; margin-bottom:24px; transition:0.3s; }
+.key-input-field:focus { border-color:var(--neon-green); box-shadow:0 0 15px var(--neon-glow); }
+.submit-scan-btn { width:100%; padding:16px; background:var(--neon-green); color:#020604; font-weight:800; font-size:1rem; border:none; border-radius:30px; cursor:pointer; text-transform:uppercase; letter-spacing:2px; transition:0.3s; }
+.submit-scan-btn:hover { background:#34d399; box-shadow:0 0 25px rgba(52,211,153,0.5); }
 
-/* ========== OVERLAY AUTH ========== */
-#authOverlay {
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at center, #041d10 0%, #010402 100%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 99999;
-  padding: 24px;
-  transition: all 0.5s;
-}
-#authOverlay.hidden { opacity: 0; pointer-events: none; transform: scale(1.08); }
-.auth-container {
-  background: var(--panel-bg);
-  border: 2px solid var(--neon-green);
-  box-shadow: 0 0 35px var(--neon-glow);
-  border-radius: 24px;
-  padding: 40px 30px;
-  width: 100%;
-  max-width: 440px;
-  text-align: center;
-  backdrop-filter: blur(12px);
-}
-.auth-container h1 {
-  font-size: 1.9rem;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  color: #fff;
-  text-shadow: 0 0 8px var(--neon-glow);
-}
-.auth-container p {
-  font-size: 0.85rem;
-  color: var(--neon-green);
-  margin-bottom: 32px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.key-input-field {
-  width: 100%;
-  padding: 16px;
-  background: rgba(0,0,0,0.7);
-  border: 1px solid var(--border-line);
-  border-radius: 30px;
-  color: #fff;
-  font-size: 1rem;
-  text-align: center;
-  outline: none;
-  margin-bottom: 24px;
-  transition: 0.3s;
-}
-.key-input-field:focus { border-color: var(--neon-green); box-shadow: 0 0 15px var(--neon-glow); }
-.submit-scan-btn {
-  width: 100%;
-  padding: 16px;
-  background: var(--neon-green);
-  color: #020604;
-  font-weight: 800;
-  font-size: 1rem;
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  transition: 0.3s;
-}
-.submit-scan-btn:hover { background: #34d399; box-shadow: 0 0 25px rgba(52,211,153,0.5); }
+/* ========== HEADER ========== */
+.top-command-bar { background:var(--panel-bg); backdrop-filter:blur(12px); border-bottom:1px solid var(--border-line); padding:10px 16px; z-index:2000; display:flex; flex-direction:column; gap:10px; transition:background 0.3s; }
+.bar-first-row { display:flex; justify-content:space-between; align-items:center; }
+.brand-block { display:flex; align-items:center; gap:10px; }
+.header-logo { width:28px; height:28px; object-fit:contain; filter:drop-shadow(0 0 6px var(--neon-green)); }
+.brand-title-text { font-size:1.05rem; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
+.control-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+.icon-btn { background:transparent; border:1px solid var(--border-line); color:var(--text-light); font-size:1.2rem; width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background 0.2s; }
+.icon-btn:hover { background:rgba(16,185,129,0.2); }
 
-/* ========== HEADER & BARRE ========== */
-.top-command-bar {
-  background: var(--panel-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-line);
-  padding: 10px 16px;
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  transition: background 0.3s;
-}
-.bar-first-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.brand-block {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.header-logo {
-  width: 28px; height: 28px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 6px var(--neon-green));
-}
-.brand-title-text {
-  font-size: 1.05rem;
-  font-weight: 900;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-.control-buttons {
-  display: flex;
-  gap: 8px;
-}
-.icon-btn {
-  background: transparent;
-  border: 1px solid var(--border-line);
-  color: var(--text-light);
-  font-size: 1.2rem;
-  width: 36px; height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.icon-btn:hover { background: rgba(16,185,129,0.2); }
+.filters-collapsible { display:none; flex-direction:column; gap:10px; }
+.filters-collapsible.open { display:flex; }
+.interactive-selectors { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.tactical-dropdown, .tactical-input-number { background:var(--bg-input); border:1px solid var(--border-line); color:var(--text-light); padding:8px 12px; border-radius:10px; font-size:0.85rem; outline:none; }
+.tactical-input-number { width:60px; text-align:center; }
+.date-input { background:var(--bg-input); border:1px solid var(--border-line); color:var(--text-light); padding:6px; border-radius:10px; font-size:0.85rem; outline:none; width:130px; }
+.date-group { display:flex; align-items:center; gap:4px; }
+.search-block { width:100%; position:relative; }
+.search-input-box { width:100%; padding:12px 18px; background:var(--bg-input); border:1px solid var(--border-line); border-radius:14px; color:var(--text-light); font-size:0.95rem; outline:none; transition:0.3s; }
+.search-input-box:focus { border-color:var(--neon-green); box-shadow:0 0 10px var(--neon-glow); }
 
-/* Panneau filtres (collapsible) */
-.filters-collapsible {
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-}
-.filters-collapsible.open {
-  display: flex;
-}
-.interactive-selectors {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.tactical-dropdown, .tactical-input-number {
-  background: var(--bg-input);
-  border: 1px solid var(--border-line);
-  color: var(--text-light);
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  outline: none;
-}
-.tactical-input-number { width: 60px; text-align: center; }
-.search-block {
-  width: 100%;
-  position: relative;
-}
-.search-input-box {
-  width: 100%;
-  padding: 12px 18px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-line);
-  border-radius: 14px;
-  color: var(--text-light);
-  font-size: 0.95rem;
-  outline: none;
-  transition: 0.3s;
-}
-.search-input-box:focus { border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-glow); }
-
-/* Autocomplétion */
-.autocomplete-dropdown-panel {
-  position: absolute;
-  top: 100%; left: 0; right: 0;
-  background: var(--panel-bg);
-  border: 1px solid var(--neon-green);
-  border-radius: 0 0 14px 14px;
-  z-index: 3000;
-  max-height: 220px;
-  overflow-y: auto;
-  display: none;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-  backdrop-filter: blur(8px);
-}
-.autocomplete-row-item {
-  padding: 12px 18px;
-  cursor: pointer;
-  color: var(--text-light);
-  font-size: 0.9rem;
-  border-bottom: 1px solid rgba(16,185,129,0.1);
-  transition: background 0.2s;
-}
-.autocomplete-row-item:hover { background: rgba(16,185,129,0.2); color: var(--neon-green); }
+.autocomplete-dropdown-panel { position:absolute; top:100%; left:0; right:0; background:var(--panel-bg); border:1px solid var(--neon-green); border-radius:0 0 14px 14px; z-index:3000; max-height:220px; overflow-y:auto; display:none; box-shadow:0 10px 25px rgba(0,0,0,0.6); backdrop-filter:blur(8px); }
+.autocomplete-row-item { padding:12px 18px; cursor:pointer; color:var(--text-light); font-size:0.9rem; border-bottom:1px solid rgba(16,185,129,0.1); transition:background 0.2s; }
+.autocomplete-row-item:hover { background:rgba(16,185,129,0.2); color:var(--neon-green); }
 
 /* ========== CARTE ========== */
-.workspace-area {
-  flex: 1;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-#live-map-viewport {
-  position: absolute;
-  inset: 0;
-  background: #010402;
-  z-index: 1;
-}
+.workspace-area { flex:1; position:relative; display:flex; flex-direction:column; }
+#live-map-viewport { position:absolute; inset:0; background:#010402; z-index:1; }
 
 /* ========== SIDEBAR ========== */
-#radar-sidebar-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  bottom: 95px;
-  width: 300px;
-  background: var(--panel-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-line);
-  border-radius: 20px;
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-  transition: background 0.3s;
-}
-.panel-header-title {
-  padding: 14px;
-  background: rgba(0,0,0,0.4);
-  border-bottom: 1px solid var(--border-line);
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--neon-green);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  display: flex;
-  justify-content: space-between;
-}
-.birds-scroller {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-}
-.bird-card-item {
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--card-bg);
-  margin-bottom: 8px;
-  border-left: 4px solid transparent;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.bird-card-item:hover {
-  background: rgba(16,185,129,0.1);
-  border-left-color: var(--neon-green);
-}
-.card-bird-name { font-size: 0.9rem; font-weight: 700; }
-.card-bird-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#radar-sidebar-panel { position:absolute; top:16px; right:16px; bottom:95px; width:300px; background:var(--panel-bg); backdrop-filter:blur(12px); border:1px solid var(--border-line); border-radius:20px; z-index:999; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 15px 35px rgba(0,0,0,0.6); transition:background 0.3s; }
+.panel-header-title { padding:14px; background:rgba(0,0,0,0.4); border-bottom:1px solid var(--border-line); font-size:0.9rem; font-weight:800; color:var(--neon-green); text-transform:uppercase; letter-spacing:1px; display:flex; justify-content:space-between; align-items:center; }
+.sort-controls { display:flex; gap:4px; }
+.sort-btn { background:transparent; border:1px solid var(--border-line); color:var(--text-light); padding:2px 6px; border-radius:6px; font-size:0.75rem; cursor:pointer; }
+.sort-btn.active { background:var(--neon-green); color:#000; }
+.birds-scroller { flex:1; overflow-y:auto; padding:8px; }
+.bird-card-item { padding:12px; border-radius:10px; background:var(--card-bg); margin-bottom:8px; border-left:4px solid transparent; cursor:pointer; transition:0.2s; position:relative; display:flex; align-items:center; }
+.bird-card-item:hover { background:rgba(16,185,129,0.1); border-left-color:var(--neon-green); }
+.fav-star { position:absolute; top:8px; right:8px; font-size:1.2rem; cursor:pointer; color:var(--text-gray); transition:0.2s; }
+.fav-star.active { color:#facc15; }
+.card-bird-name { font-size:0.9rem; font-weight:700; flex:1; }
+.card-bird-sub { font-size:0.75rem; color:var(--text-gray); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-/* Mobile */
-@media (max-width: 767px) {
-  .top-command-bar { padding: 8px; }
-  .brand-title-text { font-size: 0.95rem; }
-  #radar-sidebar-panel {
-    top: auto; left: 10px; right: 10px; bottom: 95px;
-    width: auto; height: 140px;
-  }
-  .birds-scroller {
-    display: flex; gap: 10px;
-    overflow-x: auto; overflow-y: hidden; padding: 10px;
-  }
-  .bird-card-item {
-    flex: 0 0 230px; margin-bottom: 0;
-    border-left: none; border-bottom: 4px solid transparent;
-  }
-  .bird-card-item:hover { border-bottom-color: var(--neon-green); }
-}
+/* ========== TIMELINE ========== */
+#activity-timeline { position:absolute; bottom:95px; left:16px; right:16px; height:40px; background:rgba(1,4,2,0.95); border:1px solid var(--border-line); border-radius:10px; z-index:1001; display:flex; align-items:flex-end; padding:4px; gap:2px; overflow:hidden; }
+#activity-timeline .bar { flex:1; background:var(--neon-green); opacity:0.6; min-height:2px; border-radius:2px; transition:height 0.3s; }
 
 /* ========== CONSOLE ========== */
-#mobile-diagnostic-terminal {
-  position: absolute;
-  bottom: 16px; left: 16px; right: 16px;
-  height: 65px;
-  background: rgba(1,4,2,0.95);
-  border: 1px solid var(--neon-green);
-  border-radius: 14px;
-  z-index: 1000;
-  padding: 10px 14px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.75rem;
-  overflow-y: auto;
-  color: #a7f3d0;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.8);
-  transition: background 0.3s, color 0.3s;
-}
+#mobile-diagnostic-terminal { position:absolute; bottom:16px; left:16px; right:16px; height:65px; background:rgba(1,4,2,0.95); border:1px solid var(--neon-green); border-radius:14px; z-index:1000; padding:10px 14px; font-family:'Courier New', monospace; font-size:0.75rem; overflow-y:auto; color:#a7f3d0; box-shadow:0 5px 20px rgba(0,0,0,0.8); transition:background 0.3s, color 0.3s; }
 
-/* Pin */
-.maps-icon-container {
-  display: flex; justify-content: center; align-items: center;
-  transform: translate(-50%, -100%);
-}
-.maps-icon-svg {
-  width: 30px; height: 30px;
-  fill: var(--neon-green);
-  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
-  animation: mapsPinBounce 1.8s infinite alternate ease-in-out;
-}
-@keyframes mapsPinBounce {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-3px); }
+/* ========== ICÔNES OISEAUX ========== */
+.maps-icon-container { display:flex; justify-content:center; align-items:center; transform:translate(-50%, -100%); }
+.maps-icon-svg { width:30px; height:30px; fill:var(--neon-green); filter:drop-shadow(0 2px 5px rgba(0,0,0,0.7)); animation:mapsPinBounce 1.8s infinite alternate ease-in-out; }
+@keyframes mapsPinBounce { 0%{transform:translateY(0);} 100%{transform:translateY(-3px);} }
+
+@media (max-width: 767px) {
+  .top-command-bar { padding:8px; }
+  #radar-sidebar-panel { top:auto; left:10px; right:10px; bottom:95px; width:auto; height:140px; }
+  .birds-scroller { display:flex; gap:10px; overflow-x:auto; overflow-y:hidden; padding:10px; }
+  .bird-card-item { flex:0 0 230px; margin-bottom:0; border-left:none; border-bottom:4px solid transparent; }
+  .bird-card-item:hover { border-bottom-color:var(--neon-green); }
+  #activity-timeline { bottom:160px; }
 }
 </style>
 </head>
 <body>
 
-<!-- OVERLAY D'AUTHENTIFICATION -->
+<!-- OVERLAY AUTH -->
 <div id="authOverlay">
   <div class="auth-container">
     <h1>Décrypteur Aviaire</h1>
@@ -396,7 +143,7 @@ body {
   </div>
 </div>
 
-<!-- HEADER PRINCIPAL -->
+<!-- HEADER -->
 <header class="top-command-bar">
   <div class="bar-first-row">
     <div class="brand-block">
@@ -406,10 +153,14 @@ body {
     <div class="control-buttons">
       <button class="icon-btn" id="themeToggle" title="Mode jour/nuit">🌙</button>
       <button class="icon-btn" id="hamburgerToggle" title="Filtres">☰</button>
+      <button class="icon-btn" id="geolocBtn" title="Position">📍</button>
+      <button class="icon-btn" id="fullscreenBtn" title="Plein écran">⛶</button>
+      <button class="icon-btn" id="soundToggle" title="Ambiance sonore">🔇</button>
+      <button class="icon-btn" id="favFilterBtn" title="Favoris">⭐</button>
     </div>
   </div>
 
-  <!-- Panneau de filtres repliable -->
+  <!-- Panneau filtres -->
   <div id="filtersPanel" class="filters-collapsible">
     <div class="interactive-selectors">
       <input type="number" id="timeAmountInput" class="tactical-input-number" value="14" min="1" onchange="executerScanServeur()">
@@ -424,6 +175,12 @@ body {
         <option value="50">50 km</option>
       </select>
     </div>
+    <div class="date-group">
+      <input type="date" id="startDate" class="date-input" onchange="handleCustomDate()">
+      <span>→</span>
+      <input type="date" id="endDate" class="date-input" onchange="handleCustomDate()">
+      <button class="icon-btn" onclick="clearDates()" title="Effacer dates">✕</button>
+    </div>
     <div class="search-block">
       <input type="text" id="filterInput" class="search-input-box" placeholder="🔍 Recherche (ex: Mésange, Faucon...)" oninput="gererAutocompletion()" />
       <div id="suggestionsBox" class="autocomplete-dropdown-panel"></div>
@@ -431,96 +188,128 @@ body {
   </div>
 </header>
 
-<!-- ZONE CARTE + SIDEBAR -->
+<!-- MAIN -->
 <main class="workspace-area">
   <div id="live-map-viewport"></div>
 
+  <!-- Sidebar -->
   <div id="radar-sidebar-panel">
     <div class="panel-header-title">
       <span>Espèces scannées</span>
+      <div class="sort-controls">
+        <button class="sort-btn active" onclick="setSort('date')">📅</button>
+        <button class="sort-btn" onclick="setSort('count')">🔢</button>
+        <button class="sort-btn" onclick="setSort('alpha')">🔤</button>
+      </div>
       <span id="counter-badge" style="color:#fff; background:rgba(16,185,129,0.3); padding:1px 8px; border-radius:10px;">0</span>
     </div>
     <div id="birds-list-viewport" class="birds-scroller"></div>
+    <button id="exportBtn" style="margin:4px; background:var(--neon-green); border:none; border-radius:6px; padding:4px; cursor:pointer; font-size:0.7rem; text-transform:uppercase;">↓ CSV</button>
   </div>
 
+  <!-- Timeline -->
+  <div id="activity-timeline"></div>
+
+  <!-- Console -->
   <div id="mobile-diagnostic-terminal">> Système en attente d'authentification...</div>
 </main>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ==================== VARIABLES GLOBALES ====================
-let globalLeafletMap;
-let mapLayerGroup;
-let currentTileLayer;
+let globalLeafletMap, mapLayerGroup, currentTileLayer;
 let radarCenterCoordinates = { lat: 47.3941, lng: 0.6848 };
 let ebirdRawDataset = [];
 let secureUserToken = "";
 let autocompleteSelectionInProgress = false;
-let isSpeciesScan = false; // indique si le dataset actuel correspond à une espèce spécifique
+let isSpeciesScan = false;
+let currentSort = 'date';
+let favoriteSpecies = new Set(JSON.parse(localStorage.getItem('favSpecies') || '[]'));
+let ambientAudio = null;
+
+// Silhouettes par groupe
+const birdSilhouettes = {
+  rapace: '<path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8zm0 2c2.2 0 4 1.8 4 4 0 2.5-4 8-4 8s-4-5.5-4-8c0-2.2 1.8-4 4-4zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>', // rapace stylisé
+  passereau: '<circle cx="12" cy="12" r="8"/>', // simple
+  echassier: '<ellipse cx="12" cy="12" rx="6" ry="10"/>',
+  default: '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>'
+};
+
+function getBirdGroup(comName) {
+  const name = comName.toLowerCase();
+  if (/faucon|buse|aigle|milan|épervier|busard/.test(name)) return 'rapace';
+  if (/mésange|roitelet|pinson|bruant|verdier|chardonneret|linotte|pouillot|fauvette|grive|merle|rougegorge|accenteur/.test(name)) return 'passereau';
+  if (/héron|cigogne|aigrette|grue|ibis/.test(name)) return 'echassier';
+  return 'default';
+}
+
+function getCustomIcon(comName) {
+  const group = getBirdGroup(comName);
+  const svg = birdSilhouettes[group];
+  return L.divIcon({
+    className: 'maps-icon-container',
+    html: `<svg class="maps-icon-svg" viewBox="0 0 24 24">${svg}</svg>`,
+    iconSize: [30,30],
+    iconAnchor: [15,30],
+    popupAnchor: [0,-30]
+  });
+}
 
 // ==================== LOGGER ====================
 function loggerDiagnostic(texte, statut = 'info') {
   const terminal = document.getElementById('mobile-diagnostic-terminal');
   if (!terminal) return;
-  let colorStyle = '';
-  if (statut === 'success') colorStyle = 'style="color: #34d399;"';
-  if (statut === 'warning') colorStyle = 'style="color: #fb923c;"';
-  if (statut === 'error') colorStyle = 'style="color: #f87171; font-weight:bold;"';
-  terminal.innerHTML += `<br><span ${colorStyle}>[${new Date().toLocaleTimeString('fr-FR')}] ${texte}</span>`;
+  let color = '';
+  if (statut === 'success') color = 'style="color:#34d399;"';
+  if (statut === 'warning') color = 'style="color:#fb923c;"';
+  if (statut === 'error') color = 'style="color:#f87171; font-weight:bold;"';
+  terminal.innerHTML += `<br><span ${color}>[${new Date().toLocaleTimeString('fr-FR')}] ${texte}</span>`;
   terminal.scrollTop = terminal.scrollHeight;
 }
 
-// ==================== GESTION DU FOND DE CARTE JOUR/NUIT ====================
+// ==================== FOND DE CARTE ====================
 function setMapTiles(isLight) {
   if (currentTileLayer) globalLeafletMap.removeLayer(currentTileLayer);
-  const tileUrl = isLight
+  const url = isLight
     ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
     : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
-  currentTileLayer = L.tileLayer(tileUrl, { attribution: '&copy; CartoDB' }).addTo(globalLeafletMap);
+  currentTileLayer = L.tileLayer(url, { attribution: '&copy; CartoDB' }).addTo(globalLeafletMap);
 }
 
-// ==================== INITIALISATION CARTE ====================
+// ==================== INIT ====================
 document.addEventListener("DOMContentLoaded", () => {
   loggerDiagnostic("Chargement du moteur cartographique...");
   try {
     globalLeafletMap = L.map('live-map-viewport', { zoomControl: false })
       .setView([radarCenterCoordinates.lat, radarCenterCoordinates.lng], 10);
-
     L.control.zoom({ position: 'bottomright' }).addTo(globalLeafletMap);
-
     const storedTheme = localStorage.getItem('radar-theme');
     const isLight = storedTheme === 'light';
     setMapTiles(isLight);
-
     mapLayerGroup = L.layerGroup().addTo(globalLeafletMap);
-    loggerDiagnostic("Carte Leaflet initialisée.", "success");
 
     // Clé stockée
     const savedToken = localStorage.getItem('ebird_secure_token');
     if (savedToken) {
       document.getElementById('tokenField').value = savedToken;
       secureUserToken = savedToken;
-      loggerDiagnostic("Clé détectée depuis le stockage local.", "success");
     }
 
-    // Validation touche Entrée
-    document.getElementById('tokenField').addEventListener('keypress', (e) => {
+    document.getElementById('tokenField').addEventListener('keypress', e => {
       if (e.key === 'Enter') initialiserRadarComplet();
     });
 
-    // Clic sur la carte = nouveau centre
-    globalLeafletMap.on('click', (e) => {
+    globalLeafletMap.on('click', e => {
       radarCenterCoordinates = { lat: e.latlng.lat, lng: e.latlng.lng };
-      loggerDiagnostic(`Centre déplacé : ${radarCenterCoordinates.lat.toFixed(4)}, ${radarCenterCoordinates.lng.toFixed(4)}`);
       executerScanServeur();
     });
 
-    // ---- BOUTON HAMBURGER (filtres) ----
+    // Hamburger
     document.getElementById('hamburgerToggle').addEventListener('click', () => {
       document.getElementById('filtersPanel').classList.toggle('open');
     });
 
-    // ---- BOUTON THEME JOUR/NUIT ----
+    // Thème
     const themeBtn = document.getElementById('themeToggle');
     if (isLight) {
       document.body.classList.add('light-mode');
@@ -534,18 +323,58 @@ document.addEventListener("DOMContentLoaded", () => {
       setMapTiles(nowLight);
     });
 
-  } catch (err) {
-    loggerDiagnostic(`Erreur critique carte : ${err.message}`, "error");
-  }
-});
+    // Géolocalisation
+    document.getElementById('geolocBtn').addEventListener('click', () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          radarCenterCoordinates = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          globalLeafletMap.setView([radarCenterCoordinates.lat, radarCenterCoordinates.lng], 12);
+          executerScanServeur();
+        }, err => alert("Géolocalisation refusée."));
+      } else alert("Géolocalisation non supportée.");
+    });
 
-// ==================== PIN CUSTOM ====================
-const mapsCustomPin = L.divIcon({
-  className: 'maps-icon-container',
-  html: `<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
-  popupAnchor: [0, -30]
+    // Plein écran
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+      const elem = document.documentElement;
+      if (!document.fullscreenElement) elem.requestFullscreen();
+      else document.exitFullscreen();
+    });
+
+    // Son ambiant
+    const soundBtn = document.getElementById('soundToggle');
+    soundBtn.addEventListener('click', () => {
+      if (!ambientAudio) {
+        ambientAudio = new Audio('https://www.soundjay.com/nature/sounds/forest-1.mp3'); // fichier libre de droits exemple
+        ambientAudio.loop = true;
+      }
+      if (ambientAudio.paused) {
+        ambientAudio.play();
+        soundBtn.innerHTML = '🔊';
+      } else {
+        ambientAudio.pause();
+        soundBtn.innerHTML = '🔇';
+      }
+    });
+
+    // Favoris filtre
+    document.getElementById('favFilterBtn').addEventListener('click', () => {
+      const active = document.getElementById('favFilterBtn').classList.toggle('active');
+      if (active) {
+        document.getElementById('filterInput').value = '';
+        filtrerEtAfficherOiseaux(true); // mode favoris
+      } else {
+        filtrerEtAfficherOiseaux(false);
+      }
+    });
+
+    // Export CSV
+    document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+    loggerDiagnostic("Initialisation terminée.", "success");
+  } catch (err) {
+    loggerDiagnostic(`Erreur critique : ${err.message}`, "error");
+  }
 });
 
 // ==================== FORMATAGE HEURE PARIS ====================
@@ -560,41 +389,53 @@ function formatParisTime(obsDtString) {
 // ==================== AUTH ====================
 function initialiserRadarComplet() {
   const tokenInput = document.getElementById('tokenField').value.trim();
-  if (!tokenInput && !secureUserToken) {
-    alert("Saisis ta clé eBird pour activer la liaison satellite.");
-    return;
-  }
+  if (!tokenInput && !secureUserToken) { alert("Clé eBird requise."); return; }
   if (tokenInput) {
     secureUserToken = tokenInput;
     localStorage.setItem('ebird_secure_token', secureUserToken);
   }
-  loggerDiagnostic("Liaison satellite établie. Scan en cours...", "success");
   document.getElementById('authOverlay').classList.add('hidden');
   setTimeout(() => {
     if (globalLeafletMap) globalLeafletMap.invalidateSize();
-    executerScanServeur(); // scan général
+    executerScanServeur();
   }, 350);
 }
 
-// ==================== SCAN API (avec espèce optionnelle) ====================
-async function executerScanServeur(speciesSciName = null) {
+// ==================== DATES PERSONNALISÉES ====================
+function handleCustomDate() {
+  const start = document.getElementById('startDate').value;
+  const end = document.getElementById('endDate').value;
+  if (start && end) {
+    executerScanServeur(); // relance avec dates
+  }
+}
+function clearDates() {
+  document.getElementById('startDate').value = '';
+  document.getElementById('endDate').value = '';
+  executerScanServeur();
+}
+
+// ==================== SCAN API ====================
+async function executerScanServeur(speciesCode = null) {
   if (!secureUserToken) return;
 
-  const amount = parseInt(document.getElementById('timeAmountInput').value) || 1;
-  const unit = parseInt(document.getElementById('timeUnitDropdown').value) || 1;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
   const radius = document.getElementById('radiusDropdown').value;
-  let computedDays = amount * unit;
-  if (computedDays > 30) {
-    loggerDiagnostic(`Limite eBird : ${amount} ${document.getElementById('timeUnitDropdown').selectedOptions[0].text} ramené à 30 jours.`, "warning");
-    computedDays = 30;
+  let back = null;
+
+  if (!startDate || !endDate) {
+    const amount = parseInt(document.getElementById('timeAmountInput').value) || 1;
+    const unit = parseInt(document.getElementById('timeUnitDropdown').value) || 1;
+    back = Math.min(amount * unit, 30);
+    if (back > 30) {
+      loggerDiagnostic("Limite eBird: ramené à 30 jours.", "warning");
+      back = 30;
+    }
   }
 
   mapLayerGroup.clearLayers();
-  if (speciesSciName) {
-    loggerDiagnostic(`Scan spécifique : ${speciesSciName}, Rayon ${radius} km, ${computedDays} jours...`);
-  } else {
-    loggerDiagnostic(`Scan général : Rayon ${radius} km, ${computedDays} jours...`);
-  }
+  loggerDiagnostic(`Scan : centre [${radarCenterCoordinates.lat.toFixed(4)},${radarCenterCoordinates.lng.toFixed(4)}]`);
 
   L.circle([radarCenterCoordinates.lat, radarCenterCoordinates.lng], {
     color: '#10b981', fillColor: '#10b981', fillOpacity: 0.04,
@@ -602,23 +443,25 @@ async function executerScanServeur(speciesSciName = null) {
   }).addTo(mapLayerGroup);
 
   try {
-    let queryUrl = `/api/ebird?lat=${radarCenterCoordinates.lat}&lng=${radarCenterCoordinates.lng}&dist=${radius}&back=${computedDays}`;
-    if (speciesSciName) {
-      queryUrl += `&species=${encodeURIComponent(speciesSciName)}`;
+    let url = `/api/ebird?lat=${radarCenterCoordinates.lat}&lng=${radarCenterCoordinates.lng}&dist=${radius}`;
+    if (startDate && endDate) {
+      url += `&start=${startDate}&end=${endDate}`;
+    } else {
+      url += `&back=${back}`;
+    }
+    if (speciesCode) {
+      url += `&speciesCode=${speciesCode}`; // le serveur doit appeler l'endpoint /recent/{speciesCode}
     }
 
-    const response = await fetch(queryUrl, {
-      headers: { 'x-user-ebird-key': secureUserToken }
-    });
+    const response = await fetch(url, { headers: { 'x-user-ebird-key': secureUserToken } });
     const content = await response.json();
     if (content.error) {
       loggerDiagnostic(`Erreur serveur : ${content.error}`, "error");
       alert(content.error);
       return;
     }
-
     ebirdRawDataset = content;
-    isSpeciesScan = !!speciesSciName;
+    isSpeciesScan = !!speciesCode;
     loggerDiagnostic(`${ebirdRawDataset.length} observations reçues.`, "success");
     filtrerEtAfficherOiseaux();
   } catch (e) {
@@ -626,109 +469,117 @@ async function executerScanServeur(speciesSciName = null) {
   }
 }
 
-// ==================== AUTOCOMPLÉTION (améliorée : déclenche scan spécifique) ====================
+// ==================== AUTOCOMPLÉTION (corrigée avec speciesCode) ====================
 function gererAutocompletion() {
-  // Si un flag de sélection est actif, on l'ignore (évite la réouverture)
   if (autocompleteSelectionInProgress) {
     autocompleteSelectionInProgress = false;
     return;
   }
 
-  const inputField = document.getElementById('filterInput');
-  const query = inputField.value.trim();
+  const input = document.getElementById('filterInput');
+  const query = input.value.trim();
   const box = document.getElementById('suggestionsBox');
 
-  // Si le champ est vidé, on revient au scan général (toutes les espèces)
   if (!query) {
     box.style.display = 'none';
     if (isSpeciesScan) {
-      // On était en mode espèce spécifique, on relance un scan général
-      inputField.value = '';
-      executerScanServeur(); // pas de paramètre = général
+      input.value = '';
+      executerScanServeur();
     } else {
-      // Sinon on affiche simplement le dataset actuel (qui est déjà général)
       filtrerEtAfficherOiseaux();
     }
     return;
   }
 
-  // Si on est en mode espèce spécifique, le dataset ne contient qu'une seule espèce.
-  // L'autocomplétion ne servirait à rien, on pourrait cacher les suggestions et filtrer localement.
   if (isSpeciesScan) {
     box.style.display = 'none';
     filtrerEtAfficherOiseaux();
     return;
   }
 
-  // Mode normal (dataset multi-espèces) : on construit les suggestions
-  const matchingNames = [...new Set(
-    ebirdRawDataset
+  const matching = [...new Set(
+    ebirdRawDataset.filter(item => item.comName && item.comName.toLowerCase().includes(query.toLowerCase()))
       .map(item => item.comName)
-      .filter(name => name && name.toLowerCase().includes(query.toLowerCase()))
-  )];
-  const limited = matchingNames.slice(0, 5);
+  )].slice(0,5);
 
-  if (limited.length === 0) {
+  if (!matching.length) {
     box.style.display = 'none';
     filtrerEtAfficherOiseaux();
     return;
   }
 
   box.innerHTML = '';
-  limited.forEach(name => {
+  matching.forEach(name => {
     const row = document.createElement('div');
     row.className = 'autocomplete-row-item';
     row.innerText = name;
     row.onclick = () => {
       autocompleteSelectionInProgress = true;
-      inputField.value = name;
+      input.value = name;
       box.style.display = 'none';
-
-      // Récupérer le nom scientifique correspondant pour le scan spécifique
       const found = ebirdRawDataset.find(item => item.comName === name);
-      if (found && found.sciName) {
-        executerScanServeur(found.sciName);
+      if (found && found.speciesCode) {
+        executerScanServeur(found.speciesCode); // scan par espèce
       } else {
-        // Fallback : filtrer localement (ne devrait pas arriver)
         filtrerEtAfficherOiseaux();
       }
     };
     box.appendChild(row);
   });
-
   box.style.display = 'block';
-  filtrerEtAfficherOiseaux(); // filtre local en attendant le scan
+  filtrerEtAfficherOiseaux();
 }
 
-// Fermer les suggestions si clic ailleurs
-document.addEventListener('click', (e) => {
+document.addEventListener('click', e => {
   const box = document.getElementById('suggestionsBox');
   if (!box) return;
   if (e.target.id !== 'filterInput') box.style.display = 'none';
 });
 
-// ==================== RENDU OISEAUX ====================
-function filtrerEtAfficherOiseaux() {
+// ==================== TRI ====================
+function setSort(mode) {
+  currentSort = mode;
+  document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+  if (mode === 'date') document.querySelector('.sort-btn:nth-child(1)').classList.add('active');
+  else if (mode === 'count') document.querySelector('.sort-btn:nth-child(2)').classList.add('active');
+  else if (mode === 'alpha') document.querySelector('.sort-btn:nth-child(3)').classList.add('active');
+  filtrerEtAfficherOiseaux();
+}
+
+// ==================== RENDU (avec favoris, silhouette, tri) ====================
+function filtrerEtAfficherOiseaux(favOnly = false) {
   const filter = document.getElementById('filterInput').value.toLowerCase();
   const container = document.getElementById('birds-list-viewport');
   const badge = document.getElementById('counter-badge');
   container.innerHTML = '';
 
-  // Supprimer marqueurs (sauf cercle)
   mapLayerGroup.eachLayer(layer => {
     if (!layer.options.radius) mapLayerGroup.removeLayer(layer);
   });
 
-  const results = ebirdRawDataset.filter(item => {
+  let results = ebirdRawDataset.filter(item => {
+    if (favOnly && !favoriteSpecies.has(item.speciesCode)) return false;
     const matchFr = item.comName && item.comName.toLowerCase().includes(filter);
     const matchSci = item.sciName && item.sciName.toLowerCase().includes(filter);
     return matchFr || matchSci;
   });
 
+  // Tri
+  if (currentSort === 'date') {
+    results.sort((a,b) => (b.obsDt || '').localeCompare(a.obsDt || ''));
+  } else if (currentSort === 'count') {
+    results.sort((a,b) => (b.howMany || 0) - (a.howMany || 0));
+  } else if (currentSort === 'alpha') {
+    results.sort((a,b) => (a.comName || '').localeCompare(b.comName || ''));
+  }
+
   badge.innerText = results.length;
 
+  // Timeline
+  updateTimeline(results);
+
   if (results.length === 0) {
-    container.innerHTML = '<div style="color:var(--text-gray); font-size:0.8rem; text-align:center; padding:15px;">Aucun oiseau détecté</div>';
+    container.innerHTML = '<div style="color:var(--text-gray); text-align:center; padding:15px;">Aucun oiseau détecté</div>';
     return;
   }
 
@@ -741,38 +592,105 @@ function filtrerEtAfficherOiseaux() {
     const checklistUrl = bird.subId ? `https://ebird.org/checklist/${bird.subId}` : '#';
     const sciName = bird.sciName || 'Nom scientifique inconnu';
     const locName = bird.locName || 'Localisation non précisée';
+    const speciesCode = bird.speciesCode || '';
 
-    // Marqueur
-    const marker = L.marker([bird.lat, bird.lng], { icon: mapsCustomPin });
-    marker.bindPopup(`
-      <div style="background:#091710; color:#fff; padding:5px; font-family:sans-serif; min-width:220px; line-height: 1.45;">
-        <b style="color:#10b981; font-size:1rem;">${frenchName}</b><br>
-        <i style="color:#94a3b8; font-size:0.75rem; display:block; margin-top:2px; margin-bottom:6px;">${sciName}</i>
+    // Icône personnalisée
+    const icon = getCustomIcon(frenchName);
+    const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(`
+      <div style="background:#091710; color:#fff; padding:5px; min-width:220px;">
+        <b style="color:#10b981;">${frenchName}</b><br>
+        <i style="color:#94a3b8; font-size:0.75rem;">${sciName}</i>
         <div style="font-size:0.8rem; border-top:1px solid rgba(16,185,129,0.2); padding-top:6px;">
-          👤 Observateur : <b style="color:#fff;">${observer}</b><br>
-          🕒 Heure (Paris) : <b style="color:#fff;">${formattedTime}</b><br>
-          🔢 Nombre : <b>${totalSeen}</b><br>
-          📍 Lieu : <span style="color:#94a3b8;">${locName}</span><br>
-          🔗 <a href="${checklistUrl}" target="_blank" style="color:#34d399; font-weight:bold; text-decoration:underline; display:inline-block; margin-top:4px;">Checklist eBird</a>
+          👤 ${observer}<br>
+          🕒 ${formattedTime}<br>
+          🔢 ${totalSeen}<br>
+          📍 ${locName}<br>
+          <a href="${checklistUrl}" target="_blank" style="color:#34d399;">Checklist eBird</a>
         </div>
       </div>
     `);
     marker.addTo(mapLayerGroup);
 
-    // Carte sidebar
+    // Carte sidebar avec étoile favoris
     const card = document.createElement('div');
     card.className = 'bird-card-item';
+    const isFav = favoriteSpecies.has(speciesCode);
     card.innerHTML = `
-      <div class="card-bird-name">${frenchName} (x${totalSeen})</div>
-      <div class="card-bird-sub">🕒 ${formattedTime} | 👤 ${observer}</div>
-      <div class="card-bird-sub" style="color: var(--neon-green)">📍 ${locName}</div>
+      <span class="fav-star ${isFav ? 'active' : ''}" data-code="${speciesCode}">⭐</span>
+      <div>
+        <div class="card-bird-name">${frenchName} (x${totalSeen})</div>
+        <div class="card-bird-sub">🕒 ${formattedTime} | 👤 ${observer}</div>
+        <div class="card-bird-sub" style="color: var(--neon-green)">📍 ${locName}</div>
+      </div>
     `;
-    card.onclick = () => {
+    card.querySelector('.fav-star').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const code = e.target.dataset.code;
+      if (favoriteSpecies.has(code)) {
+        favoriteSpecies.delete(code);
+        e.target.classList.remove('active');
+      } else {
+        favoriteSpecies.add(code);
+        e.target.classList.add('active');
+      }
+      localStorage.setItem('favSpecies', JSON.stringify([...favoriteSpecies]));
+      if (document.getElementById('favFilterBtn').classList.contains('active')) {
+        filtrerEtAfficherOiseaux(true);
+      }
+    });
+    card.addEventListener('click', () => {
       globalLeafletMap.setView([bird.lat, bird.lng], 14);
       marker.openPopup();
-    };
+    });
     container.appendChild(card);
   });
+}
+
+// ==================== TIMELINE ====================
+function updateTimeline(data) {
+  const container = document.getElementById('activity-timeline');
+  if (!container) return;
+  const hours = Array(24).fill(0);
+  data.forEach(bird => {
+    if (bird.obsDt) {
+      const hour = parseInt(bird.obsDt.split(' ')[1]?.split(':')[0]);
+      if (!isNaN(hour) && hour >= 0 && hour < 24) hours[hour]++;
+    }
+  });
+  const max = Math.max(...hours, 1);
+  container.innerHTML = hours.map(count => {
+    const height = Math.max(2, (count / max) * 30);
+    return `<div class="bar" style="height:${height}px;" title="${count} obs"></div>`;
+  }).join('');
+}
+
+// ==================== EXPORT CSV ====================
+function exportToCSV() {
+  const rows = [['Espèce', 'Nom scientifique', 'Nombre', 'Date', 'Observateur', 'Lieu', 'Checklist']];
+  const filter = document.getElementById('filterInput').value.toLowerCase();
+  const data = ebirdRawDataset.filter(item => {
+    const matchFr = item.comName && item.comName.toLowerCase().includes(filter);
+    const matchSci = item.sciName && item.sciName.toLowerCase().includes(filter);
+    return matchFr || matchSci;
+  });
+  data.forEach(bird => {
+    rows.push([
+      bird.comName || '',
+      bird.sciName || '',
+      bird.howMany || 1,
+      bird.obsDt || '',
+      bird.userDisplayName || '',
+      bird.locName || '',
+      bird.subId ? `https://ebird.org/checklist/${bird.subId}` : ''
+    ]);
+  });
+  const csvContent = rows.map(r => r.map(cell => `"${cell}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ebird_export.csv';
+  a.click();
 }
 </script>
 </body>
