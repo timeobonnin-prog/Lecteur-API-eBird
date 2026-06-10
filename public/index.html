@@ -70,6 +70,18 @@
         .brand-bird-svg { width: 28px; height: 28px; fill: var(--neon-green); filter: drop-shadow(0 0 6px var(--neon-green)); }
         .brand-title-text { font-size: 1.05rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
         
+        /* Lien logo eBird */
+        .brand-logo-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+        }
+        .brand-logo-link:hover .brand-bird-svg {
+            fill: #34d399;
+            filter: drop-shadow(0 0 10px var(--neon-green));
+        }
+
         .control-buttons { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
         .icon-btn {
             background: transparent; border: 1px solid var(--border-line); color: var(--text-light);
@@ -248,7 +260,10 @@
     <header class="top-command-bar">
         <div class="bar-first-row">
             <div class="brand-block">
-                <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
+                <!-- Logo eBird cliquable pour obtenir une clé API -->
+                <a href="https://ebird.org/api/keygen" target="_blank" class="brand-logo-link" title="Obtenir une clé API eBird">
+                    <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
+                </a>
                 <span class="brand-title-text">Lecteur API eBird</span>
             </div>
             <div class="control-buttons">
@@ -311,6 +326,11 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // Fonction utilitaire pour normaliser (supprimer les accents)
+        function normalize(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        }
+
         let map, layerGroup, currentTile;
         let radarCenter = [47.3941, 0.6848];
         let ebirdRawData = [];
@@ -479,7 +499,7 @@
 
         function autocompleteEspeces() {
             const input = document.getElementById('searchInput');
-            const query = input.value.trim().toLowerCase();
+            const query = normalize(input.value.trim());
             const list = document.getElementById('autocompleteList');
             
             if (!query) {
@@ -488,13 +508,12 @@
                 return;
             }
 
+            // Utiliser ebirdRawData pour extraire toutes les espèces uniques
             const toutesEspeces = new Set();
-            Object.values(lieuxData).forEach(lieu => {
-                lieu.oiseaux.forEach(o => {
-                    if (o.nom.toLowerCase().includes(query)) {
-                        toutesEspeces.add(o.nom);
-                    }
-                });
+            ebirdRawData.forEach(obs => {
+                if (obs.comName && normalize(obs.comName).includes(query)) {
+                    toutesEspeces.add(obs.comName);
+                }
             });
 
             const suggestions = Array.from(toutesEspeces).slice(0, 5);
@@ -536,12 +555,12 @@
             const listContainer = document.getElementById('birds-list-viewport');
             listContainer.innerHTML = '';
 
-            const recherche = document.getElementById('searchInput').value.toLowerCase();
+            const recherche = normalize(document.getElementById('searchInput').value);
             const methodeTri = document.getElementById('sortSelect').value;
 
             let lieuxFiltres = Object.values(lieuxData).filter(lieu => {
-                const matchLieu = lieu.nomLieu.toLowerCase().includes(recherche);
-                const matchEspece = lieu.oiseaux.some(o => o.nom.toLowerCase().includes(recherche));
+                const matchLieu = normalize(lieu.nomLieu).includes(recherche);
+                const matchEspece = lieu.oiseaux.some(o => normalize(o.nom).includes(recherche));
                 return matchLieu || matchEspece;
             });
 
