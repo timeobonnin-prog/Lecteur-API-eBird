@@ -17,7 +17,6 @@
             --border-line: rgba(16, 185, 129, 0.25);
             --text-light: #f8fafc;
             --text-gray: #94a3b8;
-            --popup-bg: #091710;
         }
 
         body.day-mode {
@@ -28,7 +27,6 @@
             --border-line: rgba(5, 150, 105, 0.3);
             --text-light: #0f172a;
             --text-gray: #475569;
-            --popup-bg: #ffffff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
@@ -187,12 +185,33 @@
         .card-list-name { font-weight: bold; color: var(--text-light); font-size: 0.9rem; }
         .card-list-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 4px; }
 
+        /* Détail des espèces (caché par défaut) */
+        .species-detail {
+            display: none;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-line);
+            font-size: 0.8rem;
+        }
+        .bird-card-item.expanded .species-detail {
+            display: block;
+        }
+        .species-detail ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .species-detail li {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+            color: var(--text-light);
+        }
+        .species-detail .qte { color: var(--neon-green); font-weight: bold; }
+
         .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
         .maps-icon-svg { width: 28px; height: 28px; fill: var(--neon-green); animation: mapsPinBounce 1.5s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
         @keyframes mapsPinBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
-
-        /* On peut masquer les popups Leaflet par défaut, mais on les garde ici car on ne les utilise plus */
-        .leaflet-popup { display: none; } /* Cache tous les popups */
 
         @media (max-width: 767px) {
             #radar-sidebar-panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 200px; }
@@ -319,7 +338,6 @@
                 executerScan();
             });
 
-            // Popup GitHub avec délai
             const githubContainer = document.getElementById('githubContainer');
             const githubPopup = document.getElementById('githubPopup');
             let githubTimeout;
@@ -531,39 +549,55 @@
             lieuxFiltres.forEach(lieu => {
                 const dateFormatee = formatDate(lieu.dateDerniere);
 
-                // Marqueur SANS popup
+                // Marqueur sans popup
                 const marker = L.marker([lieu.lat, lieu.lng], { icon: iconeRadar })
                                 .addTo(layerGroup);
                 markersList[lieu.id] = marker;
 
-                // Clic sur le marqueur → défiler vers la fiche et la surligner
+                // Clic sur le marqueur → défiler vers la fiche + l'expand
                 marker.on('click', function() {
                     const fiche = cardElements[lieu.id];
                     if (fiche) {
                         fiche.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         fiche.classList.add('highlight');
+                        // Ouvrir la liste des espèces si ce n'est pas déjà fait
+                        if (!fiche.classList.contains('expanded')) {
+                            fiche.classList.add('expanded');
+                        }
                         setTimeout(() => fiche.classList.remove('highlight'), 1500);
                     }
                 });
 
-                // Fiche dans le panneau
+                // Fiche du lieu
                 const card = document.createElement('div');
                 card.className = 'bird-card-item';
+                
+                // Construction de la liste des espèces pour le détail
+                let speciesListHtml = '';
+                lieu.oiseaux.forEach(o => {
+                    speciesListHtml += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
+                });
+
                 card.innerHTML = `
                     <div class="card-list-name">${lieu.nomLieu}</div>
                     <div class="card-list-sub">
                         🕒 ${dateFormatee} · 👤 ${lieu.observateur}<br>
                         🦅 ${lieu.oiseaux.length} espèce(s) · 🔢 ${lieu.totalOiseaux} indiv.
                     </div>
+                    <div class="species-detail">
+                        <ul>${speciesListHtml}</ul>
+                    </div>
                 `;
 
+                // Survol : centrer la carte sans zoom
                 card.addEventListener('mouseenter', () => {
                     map.setView([lieu.lat, lieu.lng], map.getZoom(), { animate: true, duration: 0.3 });
                 });
 
+                // Clic sur la fiche : zoom + toggle de la liste d'espèces
                 card.onclick = () => {
                     map.setView([lieu.lat, lieu.lng], 14);
-                    // Ne plus ouvrir de popup
+                    card.classList.toggle('expanded');
                 };
 
                 cardElements[lieu.id] = card;
