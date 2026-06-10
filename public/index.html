@@ -253,7 +253,6 @@
             </div>
             <div class="control-buttons">
                 <button class="icon-btn" id="themeToggleBtn" onclick="basculerTheme()">🌙</button>
-                <button class="icon-btn" onclick="executerScan()" title="Lancer le scan">🔄</button>
                 
                 <div class="github-container" id="githubContainer">
                     <div class="github-icon" id="githubIcon">
@@ -267,13 +266,13 @@
             </div>
         </div>
         <div class="filters-row">
-            <input type="number" id="timeAmount" class="tactical-input-number" value="14" min="1">
-            <select id="timeUnit" class="tactical-dropdown">
+            <input type="number" id="timeAmount" class="tactical-input-number" value="14" min="1" onchange="executerScan()">
+            <select id="timeUnit" class="tactical-dropdown" onchange="executerScan()">
                 <option value="1" selected>Jours</option>
                 <option value="30">Mois</option>
                 <option value="365">Années</option>
             </select>
-            <select id="radiusSelect" class="tactical-dropdown">
+            <select id="radiusSelect" class="tactical-dropdown" onchange="executerScan()">
                 <option value="10">10 km</option>
                 <option value="25" selected>25 km</option>
                 <option value="50">50 km</option>
@@ -436,7 +435,7 @@
                         dateObj: new Date(obs.obsDt),
                         oiseaux: [],
                         totalOiseaux: 0,
-                        checklistSubId: obs.subId || null   // on conserve le premier subId rencontré
+                        checklistSubId: obs.subId || null
                     };
                 }
 
@@ -588,7 +587,6 @@
                     speciesListHtml += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
                 });
 
-                // Lien vers la checklist eBird si disponible
                 const checklistLinkHtml = lieu.checklistSubId 
                     ? `<a href="https://ebird.org/checklist/${lieu.checklistSubId}" target="_blank" class="checklist-link">🔗 Voir la checklist eBird</a>`
                     : '';
