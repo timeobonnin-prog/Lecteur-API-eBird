@@ -30,7 +30,6 @@
         * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui, sans-serif; -webkit-tap-highlight-color:transparent; }
         body { background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; transition:0.3s; }
 
-        /* Auth */
         #authOverlay { position:fixed; inset:0; background:radial-gradient(circle at center, #041d10, #010402); display:flex; justify-content:center; align-items:center; z-index:99999; padding:24px; transition:0.5s; }
         #authOverlay.hidden { opacity:0; pointer-events:none; transform:scale(1.08); }
         .auth-container { background:var(--panel); border:2px solid var(--neon); box-shadow:0 0 35px var(--glow); border-radius:24px; padding:30px 20px; max-width:400px; text-align:center; backdrop-filter:blur(12px); }
@@ -40,7 +39,6 @@
         .key-input-field:focus { border-color:var(--neon); box-shadow:0 0 15px var(--glow); }
         .submit-scan-btn { width:100%; padding:14px; background:var(--neon); color:#020604; font-weight:800; font-size:0.9rem; border:none; border-radius:30px; cursor:pointer; text-transform:uppercase; letter-spacing:1px; }
 
-        /* Header */
         .top-command-bar { background:var(--panel); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); padding:6px 12px; z-index:2000; display:flex; flex-direction:column; gap:6px; }
         .bar-first-row { display:flex; justify-content:space-between; align-items:center; }
         .brand-block { display:flex; align-items:center; gap:6px; }
@@ -63,11 +61,9 @@
         .autocomplete-row-item { padding:10px 14px; cursor:pointer; color:var(--text); font-size:0.85rem; border-bottom:1px solid rgba(16,185,129,0.1); }
         .autocomplete-row-item:hover { background:rgba(16,185,129,0.2); }
 
-        /* Map */
         .workspace-area { flex:1; position:relative; }
         #live-map-viewport { position:absolute; inset:0; background:#010402; z-index:1; }
 
-        /* Sidebar */
         #radar-sidebar-panel { position:absolute; top:10px; right:10px; bottom:80px; width:270px; background:var(--panel); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:16px; z-index:999; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); }
         .panel-header-title { padding:8px 12px; background:rgba(0,0,0,0.4); border-bottom:1px solid var(--border); font-size:0.75rem; font-weight:800; color:var(--neon); text-transform:uppercase; display:flex; justify-content:space-between; align-items:center; }
         .sort-controls { display:flex; gap:2px; }
@@ -185,10 +181,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     // ============ LISTES ============
-    const RARE_SPECIES_CODES = new Set([
-        'tinfal', 'aegmon', 'circya', 'bubvir' // à compléter avec les vrais codes
-    ]);
-
+    const RARE_SPECIES_CODES = new Set(['tinfal', 'aegmon', 'circya', 'bubvir']); // à compléter
     const UICN_STATUS = {
         'tinfal': 'VU',
         'aegmon': 'EN',
@@ -230,6 +223,7 @@
     let favFilterActive = false;
     let rareFilterActive = false;
 
+    // Silhouettes + icône
     const silhouettes = {
         rapace: 'M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8zm0 2c2.2 0 4 1.8 4 4 0 2.5-4 8-4 8s-4-5.5-4-8c0-2.2 1.8-4 4-4zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
         passereau: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4 1.79-4 4-4z',
@@ -252,6 +246,7 @@
         });
     }
 
+    // Logger
     function log(msg, status = 'info') {
         const t = document.getElementById('mobile-diagnostic-terminal');
         if (!t) return;
@@ -390,6 +385,7 @@
     function handleCustomDate() { const s = document.getElementById('startDate').value, e = document.getElementById('endDate').value; if (s && e) runScan(); }
     function clearDates() { document.getElementById('startDate').value = ''; document.getElementById('endDate').value = ''; runScan(); }
 
+    // ============ SCAN ============
     async function runScan(code = null) {
         if (!token) return;
         const start = document.getElementById('startDate').value, end = document.getElementById('endDate').value;
@@ -420,10 +416,10 @@
                 dataset = data;
                 speciesScan = false;
                 selectedSpeciesCode = null;
-                const distinctSpecies = [...new Set(data.map(b => b.speciesCode).filter(Boolean))];
-                if (distinctSpecies.length <= 1 || rareFilterActive) {
+                const distinct = [...new Set(data.map(b => b.speciesCode).filter(Boolean))];
+                if (distinct.length <= 1 || rareFilterActive) {
                     viewMode = 'details';
-                    if (distinctSpecies.length === 1) selectedSpeciesCode = distinctSpecies[0];
+                    if (distinct.length === 1) selectedSpeciesCode = distinct[0];
                     document.getElementById('backToSpeciesBtn').style.display = 'none';
                 } else {
                     viewMode = 'species';
@@ -503,6 +499,7 @@
         render();
     }
 
+    // ============ RENDU ============
     function render() {
         const filterText = document.getElementById('filterInput').value.toLowerCase();
         const container = document.getElementById('birds-list-viewport');
@@ -523,31 +520,47 @@
 
         const currentViewMode = rareFilterActive ? 'details' : viewMode;
 
+        // ----- Vue par espèces (groupée) -----
         if (currentViewMode === 'species') {
             const groups = {};
             filtered.forEach(b => {
                 const code = b.speciesCode || '?';
-                if (!groups[code]) groups[code] = { comName: b.comName || 'Inconnu', sciName: b.sciName || '', speciesCode: code, count: 0, lastObs: b.obsDt || '', firstObs: b };
+                if (!groups[code]) groups[code] = {
+                    comName: b.comName || 'Inconnu',
+                    sciName: b.sciName || '',
+                    speciesCode: code,
+                    count: 0,
+                    lastObs: b.obsDt || '',
+                    firstObs: b
+                };
                 groups[code].count += 1;
                 if (b.obsDt && b.obsDt > groups[code].lastObs) groups[code].lastObs = b.obsDt;
             });
             let speciesList = Object.values(groups);
+
             if (sortMode === 'alpha') speciesList.sort((a, b) => a.comName.localeCompare(b.comName));
             else if (sortMode === 'count') speciesList.sort((a, b) => b.count - a.count);
             else if (sortMode === 'date') speciesList.sort((a, b) => b.lastObs.localeCompare(a.lastObs));
-            badge.textContent = speciesList.length;
-            if (!speciesList.length) { container.innerHTML = '<div style="color:var(--grey); text-align:center; padding:10px;">Aucune espèce</div>'; return; }
 
+            badge.textContent = speciesList.length;
+            if (!speciesList.length) {
+                container.innerHTML = '<div style="color:var(--grey); text-align:center; padding:10px;">Aucune espèce</div>';
+                return;
+            }
+
+            // Création des marqueurs pour toutes les observations
             filtered.forEach(bird => {
                 const icon = customIcon(bird.comName || 'Oiseau');
-                const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(`<b>${bird.comName}</b><br>${bird.sciName || ''}<br>${formatTime(bird.obsDt)}`).addTo(layerGroup);
+                const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(buildPopupContent(bird)).addTo(layerGroup);
                 const code = bird.speciesCode || '?';
                 if (!markersBySpecies[code]) markersBySpecies[code] = [];
                 markersBySpecies[code].push(marker);
             });
 
+            // Liste des espèces
             speciesList.forEach(sp => {
-                const div = document.createElement('div'); div.className = 'species-item';
+                const div = document.createElement('div');
+                div.className = 'species-item';
                 if (RARE_SPECIES_CODES.has(sp.speciesCode)) div.classList.add('rare-item');
                 const isRare = RARE_SPECIES_CODES.has(sp.speciesCode);
                 const iucnEmoji = getIucnEmoji(sp.speciesCode);
@@ -559,38 +572,43 @@
                     <span class="species-count">${formatTime(sp.lastObs)}</span>
                 `;
                 div.addEventListener('click', () => {
-                    const first = sp.firstObs;
-                    if (first) { map.setView([first.lat, first.lng], 13); const marks = markersBySpecies[sp.speciesCode]; if (marks && marks.length) marks[0].openPopup(); }
+                    const firstObs = sp.firstObs;
+                    if (firstObs) {
+                        map.setView([firstObs.lat, firstObs.lng], 13);
+                        const markers = markersBySpecies[sp.speciesCode];
+                        if (markers && markers.length) {
+                            markers[0].openPopup(); // ouvre le popup du premier marqueur
+                        }
+                    }
                 });
                 container.appendChild(div);
             });
+
         } else {
+            // ----- Vue détaillée (observations individuelles) -----
             if (sortMode === 'date') filtered.sort((a, b) => (b.obsDt || '').localeCompare(a.obsDt || ''));
             else if (sortMode === 'count') filtered.sort((a, b) => (b.howMany || 0) - (a.howMany || 0));
             else if (sortMode === 'alpha') filtered.sort((a, b) => (a.comName || '').localeCompare(b.comName || ''));
+
             badge.textContent = filtered.length;
-            if (!filtered.length) { container.innerHTML = '<div style="color:var(--grey); text-align:center; padding:10px;">Aucune observation</div>'; return; }
+            if (!filtered.length) {
+                container.innerHTML = '<div style="color:var(--grey); text-align:center; padding:10px;">Aucune observation</div>';
+                return;
+            }
 
             filtered.forEach(bird => {
-                const name = bird.comName || "Oiseau", count = bird.howMany || 1, obs = bird.userDisplayName || "Anonyme";
-                const dt = formatTime(bird.obsDt), sci = bird.sciName || '', loc = bird.locName || '?', code = bird.speciesCode || '';
+                const name = bird.comName || "Oiseau";
+                const code = bird.speciesCode || '';
                 let markerColor = 'var(--neon)';
                 if (compareMode) {
                     const idx = compareSpecies.indexOf(code);
                     if (idx >= 0) markerColor = ['#10b981', '#f59e0b', '#8b5cf6'][idx] || 'var(--neon)';
                 }
                 const icon = customIcon(name, markerColor);
-                const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(`
-                    <div style="background:#091710;color:#fff;padding:5px;min-width:200px;">
-                        <b style="color:#10b981;">${name}</b><br><i style="color:#94a3b8;font-size:0.75rem;">${sci}</i>
-                        <div style="font-size:0.75rem;border-top:1px solid rgba(16,185,129,0.2);margin-top:4px;padding-top:4px;">
-                            👤 ${obs}<br>🕒 ${dt}<br>🔢 ${count}<br>📍 ${loc}<br>
-                            <a href="${bird.subId ? 'https://ebird.org/checklist/'+bird.subId : '#'}" target="_blank" style="color:#34d399;">Checklist</a>
-                            <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(sci)}" target="_blank" style="color:#60a5fa; margin-left:6px;">📷 Photos</a>
-                        </div>
-                    </div>`).addTo(layerGroup);
+                const marker = L.marker([bird.lat, bird.lng], { icon }).bindPopup(buildPopupContent(bird)).addTo(layerGroup);
 
-                const card = document.createElement('div'); card.className = 'bird-card-item';
+                const card = document.createElement('div');
+                card.className = 'bird-card-item';
                 if (compareMode && compareSpecies.includes(code)) card.classList.add('compare-selected');
                 if (RARE_SPECIES_CODES.has(code)) card.classList.add('rare-item');
                 const isFav = favorites.has(code);
@@ -600,11 +618,12 @@
                     ${iucnEmoji ? `<span class="iucn-badge">${iucnEmoji}</span>` : ''}
                     ${RARE_SPECIES_CODES.has(code) ? '<span class="rare-flag active">🚩</span>' : ''}
                     <div class="bird-card-info">
-                        <div class="card-bird-name">${name} (x${count})</div>
-                        <div class="card-bird-sub">🕒 ${dt} · ${obs}</div>
-                        <div class="card-bird-sub" style="color:var(--neon);">📍 ${loc}</div>
+                        <div class="card-bird-name">${name} (x${bird.howMany || 1})</div>
+                        <div class="card-bird-sub">🕒 ${formatTime(bird.obsDt)} · ${bird.userDisplayName || 'Anonyme'}</div>
+                        <div class="card-bird-sub" style="color:var(--neon);">📍 ${bird.locName || '?'}</div>
                     </div>
                 `;
+                // Étoile favori
                 card.querySelector('.fav-star').addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (favorites.has(code)) { favorites.delete(code); e.target.classList.remove('active'); }
@@ -612,6 +631,7 @@
                     localStorage.setItem('favSpecies', JSON.stringify([...favorites]));
                     if (favFilterActive) render();
                 });
+                // Clic sur la fiche
                 card.addEventListener('click', () => {
                     if (compareMode) {
                         if (compareSpecies.includes(code)) compareSpecies = compareSpecies.filter(c => c !== code);
@@ -626,6 +646,7 @@
             });
         }
 
+        // Légende comparaison
         if (compareMode && compareSpecies.length) {
             legend.style.display = 'block';
             const colors = ['#10b981', '#f59e0b', '#8b5cf6'];
@@ -634,6 +655,37 @@
                 return `<span style="background:${colors[i]}"></span>${name}`;
             }).join(' ');
         } else legend.style.display = 'none';
+    }
+
+    // Construction du contenu de la popup (riche)
+    function buildPopupContent(bird) {
+        const name = bird.comName || "Oiseau";
+        const sci = bird.sciName || '';
+        const loc = bird.locName || 'Inconnu';
+        const obs = bird.userDisplayName || 'Anonyme';
+        const dt = formatTime(bird.obsDt);
+        const count = bird.howMany || 1;
+        const checklist = bird.subId ? `https://ebird.org/checklist/${bird.subId}` : '#';
+        const iucn = getIucnEmoji(bird.speciesCode);
+        const rare = RARE_SPECIES_CODES.has(bird.speciesCode) ? '🚩 Rare' : '';
+
+        return `
+            <div style="background:#091710; color:#fff; padding:8px; font-family:sans-serif; min-width:220px; border-radius:8px;">
+                <b style="color:#10b981; font-size:1rem;">${name}</b>
+                ${iucn ? `<span style="margin-left:4px;">${iucn}</span>` : ''}
+                ${rare ? `<span style="color:#f87171; margin-left:6px;">${rare}</span>` : ''}
+                <br>
+                <i style="color:#94a3b8; font-size:0.75rem;">${sci}</i>
+                <div style="font-size:0.75rem; border-top:1px solid rgba(16,185,129,0.2); margin-top:6px; padding-top:6px;">
+                    👤 ${obs}<br>
+                    🕒 ${dt}<br>
+                    🔢 ${count} individu(s)<br>
+                    📍 ${loc}<br>
+                    <a href="${checklist}" target="_blank" style="color:#34d399; font-weight:bold;">Checklist eBird</a>
+                    <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(sci)}" target="_blank" style="color:#60a5fa; margin-left:6px;">📷 Photos</a>
+                </div>
+            </div>
+        `;
     }
 
     function exportCSV() {
