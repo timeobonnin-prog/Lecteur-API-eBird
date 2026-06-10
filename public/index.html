@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Radar Aviaire Tactique</title>
+    <title>Lecteur API eBird – Sécurisé par Vercel</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="icon" type="image/png" href="API Ebird.png">
@@ -185,7 +185,6 @@
         .card-list-name { font-weight: bold; color: var(--text-light); font-size: 0.9rem; }
         .card-list-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 4px; }
 
-        /* Détail des espèces (caché par défaut) */
         .species-detail {
             display: none;
             margin-top: 8px;
@@ -224,10 +223,10 @@
 
     <div id="authOverlay">
         <div class="auth-container">
-            <h1>Radar Aviaire</h1>
-            <p>Système Tactique Initialisé</p>
+            <h1>Lecteur API eBird</h1>
+            <p>Connexion sécurisée – Vercel</p>
             <input type="password" id="tokenField" class="key-input-field" placeholder="Clé API eBird..." />
-            <button class="submit-scan-btn" onclick="initialiserRadar()">Activer le Radar</button>
+            <button class="submit-scan-btn" onclick="initialiserRadar()">Activer le Scanner</button>
         </div>
     </div>
 
@@ -235,7 +234,7 @@
         <div class="bar-first-row">
             <div class="brand-block">
                 <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
-                <span class="brand-title-text">Radar Tactique</span>
+                <span class="brand-title-text">Lecteur API eBird</span>
             </div>
             <div class="control-buttons">
                 <button class="icon-btn" id="themeToggleBtn" onclick="basculerTheme()">🌙</button>
@@ -549,18 +548,15 @@
             lieuxFiltres.forEach(lieu => {
                 const dateFormatee = formatDate(lieu.dateDerniere);
 
-                // Marqueur sans popup
                 const marker = L.marker([lieu.lat, lieu.lng], { icon: iconeRadar })
                                 .addTo(layerGroup);
                 markersList[lieu.id] = marker;
 
-                // Clic sur le marqueur → défiler vers la fiche + l'expand
                 marker.on('click', function() {
                     const fiche = cardElements[lieu.id];
                     if (fiche) {
                         fiche.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         fiche.classList.add('highlight');
-                        // Ouvrir la liste des espèces si ce n'est pas déjà fait
                         if (!fiche.classList.contains('expanded')) {
                             fiche.classList.add('expanded');
                         }
@@ -568,11 +564,9 @@
                     }
                 });
 
-                // Fiche du lieu
                 const card = document.createElement('div');
                 card.className = 'bird-card-item';
                 
-                // Construction de la liste des espèces pour le détail
                 let speciesListHtml = '';
                 lieu.oiseaux.forEach(o => {
                     speciesListHtml += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
@@ -589,12 +583,10 @@
                     </div>
                 `;
 
-                // Survol : centrer la carte sans zoom
                 card.addEventListener('mouseenter', () => {
                     map.setView([lieu.lat, lieu.lng], map.getZoom(), { animate: true, duration: 0.3 });
                 });
 
-                // Clic sur la fiche : zoom + toggle de la liste d'espèces
                 card.onclick = () => {
                     map.setView([lieu.lat, lieu.lng], 14);
                     card.classList.toggle('expanded');
