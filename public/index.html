@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lecteur API eBird – Sécurisé par Vercel</title>
-    
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="icon" type="image/png" href="API Ebird.png">
-    
+    <link rel="icon" type="image/svg+xml" href="ebird.svg">
+
     <style>
         :root {
             --neon-green: #10b981;
@@ -42,14 +42,14 @@
             padding: 24px; transition: all 0.5s ease;
         }
         #authOverlay.hidden { opacity: 0; pointer-events: none; transform: scale(1.05); }
-        
+
         .auth-container {
             background: var(--panel-bg); border: 2px solid var(--neon-green); box-shadow: 0 0 35px var(--neon-glow);
             border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 440px; text-align: center;
         }
         .auth-container h1 { font-size: 1.9rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; color: var(--text-light); }
         .auth-container p { color: var(--neon-green); margin-bottom: 32px; text-transform: uppercase; font-size: 0.85rem; }
-        
+
         .key-input-field {
             width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.1); border: 1px solid var(--border-line);
             border-radius: 30px; color: var(--text-light); text-align: center; outline: none; margin-bottom: 24px;
@@ -67,19 +67,19 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .brand-block { display: flex; align-items: center; gap: 10px; }
-        .brand-bird-svg { width: 28px; height: 28px; fill: var(--neon-green); filter: drop-shadow(0 0 6px var(--neon-green)); }
-        .brand-title-text { font-size: 1.05rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
-        
-        .brand-logo-link {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: inherit;
+
+        /* Logo eBird en SVG */
+        .brand-logo-img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 4px var(--neon-green));
+            transition: filter 0.2s;
         }
-        .brand-logo-link:hover .brand-bird-svg {
-            fill: #34d399;
+        .brand-logo-link:hover .brand-logo-img {
             filter: drop-shadow(0 0 10px var(--neon-green));
         }
+        .brand-title-text { font-size: 1.05rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
 
         .control-buttons { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
         .icon-btn {
@@ -129,7 +129,7 @@
             background: var(--neon-glow);
             color: var(--neon-green);
         }
-        
+
         .filters-row {
             display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
         }
@@ -203,36 +203,20 @@
             border-top: 1px solid var(--border-line);
             font-size: 0.8rem;
         }
-        .bird-card-item.expanded .species-detail {
-            display: block;
-        }
-        .species-detail ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        .bird-card-item.expanded .species-detail { display: block; }
+        .species-detail ul { list-style: none; padding: 0; margin: 0; }
         .species-detail li {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 2px;
-            color: var(--text-light);
+            display: flex; justify-content: space-between;
+            margin-bottom: 2px; color: var(--text-light);
         }
         .species-detail .qte { color: var(--neon-green); font-weight: bold; }
         .checklist-link {
-            display: inline-block;
-            margin-top: 8px;
-            color: var(--neon-green);
-            text-decoration: none;
-            font-size: 0.8rem;
-            font-weight: bold;
-            border: 1px solid var(--border-line);
-            padding: 4px 8px;
-            border-radius: 6px;
+            display: inline-block; margin-top: 8px; color: var(--neon-green);
+            text-decoration: none; font-size: 0.8rem; font-weight: bold;
+            border: 1px solid var(--border-line); padding: 4px 8px; border-radius: 6px;
             transition: background 0.2s;
         }
-        .checklist-link:hover {
-            background: rgba(16, 185, 129, 0.15);
-        }
+        .checklist-link:hover { background: rgba(16, 185, 129, 0.15); }
 
         .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
         .maps-icon-svg { width: 28px; height: 28px; fill: var(--neon-green); animation: mapsPinBounce 1.5s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
@@ -259,14 +243,15 @@
     <header class="top-command-bar">
         <div class="bar-first-row">
             <div class="brand-block">
+                <!-- Logo eBird (SVG) -->
                 <a href="https://ebird.org/api/keygen" target="_blank" class="brand-logo-link" title="Obtenir une clé API eBird">
-                    <svg class="brand-bird-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L11 15v1c0 1.1.9 2 2 2v1.93zm5.9-3.11c-.13-.37-.51-.61-.9-.61h-.79v-2c0-.55-.45-1-1-1h-6v-2c0-.55-.45-1-1-1H6.07c-.04-.33-.07-.66-.07-1 0-3.14 1.98-5.81 4.75-6.83L13 7c.55 0 1-.45 1-1V4c3.95.49 7 3.85 7 7.93 0 1.55-.44 2.99-1.1 4.22z"/></svg>
+                    <img src="ebird.svg" alt="eBird" class="brand-logo-img" />
                 </a>
                 <span class="brand-title-text">Lecteur API eBird</span>
             </div>
             <div class="control-buttons">
                 <button class="icon-btn" id="themeToggleBtn" onclick="basculerTheme()">🌙</button>
-                
+
                 <div class="github-container" id="githubContainer">
                     <div class="github-icon" id="githubIcon">
                         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -305,6 +290,8 @@
                     <span>Listes (Checklists)</span>
                     <span id="counter-badge" style="color:white; background:var(--neon-green); padding:2px 8px; border-radius:12px;">0</span>
                 </div>
+                <!-- Compteur d'espèces distinctes -->
+                <div id="totalSpeciesCounter" style="font-size:0.7rem; color:var(--text-gray); text-align:center;">0 espèce(s) distincte(s)</div>
                 <div class="search-wrapper">
                     <input type="text" id="searchInput" class="sidebar-input" placeholder="🔍 Chercher un lieu ou une espèce..." oninput="autocompleteEspeces()" autocomplete="off" />
                     <div id="autocompleteList" class="autocomplete-list"></div>
@@ -315,7 +302,7 @@
                     <option value="date">🕒 Tri : Date la plus récente</option>
                 </select>
             </div>
-            
+
             <div id="birds-list-viewport" class="birds-scroller">
                 <div style="padding:15px; text-align:center; color:var(--text-gray); font-size:0.85rem;">En attente de connexion radar...</div>
             </div>
@@ -324,7 +311,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Normalisation des accents
         function normalize(str) {
             return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         }
@@ -332,7 +318,7 @@
         let map, layerGroup, currentTile;
         let radarCenter = [47.3941, 0.6848];
         let ebirdRawData = [];
-        let listesData = {};   // Désormais indexé par subId (checklist)
+        let listesData = {};
         let markersList = {};
         let cardElements = {};
         let isNightMode = true;
@@ -342,10 +328,10 @@
             isNightMode = forceNight !== null ? forceNight : !isNightMode;
             document.body.className = isNightMode ? '' : 'day-mode';
             document.getElementById('themeToggleBtn').innerText = isNightMode ? '🌙' : '☀️';
-            
+
             if (currentTile) map.removeLayer(currentTile);
-            const tileUrl = isNightMode 
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png' 
+            const tileUrl = isNightMode
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
                 : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
             currentTile = L.tileLayer(tileUrl).addTo(map);
         }
@@ -354,7 +340,7 @@
             map = L.map('live-map-viewport', { zoomControl: false }).setView(radarCenter, 10);
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
             layerGroup = L.layerGroup().addTo(map);
-            
+
             const heure = new Date().getHours();
             basculerTheme(heure >= 21 || heure < 8);
 
@@ -378,24 +364,18 @@
                 githubPopup.style.display = 'block';
             });
             githubContainer.addEventListener('mouseleave', () => {
-                githubTimeout = setTimeout(() => {
-                    githubPopup.style.display = 'none';
-                }, 200);
+                githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
             });
-            githubPopup.addEventListener('mouseenter', () => {
-                clearTimeout(githubTimeout);
-            });
+            githubPopup.addEventListener('mouseenter', () => { clearTimeout(githubTimeout); });
             githubPopup.addEventListener('mouseleave', () => {
-                githubTimeout = setTimeout(() => {
-                    githubPopup.style.display = 'none';
-                }, 200);
+                githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
             });
         });
 
         function initialiserRadar() {
             const token = document.getElementById('tokenField').value.trim();
             if (!token) return alert("Saisis ta clé eBird !");
-            
+
             localStorage.setItem('ebirdToken', token);
             savedToken = token;
             document.getElementById('authOverlay').classList.add('hidden');
@@ -429,7 +409,7 @@
                 const rep = await fetch(url, { headers: { 'x-user-ebird-key': savedToken } });
                 const data = await rep.json();
                 if (data.error) throw new Error(data.error);
-                
+
                 ebirdRawData = data;
                 traiterDonnees();
             } catch (e) {
@@ -438,11 +418,12 @@
         }
 
         function traiterDonnees() {
-            // Regroupement par checklist (subId)
             listesData = {};
+
             ebirdRawData.forEach(obs => {
-                const subId = obs.subId || `obs_${obs.lat}_${obs.lng}_${obs.obsDt}`; // fallback unique
-                
+                const subId = obs.subId;
+                if (!subId) return; // On ignore les observations sans checklist
+
                 if (!listesData[subId]) {
                     listesData[subId] = {
                         id: subId,
@@ -454,7 +435,7 @@
                         dateObj: new Date(obs.obsDt),
                         oiseaux: [],
                         totalOiseaux: 0,
-                        checklistSubId: subId.startsWith('obs_') ? null : subId // vrai subId eBird
+                        checklistSubId: subId
                     };
                 }
 
@@ -471,7 +452,6 @@
 
                 listesData[subId].totalOiseaux += (obs.howMany || 1);
 
-                // Garder la date la plus récente de la checklist (au cas où plusieurs obs dans la même checklist)
                 if (new Date(obs.obsDt) > listesData[subId].dateObj) {
                     listesData[subId].dateObj = new Date(obs.obsDt);
                     listesData[subId].dateDerniere = obs.obsDt;
@@ -497,12 +477,11 @@
             iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28]
         });
 
-        // Autocomplétion basée sur les espèces de toutes les checklists
         function autocompleteEspeces() {
             const input = document.getElementById('searchInput');
             const query = normalize(input.value.trim());
             const list = document.getElementById('autocompleteList');
-            
+
             if (!query) {
                 list.style.display = 'none';
                 afficherInterface();
@@ -519,7 +498,7 @@
             });
 
             const suggestions = Array.from(toutesEspeces).slice(0, 5);
-            
+
             if (suggestions.length === 0) {
                 list.style.display = 'none';
                 return;
@@ -566,6 +545,13 @@
                 return matchLieu || matchEspece;
             });
 
+            // Nombre total d'espèces distinctes (avant filtre)
+            const toutesEspecesSet = new Set();
+            Object.values(listesData).forEach(liste => {
+                liste.oiseaux.forEach(o => toutesEspecesSet.add(o.nom));
+            });
+            document.getElementById('totalSpeciesCounter').innerText = `${toutesEspecesSet.size} espèce(s) distincte(s)`;
+
             document.getElementById('counter-badge').innerText = listesFiltrees.length;
 
             if (listesFiltrees.length === 0) {
@@ -602,13 +588,13 @@
 
                 const card = document.createElement('div');
                 card.className = 'bird-card-item';
-                
+
                 let speciesListHtml = '';
                 liste.oiseaux.forEach(o => {
                     speciesListHtml += `<li><span>${o.nom}</span> <span class="qte">x${o.qte}</span></li>`;
                 });
 
-                const checklistLinkHtml = liste.checklistSubId 
+                const checklistLinkHtml = liste.checklistSubId
                     ? `<a href="https://ebird.org/checklist/${liste.checklistSubId}" target="_blank" class="checklist-link">🔗 Voir la checklist eBird</a>`
                     : '';
 
