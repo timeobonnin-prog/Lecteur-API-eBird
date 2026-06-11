@@ -32,35 +32,6 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg); color:var(--text); font-family:system-ui, sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; transition:0.3s; }
 
-        #authScreen {
-            position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center;
-            z-index:99999; padding:24px; transition:0.4s;
-        }
-        #authScreen.hidden { opacity:0; pointer-events:none; transform:scale(1.05); }
-        .auth-box {
-            background:var(--panel); border:2px solid var(--neon); box-shadow:0 0 35px var(--glow);
-            border-radius:28px; padding:36px 28px; width:100%; max-width:420px; text-align:center;
-        }
-        .auth-box h1 { font-size:1.9rem; letter-spacing:3px; text-transform:uppercase; margin-bottom:6px; }
-        .auth-box p { color:var(--neon); margin-bottom:24px; font-size:0.85rem; text-transform:uppercase; }
-        .auth-logo { display:inline-block; margin-bottom:18px; }
-        .auth-logo img { width:68px; height:68px; filter:drop-shadow(0 0 8px var(--neon)); transition:0.2s; }
-        .auth-logo:hover img { filter:drop-shadow(0 0 18px var(--neon)); }
-        .api-input {
-            width:100%; padding:15px 18px; background:var(--input-bg); border:1px solid var(--border);
-            border-radius:30px; color:var(--text); text-align:center; font-size:0.95rem; outline:none;
-            margin-bottom:22px; transition:0.2s;
-        }
-        .api-input:focus { border-color:var(--neon); box-shadow:0 0 12px var(--glow); }
-        .btn-primary {
-            width:100%; padding:15px; background:var(--neon); color:#fff; font-weight:bold; font-size:1rem;
-            border:none; border-radius:30px; cursor:pointer; text-transform:uppercase; letter-spacing:1.5px;
-            transition:0.2s;
-        }
-        .btn-primary:hover { background:#34d399; box-shadow:0 0 18px rgba(16,185,129,0.5); }
-        .help-text { margin-top:14px; font-size:0.75rem; color:var(--muted); }
-        .help-text kbd { background:rgba(255,255,255,0.1); padding:1px 6px; border-radius:4px; }
-
         .top-bar {
             background:var(--panel); backdrop-filter:blur(12px); border-bottom:1px solid var(--border);
             padding:10px 18px; z-index:2000; display:flex; flex-direction:column; gap:10px;
@@ -131,21 +102,6 @@
     </style>
 </head>
 <body>
-
-<div id="authScreen">
-    <div class="auth-box">
-        <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo" title="Obtenir une clé eBird">
-            <img src="ebird.svg" alt="eBird logo" />
-        </a>
-        <h1>Lecteur eBird</h1>
-        <p>Sécurisé • Vercel</p>
-        <input type="password" id="apiKeyField" class="api-input" placeholder="Colle ta clé API eBird…" autocomplete="off" />
-        <button class="btn-primary" onclick="startRadar()">🔍 Activer le Scanner</button>
-        <div class="help-text">
-            <kbd>Entrée</kbd> pour valider • Clé sur <a href="https://ebird.org/api/keygen" target="_blank" style="color:var(--neon);">ebird.org/api/keygen</a>
-        </div>
-    </div>
-</div>
 
 <header class="top-bar">
     <div class="top-row">
@@ -244,25 +200,14 @@
         layerGroup = L.layerGroup().addTo(map);
         toggleTheme(new Date().getHours() >= 21 || new Date().getHours() < 8);
 
-        const keyField = document.getElementById('apiKeyField');
-        keyField.focus();
-        keyField.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); startRadar(); }
-        });
-
         map.on('click', (e) => {
             center = [e.latlng.lat, e.latlng.lng];
             runScan();
         });
-    });
 
-    function startRadar() {
-        const token = document.getElementById('apiKeyField').value.trim();
-        if (!token) return alert("Colle ta clé API eBird !");
-        // On n'envoie plus la clé au proxy, elle est déjà sur le serveur
-        document.getElementById('authScreen').classList.add('hidden');
-        setTimeout(() => { map.invalidateSize(); runScan(); }, 400);
-    }
+        // Premier scan automatique
+        runScan();
+    });
 
     async function runScan() {
         document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px; text-align:center; color:var(--neon);">Scan en cours…</div>';
