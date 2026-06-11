@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur API eBird – Sécurisé</title>
+    <title>Lecteur API eBird – Personnel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="icon" type="image/png" href="API Ebird.png" />
     <style>
@@ -32,6 +32,37 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg); color:var(--text); font-family:system-ui, sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; transition:0.3s; }
 
+        /* Écran de saisie de la clé */
+        #authScreen {
+            position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center;
+            z-index:99999; padding:24px; transition:0.4s;
+        }
+        #authScreen.hidden { opacity:0; pointer-events:none; transform:scale(1.05); }
+        .auth-box {
+            background:var(--panel); border:2px solid var(--neon); box-shadow:0 0 35px var(--glow);
+            border-radius:28px; padding:36px 28px; width:100%; max-width:420px; text-align:center;
+        }
+        .auth-box h1 { font-size:1.9rem; letter-spacing:3px; text-transform:uppercase; margin-bottom:6px; }
+        .auth-box p { color:var(--neon); margin-bottom:24px; font-size:0.85rem; text-transform:uppercase; }
+        .auth-logo { display:inline-block; margin-bottom:18px; }
+        .auth-logo img { width:68px; height:68px; filter:drop-shadow(0 0 8px var(--neon)); transition:0.2s; }
+        .auth-logo:hover img { filter:drop-shadow(0 0 18px var(--neon)); }
+        .api-input {
+            width:100%; padding:15px 18px; background:var(--input-bg); border:1px solid var(--border);
+            border-radius:30px; color:var(--text); text-align:center; font-size:0.95rem; outline:none;
+            margin-bottom:22px; transition:0.2s;
+        }
+        .api-input:focus { border-color:var(--neon); box-shadow:0 0 12px var(--glow); }
+        .btn-primary {
+            width:100%; padding:15px; background:var(--neon); color:#fff; font-weight:bold; font-size:1rem;
+            border:none; border-radius:30px; cursor:pointer; text-transform:uppercase; letter-spacing:1.5px;
+            transition:0.2s;
+        }
+        .btn-primary:hover { background:#34d399; box-shadow:0 0 18px rgba(16,185,129,0.5); }
+        .help-text { margin-top:14px; font-size:0.75rem; color:var(--muted); }
+        .help-text kbd { background:rgba(255,255,255,0.1); padding:1px 6px; border-radius:4px; }
+
+        /* Barre supérieure */
         .top-bar {
             background:var(--panel); backdrop-filter:blur(12px); border-bottom:1px solid var(--border);
             padding:10px 18px; z-index:2000; display:flex; flex-direction:column; gap:10px;
@@ -40,13 +71,28 @@
         .brand { display:flex; align-items:center; gap:10px; }
         .brand img { width:44px; height:44px; filter:drop-shadow(0 0 6px var(--neon)); }
         .brand span { font-weight:900; letter-spacing:2px; text-transform:uppercase; font-size:1.1rem; }
-        .actions { display:flex; gap:6px; flex-wrap:wrap; }
+        .actions { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
         .icon-btn {
             background:transparent; border:1px solid var(--border); color:var(--text);
             width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center;
             cursor:pointer; transition:0.2s; font-size:1.1rem;
         }
         .icon-btn:hover { background:rgba(16,185,129,0.15); }
+
+        /* Popup GitHub */
+        .github-container { position:relative; display:flex; align-items:center; }
+        .github-popup {
+            position:absolute; top:100%; right:0; margin-top:4px;
+            background:var(--panel); border:1px solid var(--border);
+            border-radius:12px; padding:10px; min-width:200px;
+            box-shadow:0 8px 20px rgba(0,0,0,0.4); backdrop-filter:blur(12px);
+            display:none; z-index:2500; font-size:0.8rem;
+        }
+        .github-popup a {
+            display:block; padding:6px 8px; color:var(--text);
+            text-decoration:none; border-radius:6px; margin-bottom:2px; transition:0.2s;
+        }
+        .github-popup a:hover { background:var(--glow); color:var(--neon); }
 
         .quick-filters { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
         .quick-filters select, .quick-filters input { background:var(--input-bg); border:1px solid var(--border); color:var(--text); padding:7px 12px; border-radius:8px; font-size:0.85rem; outline:none; }
@@ -57,6 +103,7 @@
         }
         .preset-btn:hover, .preset-btn.active { background:var(--neon); color:#fff; border-color:var(--neon); }
 
+        /* Carte et panneau */
         .main-area { flex:1; position:relative; display:flex; }
         #map { position:absolute; inset:0; background:var(--bg); z-index:1; }
         .sidebar {
@@ -103,6 +150,23 @@
 </head>
 <body>
 
+<!-- ÉCRAN DE SAISIE DE LA CLÉ -->
+<div id="authScreen">
+    <div class="auth-box">
+        <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo" title="Obtenir une clé eBird">
+            <img src="ebird.svg" alt="eBird logo" />
+        </a>
+        <h1>Lecteur eBird</h1>
+        <p>Sécurisé • Vercel</p>
+        <input type="password" id="apiKeyField" class="api-input" placeholder="Colle ta clé API eBird…" autocomplete="off" />
+        <button class="btn-primary" onclick="startRadar()">🔍 Activer le Scanner</button>
+        <div class="help-text">
+            <kbd>Entrée</kbd> pour valider • Clé sur <a href="https://ebird.org/api/keygen" target="_blank" style="color:var(--neon);">ebird.org/api/keygen</a>
+        </div>
+    </div>
+</div>
+
+<!-- INTERFACE PRINCIPALE -->
 <header class="top-bar">
     <div class="top-row">
         <div class="brand">
@@ -111,6 +175,16 @@
         </div>
         <div class="actions">
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+            <!-- Bouton GitHub -->
+            <div class="github-container" id="githubContainer">
+                <div class="icon-btn" id="githubIcon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                </div>
+                <div class="github-popup" id="githubPopup">
+                    <a href="https://github.com/timeobonnin-prog/mon-api/issues" target="_blank">📝 Proposer une fonctionnalité</a>
+                    <a href="https://github.com/timeobonnin-prog/mon-api" target="_blank">💻 Contribuer au développement</a>
+                </div>
+            </div>
         </div>
     </div>
     <div class="quick-filters">
@@ -160,6 +234,7 @@
     const escapeHtml = (str) => String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g,'').toLowerCase();
 
+    let userApiKey = null;
     let map, layerGroup, tileLayer;
     let center = [47.3941, 0.6848];
     let rawObservations = [];
@@ -200,16 +275,47 @@
         layerGroup = L.layerGroup().addTo(map);
         toggleTheme(new Date().getHours() >= 21 || new Date().getHours() < 8);
 
-        map.on('click', (e) => {
-            center = [e.latlng.lat, e.latlng.lng];
-            runScan();
+        const keyField = document.getElementById('apiKeyField');
+        keyField.focus();
+        keyField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); startRadar(); }
         });
 
-        // Premier scan automatique
-        runScan();
+        map.on('click', (e) => {
+            center = [e.latlng.lat, e.latlng.lng];
+            if (userApiKey) runScan();
+        });
+
+        // Gestion du popup GitHub
+        const githubContainer = document.getElementById('githubContainer');
+        const githubPopup = document.getElementById('githubPopup');
+        let githubTimeout;
+        githubContainer.addEventListener('mouseenter', () => {
+            clearTimeout(githubTimeout);
+            githubPopup.style.display = 'block';
+        });
+        githubContainer.addEventListener('mouseleave', () => {
+            githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
+        });
+        githubPopup.addEventListener('mouseenter', () => clearTimeout(githubTimeout));
+        githubPopup.addEventListener('mouseleave', () => {
+            githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
+        });
     });
 
+    function startRadar() {
+        const token = document.getElementById('apiKeyField').value.trim();
+        if (!token) return alert("Saisis ta clé eBird !");
+        userApiKey = token;
+        document.getElementById('authScreen').classList.add('hidden');
+        setTimeout(() => {
+            map.invalidateSize();
+            runScan();
+        }, 400);
+    }
+
     async function runScan() {
+        if (!userApiKey) return;
         document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px; text-align:center; color:var(--neon);">Scan en cours…</div>';
 
         const radius = document.getElementById('radiusSelect').value;
@@ -224,7 +330,9 @@
 
         const url = `/api/ebird?lat=${center[0]}&lng=${center[1]}&dist=${radius}&start=${start}&end=${end}`;
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, {
+                headers: { 'x-user-ebird-key': userApiKey }
+            });
             if (!res.ok) {
                 const text = await res.text();
                 throw new Error("Erreur serveur : " + text);
