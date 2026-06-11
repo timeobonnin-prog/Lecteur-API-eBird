@@ -18,40 +18,43 @@ module.exports = async (req, res) => {
     const { lat, lng, dist, start, end } = req.query;
 
     // Si les dates ne sont pas fournies, utiliser les 30 derniers jours
+    let startDate = start, endDate = end;
     if (!start || !end) {
         const today = new Date();
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        const endDate = today.toISOString().split('T')[0];
-        const startPath = startDate.replace(/-/g, '/');
-        const endPath   = endDate.replace(/-/g, '/');
-
-        const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
-                         `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
-
-        try {
-            const response = await fetch(ebirdUrl, { headers: { 'X-eBirdApiToken': apiKey } });
-            const data = await response.json();
-            if (!response.ok) return res.status(response.status).json({ error: `Erreur eBird : ${JSON.stringify(data)}` });
-            return res.status(200).json(data);
-        } catch (error) {
-            return res.status(500).json({ error: "Échec de la connexion à l'API eBird." });
-        }
+        startDate = thirtyDaysAgo.toISOString().split('T')[0];
+        endDate = today.toISOString().split('T')[0];
     }
 
-    // Sinon, transformer les dates YYYY-MM-DD → YYYY/MM/DD
-    const startPath = start.replace(/-/g, '/');
-    const endPath   = end.replace(/-/g, '/');
+    // Transformer les dates YYYY-MM-DD → YYYY/MM/DD
+    const startPath = startDate.replace(/-/g, '/');
+    const endPath   = endDate.replace(/-/g, '/');
 
     const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
                      `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
 
     try {
-        const response = await fetch(ebirdUrl, { headers: { 'X-eBirdApiToken': apiKey } });
+        const response = await fetch(ebirdUrl, {
+            headers: { 'X-eBirdApiToken': apiKey }
+        });
+
+        // Si la réponse n'est pas OK, on lit le texte d'erreur
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('eBird API error:', response.status, errorText);
+            return res.status(response.status).json({
+                error: `Erreur eBird (${response.status}) : ${errorText}`
+            });
+        }
+
         const data = await response.json();
-        if (!response.ok) return res.status(response.status).json({ error: `Erreur eBird : ${JSON.stringify(data)}` });
         return res.status(200).json(data);
+
     } catch (error) {
-        return res.status(500).json({ error: "Échec de la connexion à l'API eBird." });
+        // Ici on capture les vraies erreurs réseau ou de parsing
+        console.error('Proxy error:', error);
+        return res.status(500).json({
+            error: `Échec de la connexion à l'API eBird : ${error.message}`
+        });
     }
 };
