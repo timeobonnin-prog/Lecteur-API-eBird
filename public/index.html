@@ -3,461 +3,449 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur API eBird – Sécurisé</title>
-    
+    <title>Lecteur API eBird – Sécurisé & Facile</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="icon" type="image/png" href="API Ebird.png">
-    
+    <link rel="icon" type="image/png" href="API Ebird.png" />
+
     <style>
         :root {
-            --neon-green: #10b981;
-            --neon-glow: rgba(16, 185, 129, 0.3);
-            --dark-bg: #020604;
-            --panel-bg: rgba(9, 23, 16, 0.88);
-            --border-line: rgba(16, 185, 129, 0.25);
-            --text-light: #f8fafc;
-            --text-gray: #94a3b8;
+            --neon: #10b981;
+            --glow: rgba(16, 185, 129, 0.25);
+            --bg: #020604;
+            --panel: rgba(9, 23, 16, 0.9);
+            --border: rgba(16, 185, 129, 0.3);
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --input-bg: rgba(0, 0, 0, 0.45);
+            --card-bg: rgba(255, 255, 255, 0.04);
         }
-        body.day-mode {
-            --neon-green: #059669;
-            --neon-glow: rgba(5, 150, 105, 0.2);
-            --dark-bg: #f8fafc;
-            --panel-bg: rgba(255, 255, 255, 0.95);
-            --border-line: rgba(5, 150, 105, 0.3);
-            --text-light: #0f172a;
-            --text-gray: #475569;
+        body.light {
+            --neon: #059669;
+            --glow: rgba(5, 150, 105, 0.2);
+            --bg: #f8fafc;
+            --panel: rgba(255, 255, 255, 0.94);
+            --border: rgba(5, 150, 105, 0.35);
+            --text: #0f172a;
+            --muted: #475569;
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --card-bg: rgba(0, 0, 0, 0.02);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-        body { background-color: var(--dark-bg); color: var(--text-light); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.4s; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.3s; }
 
-        #authOverlay {
-            position: fixed; inset: 0; background: var(--dark-bg);
-            display: flex; justify-content: center; align-items: center; z-index: 99999;
-            padding: 24px; transition: all 0.5s ease;
+        /* Écran d'accueil */
+        #authScreen {
+            position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center;
+            z-index: 99999; padding: 24px; transition: 0.4s;
         }
-        #authOverlay.hidden { opacity: 0; pointer-events: none; transform: scale(1.05); }
-        
-        .auth-container {
-            background: var(--panel-bg); border: 2px solid var(--neon-green); box-shadow: 0 0 35px var(--neon-glow);
-            border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 440px; text-align: center;
+        #authScreen.hidden { opacity: 0; pointer-events: none; transform: scale(1.05); }
+        .auth-box {
+            background: var(--panel); border: 2px solid var(--neon); box-shadow: 0 0 35px var(--glow);
+            border-radius: 28px; padding: 36px 28px; width: 100%; max-width: 420px; text-align: center;
         }
-        .auth-container h1 { font-size: 1.9rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; color: var(--text-light); }
-        .auth-container p { color: var(--neon-green); margin-bottom: 24px; text-transform: uppercase; font-size: 0.85rem; }
-        .auth-logo-link { display: inline-block; margin-bottom: 20px; }
-        .auth-logo-img { width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 0 6px var(--neon-green)); transition: filter 0.2s; }
-        .auth-logo-link:hover .auth-logo-img { filter: drop-shadow(0 0 15px var(--neon-green)); }
-        .key-input-field {
-            width: 100%; padding: 16px; background: rgba(0,0,0,0.1); border: 1px solid var(--border-line);
-            border-radius: 30px; color: var(--text-light); text-align: center; outline: none; margin-bottom: 24px; font-size: 1rem;
+        .auth-box h1 { font-size: 1.9rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+        .auth-box p { color: var(--neon); margin-bottom: 24px; font-size: 0.85rem; text-transform: uppercase; }
+        .auth-logo { display: inline-block; margin-bottom: 18px; }
+        .auth-logo img { width: 68px; height: 68px; filter: drop-shadow(0 0 8px var(--neon)); transition: 0.2s; }
+        .auth-logo:hover img { filter: drop-shadow(0 0 18px var(--neon)); }
+        .api-input {
+            width: 100%; padding: 15px 18px; background: var(--input-bg); border: 1px solid var(--border);
+            border-radius: 30px; color: var(--text); text-align: center; font-size: 0.95rem; outline: none;
+            margin-bottom: 22px; transition: 0.2s;
         }
-        .key-input-field:focus { border-color: var(--neon-green); box-shadow: 0 0 15px var(--neon-glow); }
-        .submit-scan-btn {
-            width: 100%; padding: 16px; background: var(--neon-green); color: white; font-weight: bold;
-            border: none; border-radius: 30px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 1rem;
-        }
-        .submit-scan-btn:hover { background: #34d399; }
-
-        .top-command-bar {
-            background: var(--panel-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-line);
-            padding: 10px 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px;
-        }
-        .bar-first-row { display: flex; justify-content: space-between; align-items: center; }
-        .brand-block { display: flex; align-items: center; gap: 10px; }
-        .brand-logo-img { width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 0 6px var(--neon-green)); }
-        .brand-title-text { font-size: 1.05rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
-        .control-buttons { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-        .icon-btn {
-            background: transparent; border: 1px solid var(--border-line); color: var(--text-light);
-            font-size: 1rem; width: 34px; height: 34px; border-radius: 8px; display: flex;
-            align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
-        }
-        .icon-btn:hover { background: rgba(16, 185, 129, 0.15); }
-        .github-container { position: relative; display: flex; align-items: center; }
-        .github-icon {
-            background: transparent; border: 1px solid var(--border-line); color: var(--text-light);
-            font-size: 1rem; width: 34px; height: 34px; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-        }
-        .github-icon:hover { background: rgba(16, 185, 129, 0.15); }
-        .github-popup {
-            position: absolute; top: 100%; right: 0; margin-top: 4px;
-            background: var(--panel-bg); border: 1px solid var(--border-line);
-            border-radius: 12px; padding: 10px; min-width: 200px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4); backdrop-filter: blur(12px);
-            display: none; z-index: 2500; font-size: 0.8rem;
-        }
-        .github-popup a {
-            display: block; padding: 6px 8px; color: var(--text-light);
-            text-decoration: none; border-radius: 6px; margin-bottom: 2px; transition: 0.2s;
-        }
-        .github-popup a:hover { background: var(--neon-glow); color: var(--neon-green); }
-        .filters-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-        .tactical-dropdown {
-            background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light);
-            padding: 6px 10px; border-radius: 8px; outline: none; font-size: 0.85rem; cursor: pointer;
-        }
-        .date-input {
-            background: var(--dark-bg); border: 1px solid var(--border-line); color: var(--text-light);
-            padding: 6px; border-radius: 8px; width: 130px; font-size: 0.85rem;
-        }
-        .workspace-area { flex: 1; position: relative; display: flex; }
-        #live-map-viewport { position: absolute; inset: 0; background: var(--dark-bg); z-index: 1; }
-        #radar-sidebar-panel {
-            position: absolute; top: 10px; right: 10px; bottom: 10px; width: 300px;
-            background: var(--panel-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-line);
-            border-radius: 20px; z-index: 999; display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .panel-header-title {
-            padding: 10px; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-line);
-            display: flex; flex-direction: column; gap: 8px;
-        }
-        .header-top-row {
-            display: flex; justify-content: space-between; align-items: center;
-            font-weight: 800; color: var(--neon-green); text-transform: uppercase; font-size: 0.8rem;
-        }
-        .search-wrapper { position: relative; }
-        .sidebar-input {
-            width: 100%; padding: 8px; border-radius: 8px; background: var(--dark-bg);
-            border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.8rem;
-        }
-        .sidebar-input:focus { border-color: var(--neon-green); }
-        .autocomplete-list {
-            position: absolute; top: 100%; left: 0; right: 0;
-            background: var(--panel-bg); border: 1px solid var(--neon-green);
-            border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto;
-            display: none; z-index: 10;
-        }
-        .autocomplete-item {
-            padding: 8px 10px; cursor: pointer; font-size: 0.8rem;
-            border-bottom: 1px solid var(--border-line);
-        }
-        .autocomplete-item:hover { background: rgba(16,185,129,0.2); }
-        .sidebar-select {
-            width: 100%; padding: 8px; border-radius: 8px; background: var(--dark-bg);
-            border: 1px solid var(--border-line); color: var(--text-light); outline: none; font-size: 0.8rem;
-        }
-        .birds-scroller { flex: 1; overflow-y: auto; padding: 6px; }
-        .bird-card-item {
-            padding: 10px; border-radius: 10px; margin-bottom: 6px; cursor: pointer;
-            background: rgba(128,128,128,0.05); transition: 0.2s; border-left: 3px solid transparent;
-        }
-        .bird-card-item:hover { background: var(--neon-glow); border-left-color: var(--neon-green); }
-        .bird-card-item.highlight { background: var(--neon-glow) !important; border-left-color: var(--neon-green) !important; }
-        .card-list-name { font-weight: bold; color: var(--text-light); font-size: 0.9rem; }
-        .card-list-sub { font-size: 0.75rem; color: var(--text-gray); margin-top: 4px; }
-        .species-detail {
-            display: none; margin-top: 8px; padding-top: 8px;
-            border-top: 1px solid var(--border-line); font-size: 0.8rem;
-        }
-        .bird-card-item.expanded .species-detail { display: block; }
-        .species-detail ul { list-style: none; padding: 0; margin: 0; }
-        .species-detail li {
-            display: flex; justify-content: space-between;
-            margin-bottom: 2px; color: var(--text-light);
-        }
-        .species-detail .qte { color: var(--neon-green); font-weight: bold; }
-        .checklist-link {
-            display: inline-block; margin-top: 8px; color: var(--neon-green);
-            text-decoration: none; font-size: 0.8rem; font-weight: bold;
-            border: 1px solid var(--border-line); padding: 4px 8px; border-radius: 6px;
+        .api-input:focus { border-color: var(--neon); box-shadow: 0 0 12px var(--glow); }
+        .btn-primary {
+            width: 100%; padding: 15px; background: var(--neon); color: #fff; font-weight: bold; font-size: 1rem;
+            border: none; border-radius: 30px; cursor: pointer; text-transform: uppercase; letter-spacing: 1.5px;
             transition: 0.2s;
         }
-        .checklist-link:hover { background: rgba(16,185,129,0.15); }
-        .maps-icon-container { display: flex; justify-content: center; align-items: center; transform: translate(-50%, -100%); }
-        .maps-icon-svg { width: 28px; height: 28px; fill: var(--neon-green); animation: mapsPinBounce 1.5s infinite alternate ease-in-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
-        @keyframes mapsPinBounce { 0%{transform:translateY(0);} 100%{transform:translateY(-3px);} }
+        .btn-primary:hover { background: #34d399; box-shadow: 0 0 18px rgba(16, 185, 129, 0.5); }
+        .help-text { margin-top: 14px; font-size: 0.75rem; color: var(--muted); }
+        .help-text kbd { background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 4px; }
+
+        /* Barre supérieure */
+        .top-bar {
+            background: var(--panel); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+            padding: 10px 18px; z-index: 2000; display: flex; flex-direction: column; gap: 10px;
+        }
+        .top-row { display: flex; justify-content: space-between; align-items: center; }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand img { width: 44px; height: 44px; filter: drop-shadow(0 0 6px var(--neon)); }
+        .brand span { font-weight: 900; letter-spacing: 2px; text-transform: uppercase; font-size: 1.1rem; }
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .icon-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--text);
+            width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; font-size: 1.1rem;
+        }
+        .icon-btn:hover { background: rgba(16, 185, 129, 0.15); }
+        .tooltip { position: relative; }
+        .tooltip::after {
+            content: attr(aria-label); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+            background: var(--panel); border: 1px solid var(--border); color: var(--text); font-size: 0.7rem;
+            padding: 3px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; opacity: 0;
+            transition: 0.2s; z-index: 10;
+        }
+        .tooltip:hover::after { opacity: 1; }
+
+        /* Filtres rapides */
+        .quick-filters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .quick-filters select, .quick-filters input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 8px; font-size: 0.85rem; outline: none; }
+        .date-presets { display: flex; gap: 4px; }
+        .preset-btn {
+            background: var(--input-bg); border: 1px solid var(--border); color: var(--text);
+            padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: 0.2s;
+        }
+        .preset-btn:hover, .preset-btn.active { background: var(--neon); color: #fff; border-color: var(--neon); }
+
+        /* Carte et panneau */
+        .main-area { flex: 1; position: relative; display: flex; }
+        #map { position: absolute; inset: 0; background: var(--bg); z-index: 1; }
+        .sidebar {
+            position: absolute; top: 12px; right: 12px; bottom: 12px; width: 310px;
+            background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border);
+            border-radius: 20px; z-index: 999; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .sidebar-header { padding: 12px; background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+        .sidebar-title { display: flex; justify-content: space-between; align-items: center; font-weight: 800; color: var(--neon); text-transform: uppercase; font-size: 0.8rem; }
+        .search-box { position: relative; }
+        .search-box input { width: 100%; padding: 9px 12px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 0.82rem; outline: none; }
+        .search-box input:focus { border-color: var(--neon); }
+        .autocomplete { position: absolute; top: 100%; left: 0; right: 0; background: var(--panel); border: 1px solid var(--neon); border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto; display: none; z-index: 20; }
+        .autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
+        .autocomplete-item:hover { background: rgba(16,185,129,0.2); }
+        .sort-select { width: 100%; padding: 8px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 0.8rem; }
+        .checklist-scroller { flex: 1; overflow-y: auto; padding: 8px; }
+        .checklist-card {
+            padding: 12px; border-radius: 10px; margin-bottom: 8px; cursor: pointer;
+            background: var(--card-bg); transition: 0.2s; border-left: 3px solid transparent;
+        }
+        .checklist-card:hover { background: var(--glow); border-left-color: var(--neon); }
+        .checklist-card.highlight { background: var(--glow) !important; border-left-color: var(--neon) !important; }
+        .checklist-name { font-weight: bold; font-size: 0.9rem; }
+        .checklist-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+        .species-list { display: none; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 0.8rem; }
+        .checklist-card.expanded .species-list { display: block; }
+        .species-list ul { list-style: none; padding: 0; margin: 0; }
+        .species-list li { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .species-list .qty { color: var(--neon); font-weight: bold; }
+        .ebird-link { display: inline-block; margin-top: 8px; color: var(--neon); font-size: 0.75rem; font-weight: bold; text-decoration: none; border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; }
+        .ebird-link:hover { background: rgba(16,185,129,0.15); }
+
+        .map-marker svg { width: 26px; height: 26px; fill: var(--neon); animation: bounce 1.8s infinite alternate; }
+        @keyframes bounce { 0%{transform:translateY(0);} 100%{transform:translateY(-3px);} }
+
         @media (max-width: 767px) {
-            #radar-sidebar-panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 200px; }
-            .birds-scroller { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; }
-            .bird-card-item { flex: 0 0 220px; border-left: none; border-bottom: 3px solid transparent; }
+            .sidebar { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 220px; }
+            .checklist-scroller { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; }
+            .checklist-card { flex: 0 0 230px; border-left: none; border-bottom: 3px solid transparent; }
         }
     </style>
 </head>
 <body>
 
-<div id="authOverlay">
-    <div class="auth-container">
-        <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo-link" title="Obtenir une clé API eBird">
-            <img src="ebird.svg" alt="eBird" class="auth-logo-img" />
+<!-- Écran de connexion amélioré -->
+<div id="authScreen">
+    <div class="auth-box">
+        <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo" title="Obtenir une clé eBird">
+            <img src="ebird.svg" alt="eBird logo" />
         </a>
-        <h1>Lecteur API eBird</h1>
-        <p>Connexion sécurisée – Vercel</p>
-        <input type="password" id="tokenField" class="key-input-field" placeholder="Clé API eBird..." />
-        <button class="submit-scan-btn" onclick="initialiserRadar()">Activer le Scanner</button>
+        <h1>Lecteur eBird</h1>
+        <p>Sécurisé • Vercel</p>
+        <input type="password" id="apiKeyField" class="api-input" placeholder="Colle ta clé API eBird…" autocomplete="off" />
+        <button class="btn-primary" onclick="startRadar()">🔍 Activer le Scanner</button>
+        <div class="help-text">
+            <kbd>Entrée</kbd> pour valider • Clé récupérable sur <a href="https://ebird.org/api/keygen" target="_blank" style="color:var(--neon);">ebird.org/api/keygen</a>
+        </div>
     </div>
 </div>
 
-<header class="top-command-bar">
-    <div class="bar-first-row">
-        <div class="brand-block">
-            <img src="API Ebird.png" alt="Lecteur API eBird" class="brand-logo-img" />
-            <span class="brand-title-text">Lecteur API eBird</span>
+<!-- Interface principale -->
+<header class="top-bar">
+    <div class="top-row">
+        <div class="brand">
+            <img src="API Ebird.png" alt="Lecteur API eBird" />
+            <span>Lecteur API eBird</span>
         </div>
-        <div class="control-buttons">
-            <button class="icon-btn" id="themeToggleBtn" onclick="basculerTheme()">🌙</button>
-            <div class="github-container" id="githubContainer">
-                <div class="github-icon" id="githubIcon">
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                </div>
-                <div class="github-popup" id="githubPopup">
-                    <a href="https://github.com/timeobonnin-prog/mon-api/issues" target="_blank">📝 Proposer une fonctionnalité</a>
-                    <a href="https://github.com/timeobonnin-prog/mon-api" target="_blank">💻 Contribuer au développement</a>
-                </div>
-            </div>
+        <div class="actions">
+            <button class="icon-btn tooltip" aria-label="Mode jour / nuit" onclick="toggleTheme()" id="themeBtn">🌙</button>
+            <button class="icon-btn tooltip" aria-label="Contribuer sur GitHub" id="githubBtn">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            </button>
         </div>
     </div>
-    <div class="filters-row">
-        <select id="radiusSelect" class="tactical-dropdown" onchange="executerScan()">
+    <div class="quick-filters">
+        <select id="radiusSelect" onchange="runScan()">
             <option value="10">10 km</option>
             <option value="25" selected>25 km</option>
             <option value="50">50 km</option>
         </select>
-        <input type="date" id="startDate" class="date-input" onchange="executerScan()">
-        <input type="date" id="endDate" class="date-input" onchange="executerScan()">
-        <button class="icon-btn" onclick="document.getElementById('startDate').value='';document.getElementById('endDate').value='';executerScan();" style="font-size:0.8rem;">✕</button>
+        <div class="date-presets">
+            <button class="preset-btn active" onclick="setDatePreset(7, this)">7j</button>
+            <button class="preset-btn" onclick="setDatePreset(14, this)">14j</button>
+            <button class="preset-btn" onclick="setDatePreset(30, this)">30j</button>
+        </div>
+        <input type="date" id="startDate" onchange="runScan()" />
+        <input type="date" id="endDate" onchange="runScan()" />
+        <button class="icon-btn tooltip" aria-label="Effacer les dates" onclick="clearDates(); runScan();">✕</button>
     </div>
 </header>
 
-<main class="workspace-area">
-    <div id="live-map-viewport"></div>
-    <div id="radar-sidebar-panel">
-        <div class="panel-header-title">
-            <div class="header-top-row">
-                <span>Listes (Checklists)</span>
-                <span id="counter-badge" style="color:white; background:var(--neon-green); padding:2px 8px; border-radius:12px;">0</span>
+<main class="main-area">
+    <div id="map"></div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <span>Checklists</span>
+                <span id="checklistCount" style="color:#fff; background:var(--neon); padding:2px 8px; border-radius:12px;">0</span>
             </div>
-            <div id="totalSpeciesCounter" style="font-size:0.7rem; color:var(--text-gray); text-align:center;">0 espèce(s) distincte(s)</div>
-            <div class="search-wrapper">
-                <input type="text" id="searchInput" class="sidebar-input" placeholder="🔍 Chercher un lieu ou une espèce..." oninput="autocompleteEspeces()" autocomplete="off" />
-                <div id="autocompleteList" class="autocomplete-list"></div>
+            <div id="speciesTotal" style="font-size:0.7rem; color:var(--muted); text-align:center;">0 espèce distincte</div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Lieu ou espèce..." oninput="updateAutocomplete()" autocomplete="off" />
+                <div class="autocomplete" id="autocompleteList"></div>
             </div>
-            <select id="sortSelect" class="sidebar-select" onchange="afficherInterface()">
-                <option value="alphabet">🔤 Tri : Ordre Alphabétique</option>
-                <option value="nombre">🔢 Tri : Nombre d'oiseaux</option>
-                <option value="date">🕒 Tri : Date la plus récente</option>
+            <select class="sort-select" id="sortSelect" onchange="renderChecklists()">
+                <option value="alpha">🔤 Alphabétique</option>
+                <option value="count">🔢 Nombre d'oiseaux</option>
+                <option value="date">🕒 Plus récent</option>
             </select>
         </div>
-        <div id="birds-list-viewport" class="birds-scroller">
-            <div style="padding:15px; text-align:center; color:var(--text-gray); font-size:0.85rem;">En attente de connexion radar...</div>
+        <div class="checklist-scroller" id="checklistContainer">
+            <div style="padding:20px; text-align:center; color:var(--muted);">Prêt à scanner…</div>
         </div>
     </div>
 </main>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    function escapeHtml(unsafe) {
-        return String(unsafe).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-    }
-    function normalize(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(); }
+    // Utilitaires
+    const escapeHtml = (str) => String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g,'').toLowerCase();
 
-    let savedToken = null;
-    let map, layerGroup, currentTile;
-    let radarCenter = [47.3941, 0.6848];
-    let ebirdRawData = [], listesData = {}, markersList = {}, cardElements = {};
-    let isNightMode = true;
+    // État
+    let userToken = null;
+    let map, layerGroup, tileLayer;
+    let center = [47.3941, 0.6848];
+    let rawObservations = [];
+    let checklists = {};
+    let markerRefs = {};
+    let cardRefs = {};
+    let nightMode = true;
 
-    function basculerTheme(forceNight = null) {
-        isNightMode = forceNight !== null ? forceNight : !isNightMode;
-        document.body.className = isNightMode ? '' : 'day-mode';
-        document.getElementById('themeToggleBtn').innerText = isNightMode ? '🌙' : '☀️';
-        if (currentTile) map.removeLayer(currentTile);
-        currentTile = L.tileLayer(isNightMode
+    // Thème
+    function toggleTheme(force = null) {
+        nightMode = force !== null ? force : !nightMode;
+        document.body.className = nightMode ? '' : 'light';
+        document.getElementById('themeBtn').innerText = nightMode ? '🌙' : '☀️';
+        if (tileLayer) map.removeLayer(tileLayer);
+        tileLayer = L.tileLayer(nightMode
             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
             : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
         ).addTo(map);
     }
 
+    // Presets de dates
+    function setDatePreset(days, btn) {
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const end = new Date();
+        const start = new Date(end.getTime() - days * 86400000);
+        document.getElementById('startDate').value = start.toISOString().split('T')[0];
+        document.getElementById('endDate').value = end.toISOString().split('T')[0];
+        runScan();
+    }
+    function clearDates() {
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    // Initialisation
     document.addEventListener("DOMContentLoaded", () => {
-        map = L.map('live-map-viewport', { zoomControl: false }).setView(radarCenter, 10);
+        map = L.map('map', { zoomControl: false }).setView(center, 10);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         layerGroup = L.layerGroup().addTo(map);
-        basculerTheme(new Date().getHours() >= 21 || new Date().getHours() < 8);
+        toggleTheme(new Date().getHours() >= 21 || new Date().getHours() < 8);
 
-        const tokenField = document.getElementById('tokenField');
-        // Focus immédiat pour que la touche Entrée fonctionne
-        tokenField.focus();
-        
-        // Gestionnaire de touche Entrée
-        tokenField.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                initialiserRadar();
-            }
+        const keyField = document.getElementById('apiKeyField');
+        keyField.focus();
+        keyField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); startRadar(); }
         });
 
-        map.on('click', function(e) {
-            radarCenter = [e.latlng.lat, e.latlng.lng];
-            executerScan();
+        map.on('click', (e) => {
+            center = [e.latlng.lat, e.latlng.lng];
+            runScan();
         });
 
         // GitHub popup
-        const ghContainer = document.getElementById('githubContainer');
-        const ghPopup = document.getElementById('githubPopup');
-        let ghTimeout;
-        ghContainer.addEventListener('mouseenter', () => { clearTimeout(ghTimeout); ghPopup.style.display='block'; });
-        ghContainer.addEventListener('mouseleave', () => { ghTimeout = setTimeout(() => ghPopup.style.display='none', 200); });
-        ghPopup.addEventListener('mouseenter', () => clearTimeout(ghTimeout));
-        ghPopup.addEventListener('mouseleave', () => { ghTimeout = setTimeout(() => ghPopup.style.display='none', 200); });
+        const ghBtn = document.getElementById('githubBtn');
+        const ghPopup = document.createElement('div');
+        ghPopup.className = 'github-popup';
+        ghPopup.innerHTML = '<a href="https://github.com/timeobonnin-prog/mon-api/issues" target="_blank">📝 Proposer une fonctionnalité</a><a href="https://github.com/timeobonnin-prog/mon-api" target="_blank">💻 Contribuer</a>';
+        ghPopup.style.cssText = 'position:absolute; top:100%; right:0; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:8px; display:none; z-index:2500;';
+        ghBtn.parentNode.appendChild(ghPopup);
+        ghBtn.addEventListener('mouseenter', () => ghPopup.style.display='block');
+        ghBtn.addEventListener('mouseleave', () => setTimeout(() => ghPopup.style.display='none', 200));
+        ghPopup.addEventListener('mouseenter', () => ghPopup.style.display='block');
+        ghPopup.addEventListener('mouseleave', () => setTimeout(() => ghPopup.style.display='none', 200));
     });
 
-    function initialiserRadar() {
-        const token = document.getElementById('tokenField').value.trim();
-        if (!token) return alert("Saisis ta clé eBird !");
-        savedToken = token;
-        document.getElementById('authOverlay').classList.add('hidden');
-        setTimeout(() => { map.invalidateSize(); executerScan(); }, 400);
+    function startRadar() {
+        const token = document.getElementById('apiKeyField').value.trim();
+        if (!token) return alert("Colle ta clé API eBird !");
+        userToken = token;
+        document.getElementById('authScreen').classList.add('hidden');
+        setTimeout(() => { map.invalidateSize(); runScan(); }, 400);
     }
 
-    async function executerScan() {
-        if (!savedToken) return;
-        document.getElementById('birds-list-viewport').innerHTML = '<div style="padding:15px; text-align:center; color:var(--neon-green);">Balayage en cours...</div>';
+    async function runScan() {
+        if (!userToken) return;
+        document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px; text-align:center; color:var(--neon);">Scan en cours…</div>';
 
         const radius = document.getElementById('radiusSelect').value;
         let start = document.getElementById('startDate').value;
         let end = document.getElementById('endDate').value;
         if (!start || !end) {
             const today = new Date();
-            const past = new Date(today.getTime() - 30*86400000);
+            const past = new Date(today.getTime() - 30 * 86400000);
             start = past.toISOString().split('T')[0];
-            end   = today.toISOString().split('T')[0];
+            end = today.toISOString().split('T')[0];
         }
 
-        const url = `/api/ebird-proxy?lat=${radarCenter[0]}&lng=${radarCenter[1]}&dist=${radius}&start=${start}&end=${end}`;
+        const url = `/api/ebird?lat=${center[0]}&lng=${center[1]}&dist=${radius}&start=${start}&end=${end}`;
         try {
-            const rep = await fetch(url);
-            const data = await rep.json();
+            const res = await fetch(url);
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error("Erreur serveur : " + text);
+            }
+            const data = await res.json();
             if (data.error) throw new Error(data.error);
-            ebirdRawData = data;
-            traiterDonnees();
-        } catch (e) {
-            document.getElementById('birds-list-viewport').innerHTML = `<div style="padding:15px; color:#f87171;">Erreur: ${escapeHtml(e.message)}</div>`;
+            rawObservations = data;
+            buildChecklists();
+        } catch (err) {
+            document.getElementById('checklistContainer').innerHTML = `<div style="padding:20px; color:#f87171;">${escapeHtml(err.message)}</div>`;
         }
     }
 
-    function traiterDonnees() {
-        listesData = {};
-        ebirdRawData.forEach(obs => {
+    function buildChecklists() {
+        checklists = {};
+        rawObservations.forEach(obs => {
             const subId = obs.subId;
             if (!subId) return;
-            if (!listesData[subId]) {
-                listesData[subId] = {
-                    id:subId, nomLieu:obs.locName||"Lieu inconnu", lat:obs.lat, lng:obs.lng,
-                    observateur:obs.userDisplayName||"Anonyme", dateDerniere:obs.obsDt,
-                    dateObj:new Date(obs.obsDt), oiseaux:[], totalOiseaux:0, checklistSubId:subId
+            if (!checklists[subId]) {
+                checklists[subId] = {
+                    id: subId, name: obs.locName || 'Lieu inconnu', lat: obs.lat, lng: obs.lng,
+                    observer: obs.userDisplayName || 'Anonyme', lastDate: obs.obsDt,
+                    dateObj: new Date(obs.obsDt), species: [], totalBirds: 0
                 };
             }
-            const existant = listesData[subId].oiseaux.find(o => o.nom === (obs.comName||"Inconnu"));
-            if (existant) existant.qte += (obs.howMany||1);
-            else listesData[subId].oiseaux.push({ nom:obs.comName||"Inconnu", sci:obs.sciName||'', qte:(obs.howMany||1) });
-            listesData[subId].totalOiseaux += (obs.howMany||1);
-            if (new Date(obs.obsDt) > listesData[subId].dateObj) {
-                listesData[subId].dateObj = new Date(obs.obsDt);
-                listesData[subId].dateDerniere = obs.obsDt;
+            const existing = checklists[subId].species.find(s => s.name === obs.comName);
+            if (existing) existing.count += (obs.howMany || 1);
+            else checklists[subId].species.push({ name: obs.comName || 'Inconnu', sci: obs.sciName || '', count: obs.howMany || 1 });
+            checklists[subId].totalBirds += (obs.howMany || 1);
+            if (new Date(obs.obsDt) > checklists[subId].dateObj) {
+                checklists[subId].dateObj = new Date(obs.obsDt);
+                checklists[subId].lastDate = obs.obsDt;
             }
         });
+
         layerGroup.clearLayers();
-        L.circle(radarCenter, { color:'#10b981', fillColor:'#10b981', fillOpacity:0.04, radius:document.getElementById('radiusSelect').value*1000, weight:1 }).addTo(layerGroup);
-        afficherInterface();
+        L.circle(center, { color:'#10b981', fillColor:'#10b981', fillOpacity:0.04, radius: document.getElementById('radiusSelect').value*1000, weight:1 }).addTo(layerGroup);
+        renderChecklists();
     }
 
-    const iconeRadar = L.divIcon({
-        className:'maps-icon-container',
-        html:'<svg class="maps-icon-svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
-        iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-28]
+    const markerIcon = L.divIcon({
+        className: 'map-marker',
+        html: '<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
+        iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -26]
     });
 
-    function autocompleteEspeces() {
+    function updateAutocomplete() {
         const input = document.getElementById('searchInput');
         const query = normalize(input.value.trim());
         const list = document.getElementById('autocompleteList');
-        if (!query) { list.style.display='none'; afficherInterface(); return; }
-        const especes = new Set();
-        Object.values(listesData).forEach(l => l.oiseaux.forEach(o => { if (normalize(o.nom).includes(query)) especes.add(o.nom); }));
-        const sugg = Array.from(especes).slice(0,5);
-        if (!sugg.length) { list.style.display='none'; return; }
-        list.innerHTML = '';
-        sugg.forEach(n => {
-            const item = document.createElement('div'); item.className='autocomplete-item'; item.textContent=n;
-            item.addEventListener('click', ()=>{ input.value=n; list.style.display='none'; afficherInterface(); });
-            list.appendChild(item);
-        });
-        list.style.display='block';
+        if (!query) { list.style.display = 'none'; renderChecklists(); return; }
+        const uniqueSpecies = new Set();
+        Object.values(checklists).forEach(cl => cl.species.forEach(s => { if (normalize(s.name).includes(query)) uniqueSpecies.add(s.name); }));
+        const suggestions = Array.from(uniqueSpecies).slice(0, 5);
+        if (!suggestions.length) { list.style.display = 'none'; return; }
+        list.innerHTML = suggestions.map(s => `<div class="autocomplete-item">${s}</div>`).join('');
+        list.querySelectorAll('.autocomplete-item').forEach(item => item.addEventListener('click', () => {
+            input.value = item.textContent;
+            list.style.display = 'none';
+            renderChecklists();
+        }));
+        list.style.display = 'block';
     }
-    document.addEventListener('click', e => {
-        const autocomplete = document.getElementById('autocompleteList');
+    document.addEventListener('click', (e) => {
+        const list = document.getElementById('autocompleteList');
         const input = document.getElementById('searchInput');
-        if (e.target !== input && e.target !== autocomplete) autocomplete.style.display='none';
+        if (e.target !== input && e.target !== list) list.style.display = 'none';
     });
 
-    function afficherInterface() {
-        layerGroup.eachLayer(layer => { if (layer instanceof L.Marker) layerGroup.removeLayer(layer); });
-        markersList = {}; cardElements = {};
-        const container = document.getElementById('birds-list-viewport');
+    function renderChecklists() {
+        layerGroup.eachLayer(l => { if (l instanceof L.Marker) layerGroup.removeLayer(l); });
+        markerRefs = {}; cardRefs = {};
+        const container = document.getElementById('checklistContainer');
         container.innerHTML = '';
-        const recherche = normalize(document.getElementById('searchInput').value);
-        const tri = document.getElementById('sortSelect').value;
+        const query = normalize(document.getElementById('searchInput').value);
+        const sort = document.getElementById('sortSelect').value;
 
-        let listes = Object.values(listesData).filter(l => {
-            const matchLieu = normalize(l.nomLieu).includes(recherche);
-            const matchEspece = l.oiseaux.some(o => normalize(o.nom).includes(recherche));
-            return matchLieu || matchEspece;
+        let filtered = Object.values(checklists).filter(cl => {
+            const matchPlace = normalize(cl.name).includes(query);
+            const matchSpecies = cl.species.some(s => normalize(s.name).includes(query));
+            return matchPlace || matchSpecies;
         });
 
-        const distinct = new Set();
-        Object.values(listesData).forEach(l => l.oiseaux.forEach(o => distinct.add(o.nom)));
-        document.getElementById('totalSpeciesCounter').textContent = distinct.size + ' espèce(s) distincte(s)';
-        document.getElementById('counter-badge').textContent = listes.length;
+        const allSpecies = new Set();
+        Object.values(checklists).forEach(cl => cl.species.forEach(s => allSpecies.add(s.name)));
+        document.getElementById('speciesTotal').textContent = allSpecies.size + ' espèce(s) distincte(s)';
+        document.getElementById('checklistCount').textContent = filtered.length;
 
-        if (!listes.length) {
-            container.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-gray);">Aucune liste trouvée.</div>';
+        if (!filtered.length) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted);">Aucune checklist trouvée.</div>';
             return;
         }
 
-        if (tri==='alphabet') listes.sort((a,b)=>a.nomLieu.localeCompare(b.nomLieu));
-        else if (tri==='nombre') listes.sort((a,b)=>b.totalOiseaux-a.totalOiseaux);
-        else if (tri==='date') listes.sort((a,b)=>b.dateObj-a.dateObj);
+        if (sort === 'alpha') filtered.sort((a,b) => a.name.localeCompare(b.name));
+        else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
+        else if (sort === 'date') filtered.sort((a,b) => b.dateObj - a.dateObj);
 
-        listes.forEach(liste => {
-            const dateFormatee = formatDate(liste.dateDerniere);
-            const marker = L.marker([liste.lat, liste.lng], { icon:iconeRadar }).addTo(layerGroup);
-            markersList[liste.id] = marker;
+        filtered.forEach(cl => {
+            const dateStr = formatDate(cl.lastDate);
+            const marker = L.marker([cl.lat, cl.lng], { icon: markerIcon }).addTo(layerGroup);
+            markerRefs[cl.id] = marker;
 
-            marker.on('click', ()=>{
-                const fiche = cardElements[liste.id];
-                if (fiche) {
-                    fiche.scrollIntoView({behavior:'smooth', block:'center'});
-                    fiche.classList.add('highlight');
-                    if (!fiche.classList.contains('expanded')) fiche.classList.add('expanded');
-                    setTimeout(()=>fiche.classList.remove('highlight'), 1500);
+            marker.on('click', () => {
+                const card = cardRefs[cl.id];
+                if (card) {
+                    card.scrollIntoView({ behavior:'smooth', block:'center' });
+                    card.classList.add('highlight');
+                    if (!card.classList.contains('expanded')) card.classList.add('expanded');
+                    setTimeout(() => card.classList.remove('highlight'), 1500);
                 }
             });
 
-            const card = document.createElement('div'); card.className='bird-card-item';
-            let speciesHtml = '';
-            liste.oiseaux.forEach(o => speciesHtml += `<li><span>${escapeHtml(o.nom)}</span> <span class="qte">x${escapeHtml(String(o.qte))}</span></li>`);
-            const checklistLink = liste.checklistSubId
-                ? `<a href="https://ebird.org/checklist/${escapeHtml(liste.checklistSubId)}" target="_blank" class="checklist-link">🔗 Voir la checklist eBird</a>` : '';
-
+            const card = document.createElement('div');
+            card.className = 'checklist-card';
             card.innerHTML = `
-                <div class="card-list-name">${escapeHtml(liste.nomLieu)}</div>
-                <div class="card-list-sub">
-                    🕒 ${escapeHtml(dateFormatee)} · 👤 ${escapeHtml(liste.observateur)}<br>
-                    🦅 ${liste.oiseaux.length} espèce(s) · 🔢 ${liste.totalOiseaux} indiv.
-                </div>
-                <div class="species-detail">
-                    <ul>${speciesHtml}</ul>
-                    ${checklistLink}
+                <div class="checklist-name">${escapeHtml(cl.name)}</div>
+                <div class="checklist-sub">🕒 ${escapeHtml(dateStr)} · 👤 ${escapeHtml(cl.observer)}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div>
+                <div class="species-list">
+                    <ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)}</span> <span class="qty">x${s.count}</span></li>`).join('')}</ul>
+                    <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir la checklist eBird</a>
                 </div>`;
 
-            card.addEventListener('mouseenter', ()=> map.setView([liste.lat, liste.lng], map.getZoom(), {animate:true, duration:0.3}));
-            card.addEventListener('click', ()=>{
-                map.setView([liste.lat, liste.lng], 14);
+            card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
+            card.addEventListener('click', () => {
+                map.setView([cl.lat, cl.lng], 14);
                 card.classList.toggle('expanded');
             });
 
-            cardElements[liste.id] = card;
+            cardRefs[cl.id] = card;
             container.appendChild(card);
         });
     }
