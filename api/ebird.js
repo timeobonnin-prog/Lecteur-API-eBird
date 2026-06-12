@@ -13,28 +13,33 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Clé API eBird manquante.' });
     }
 
-    const { lat, lng, dist, start, end, debug } = req.query;
+    const { lat, lng, dist, start, end } = req.query;
 
+    // Dates par défaut : 30 derniers jours, mais fin au plus hier
     let startDate = start, endDate = end;
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
     if (!start || !end) {
-        const today = new Date();
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
         startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        endDate = today.toISOString().split('T')[0];
+        endDate = yesterday.toISOString().split('T')[0]; // hier au lieu d’aujourd’hui
+    } else {
+        // Si la date de fin est aujourd’hui ou dans le futur, on la limite à hier
+        const providedEnd = new Date(end);
+        if (providedEnd >= today) {
+            endDate = yesterday.toISOString().split('T')[0];
+        }
     }
 
-    // Endpoint historic avec les dates dans le chemin
-    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic/${startDate}/${endDate}` +
+    // Format YYYY/MM/DD pour l'URL eBird
+    const startPath = startDate.replace(/-/g, '/');
+    const endPath   = endDate.replace(/-/g, '/');
+
+    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
         `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
 
-    // Mode debug : renvoie l'URL sans appeler eBird
-    if (debug === '1') {
-        return res.status(200).json({
-            debug: true,
-            url: ebirdUrl,
-            params: { lat, lng, dist, startDate, endDate }
-        });
-    }
+    console.log('eBird URL:', ebirdUrl); // visible dans les logs Vercel
 
     try {
         const response = await fetch(ebirdUrl, {
@@ -43,6 +48,7 @@ module.exports = async (req, res) => {
 
         if (!response.ok) {
             const errorText = await response.text();
+            console.error('eBird error:', response.status, errorText);
             return res.status(response.status).json({
                 error: `Erreur eBird (${response.status}) : ${errorText}`
             });
@@ -50,7 +56,9 @@ module.exports = async (req, res) => {
 
         const data = await response.json();
         return res.status(200).json(data);
+
     } catch (error) {
+        console.error('Fetch error:', error);
         return res.status(500).json({
             error: `Échec de la connexion à l'API eBird : ${error.message}`
         });
