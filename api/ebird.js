@@ -13,9 +13,8 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Clé API eBird manquante.' });
     }
 
-    const { lat, lng, dist, start, end } = req.query;
+    const { lat, lng, dist, start, end, debug } = req.query;
 
-    // Dates par défaut : 30 derniers jours
     let startDate = start, endDate = end;
     if (!start || !end) {
         const today = new Date();
@@ -24,9 +23,18 @@ module.exports = async (req, res) => {
         endDate = today.toISOString().split('T')[0];
     }
 
-    // Format de l'endpoint historique
+    // Endpoint historic avec les dates dans le chemin
     const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic/${startDate}/${endDate}` +
         `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
+
+    // Mode debug : renvoie l'URL sans appeler eBird
+    if (debug === '1') {
+        return res.status(200).json({
+            debug: true,
+            url: ebirdUrl,
+            params: { lat, lng, dist, startDate, endDate }
+        });
+    }
 
     try {
         const response = await fetch(ebirdUrl, {
