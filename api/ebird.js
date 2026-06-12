@@ -1,48 +1,51 @@
-// api/ebird.js
 const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
+    // Configuration des en-têtes CORS pour autoriser ton frontend
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-ebird-key');
 
-    if (req.method === 'OPTIONS') return res.status(200).end();
-
-    const apiKey = req.headers['x-user-ebird-key'];
-    if (!apiKey) {
-        return res.status(400).json({ error: 'Clé API eBird manquante.' });
+    // Réponse immédiate pour la requête de pré-vérification (Preflight)
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
 
-    const { lat, lng, dist, start, end, debug } = req.query;
+    // Récupération sécurisée de la clé eBird de l'utilisateur
+    const apiKey = req.headers['x-user-ebird-key'];
+    if (!apiKey) {
+        return res.status(400).json({ error: 'Clé API eBird manquante dans le header x-user-ebird-key.' });
+    }
 
-    // Dates par défaut : 30 derniers jours
-    let startDate = start, endDate = end;
-    const today = new Date();
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const { lat, lng, dist, start, end } = req.query;
 
-    if (!start || !end) {
-        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-        startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        endDate = yesterday.toISOString().split('T')[0];
-    } else {
-        if (new Date(end).setHours(0,0,0,0) >= today.setHours(0,0,0,0)) {
-            endDate = yesterday.toISOString().split('T')[0];
+    if (!lat || !lng) {
+        return res.status(400).json({ error: 'Les paramètres lat et lng sont obligatoires.' });
+    }
+
+    // Calcul sécurisé du paramètre "back" (nombre de jours)
+    let back = 14; 
+    if (start && end) {
+        // Remplacement des slashes par des tirets pour éviter les bugs de parsing de dates
+        const startDate = new Date(start.replace(/\//g, '-'));
+        const endDate = new Date(end.replace(/\//g, '-'));
+        const today = new Date();
+
+        if (!isNaN(startDate) && !isNaN(endDate)) {
+            const effectiveEnd = endDate > today ? today : endDate;
+            const diffTime = effectiveEnd - startDate;
+            back = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // eBird limite le paramètre back entre 1 et 30 jours
+            if (back <= 0) back = 1;
+            if (back > 30) back = 30;
         }
     }
 
-    // Endpoint historique avec dates dans l'URL
-    const startPath = startDate.replace(/-/g, '/');
-    const endPath   = endDate.replace(/-/g, '/');
-    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic/${startPath}/${endPath}` +
-        `?lat=${lat}&lng=${lng}&dist=${dist}`;
-
-    if (debug === '1') {
-        return res.status(200).json({
-            debug: true,
-            url: ebirdUrl,
-            params: { lat, lng, dist, startDate, endDate, rawStart: start, rawEnd: end }
-        });
-    }
+    // Construction de l'URL finale stable de l'API eBird
+    const radius = parseInt(dist, 10) || 25;
+    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/recent` +
+        `?lat=${lat}&lng=${lng}&dist=${radius}&back=${back}&sppLocale=fr&includeProvisional=true`;
 
     try {
         const response = await fetch(ebirdUrl, {
@@ -51,17 +54,13 @@ module.exports = async (req, res) => {
 
         if (!response.ok) {
             const errorText = await response.text();
-            return res.status(response.status).json({
-                error: `Erreur eBird (${response.status}) : ${errorText}`,
-                debugHint: 'Ajoutez &debug=1 pour voir l\'URL.'
-            });
+            return res.status(response.status).json({ error: `Erreur eBird (${response.status}) : ${errorText}` });
         }
 
         const data = await response.json();
         return res.status(200).json(data);
+
     } catch (error) {
-        return res.status(500).json({
-            error: `Échec de la connexion à l'API eBird : ${error.message}`
-        });
+        return res.status(500).json({ error: `Échec de connexion à l'API eBird : ${error.message}` });
     }
 };
