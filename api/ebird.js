@@ -22,19 +22,20 @@ module.exports = async (req, res) => {
     if (!start || !end) {
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
         startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        endDate = yesterday.toISOString().split('T')[0];
+        endDate = yesterday.toISOString().split('T')[0]; // pour éviter la date du jour
     } else {
-        // On s'assure que la date de fin n'est pas dans le futur
+        // On s'assure que la date de fin ne soit pas dans le futur
         if (new Date(end) >= today) {
             endDate = yesterday.toISOString().split('T')[0];
         }
     }
 
-    // Construction de l'URL avec l'endpoint historic et les dates en paramètres
-    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic` +
-        `?lat=${lat}&lng=${lng}&dist=${dist}` +
-        `&start=${startDate}&end=${endDate}` +
-        `&sppLocale=fr&includeProvisional=true`;
+    // Transforme "YYYY-MM-DD" en "YYYY/MM/DD"
+    const startPath = startDate.replace(/-/g, '/');
+    const endPath   = endDate.replace(/-/g, '/');
+
+    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
+        `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
 
     // Mode debug : renvoie l'URL sans appeler eBird
     if (debug === '1') {
