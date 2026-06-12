@@ -22,27 +22,26 @@ module.exports = async (req, res) => {
     if (!start || !end) {
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
         startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        endDate = yesterday.toISOString().split('T')[0]; // hier pour éviter date future
+        endDate = yesterday.toISOString().split('T')[0];
     } else {
-        // Si la date de fin est aujourd’hui ou dans le futur, on la limite à hier
+        // On s'assure que la date de fin n'est pas dans le futur
         if (new Date(end) >= today) {
             endDate = yesterday.toISOString().split('T')[0];
         }
     }
 
-    // Format YYYY/MM/DD pour l'endpoint
-    const startPath = startDate.replace(/-/g, '/');
-    const endPath   = endDate.replace(/-/g, '/');
+    // Construction de l'URL avec l'endpoint historic et les dates en paramètres
+    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic` +
+        `?lat=${lat}&lng=${lng}&dist=${dist}` +
+        `&start=${startDate}&end=${endDate}` +
+        `&sppLocale=fr&includeProvisional=true`;
 
-    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
-        `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
-
-    // Mode debug : renvoie l'URL et les paramètres sans appeler eBird
+    // Mode debug : renvoie l'URL sans appeler eBird
     if (debug === '1') {
         return res.status(200).json({
             debug: true,
             url: ebirdUrl,
-            params: { lat, lng, dist, startDate, endDate, rawStart: start, rawEnd: end }
+            params: { lat, lng, dist, startDate, endDate }
         });
     }
 
@@ -61,7 +60,6 @@ module.exports = async (req, res) => {
 
         const data = await response.json();
         return res.status(200).json(data);
-
     } catch (error) {
         console.error('Fetch error:', error);
         return res.status(500).json({
