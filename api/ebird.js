@@ -13,9 +13,8 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Clé API eBird manquante.' });
     }
 
-    const { lat, lng, dist, start, end } = req.query;
+    const { lat, lng, dist, start, end, debug } = req.query;
 
-    // Dates par défaut : 30 derniers jours, mais fin au plus hier
     let startDate = start, endDate = end;
     const today = new Date();
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
@@ -23,23 +22,29 @@ module.exports = async (req, res) => {
     if (!start || !end) {
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
         startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        endDate = yesterday.toISOString().split('T')[0]; // hier au lieu d’aujourd’hui
+        endDate = yesterday.toISOString().split('T')[0]; // hier pour éviter date future
     } else {
         // Si la date de fin est aujourd’hui ou dans le futur, on la limite à hier
-        const providedEnd = new Date(end);
-        if (providedEnd >= today) {
+        if (new Date(end) >= today) {
             endDate = yesterday.toISOString().split('T')[0];
         }
     }
 
-    // Format YYYY/MM/DD pour l'URL eBird
+    // Format YYYY/MM/DD pour l'endpoint
     const startPath = startDate.replace(/-/g, '/');
     const endPath   = endDate.replace(/-/g, '/');
 
     const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
         `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
 
-    console.log('eBird URL:', ebirdUrl); // visible dans les logs Vercel
+    // Mode debug : renvoie l'URL et les paramètres sans appeler eBird
+    if (debug === '1') {
+        return res.status(200).json({
+            debug: true,
+            url: ebirdUrl,
+            params: { lat, lng, dist, startDate, endDate, rawStart: start, rawEnd: end }
+        });
+    }
 
     try {
         const response = await fetch(ebirdUrl, {
