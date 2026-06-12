@@ -33,12 +33,13 @@ module.exports = async (req, res) => {
     const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
                      `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
 
+    console.log('Calling eBird URL:', ebirdUrl); // visible dans les logs Vercel
+
     try {
         const response = await fetch(ebirdUrl, {
             headers: { 'X-eBirdApiToken': apiKey }
         });
 
-        // Si la réponse n'est pas OK, on lit le texte d'erreur
         if (!response.ok) {
             const errorText = await response.text();
             console.error('eBird API error:', response.status, errorText);
@@ -51,8 +52,8 @@ module.exports = async (req, res) => {
         return res.status(200).json(data);
 
     } catch (error) {
-        // Ici on capture les vraies erreurs réseau ou de parsing
-        console.error('Proxy error:', error);
+        // Erreur réseau, DNS, timeout, etc.
+        console.error('Proxy fetch error:', error);
         return res.status(500).json({
             error: `Échec de la connexion à l'API eBird : ${error.message}`
         });
