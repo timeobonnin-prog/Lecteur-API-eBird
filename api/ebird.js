@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
 
     const { lat, lng, dist, start, end, debug } = req.query;
 
-    // Mode debug : renvoie l'URL sans avoir besoin de la clé
+    // Mode debug : renvoie l'URL sans clé
     if (debug === '1') {
         let startDate = start, endDate = end;
         const today = new Date();
@@ -20,12 +20,15 @@ module.exports = async (req, res) => {
             startDate = thirtyDaysAgo.toISOString().split('T')[0];
             endDate = yesterday.toISOString().split('T')[0];
         } else {
-            if (new Date(end) >= today) endDate = yesterday.toISOString().split('T')[0];
+            // Si la date de fin est aujourd'hui ou plus tard, on la ramène à hier
+            if (new Date(end).setHours(0,0,0,0) >= new Date().setHours(0,0,0,0)) {
+                endDate = yesterday.toISOString().split('T')[0];
+            }
         }
         const startPath = startDate.replace(/-/g, '/');
         const endPath   = endDate.replace(/-/g, '/');
         const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
-            `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
+            `?lat=${lat}&lng=${lng}&dist=${dist}&includeProvisional=true`;
 
         return res.status(200).json({
             debug: true,
@@ -34,7 +37,7 @@ module.exports = async (req, res) => {
         });
     }
 
-    // Mode normal (nécessite la clé)
+    // Mode normal
     const apiKey = req.headers['x-user-ebird-key'];
     if (!apiKey) {
         return res.status(400).json({ error: 'Clé API eBird manquante.' });
@@ -43,23 +46,28 @@ module.exports = async (req, res) => {
     let startDate = start, endDate = end;
     const today = new Date();
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
     if (!start || !end) {
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
         startDate = thirtyDaysAgo.toISOString().split('T')[0];
         endDate = yesterday.toISOString().split('T')[0];
     } else {
-        if (new Date(end) >= today) endDate = yesterday.toISOString().split('T')[0];
+        // Comparer les dates sans l'heure
+        if (new Date(end).setHours(0,0,0,0) >= new Date().setHours(0,0,0,0)) {
+            endDate = yesterday.toISOString().split('T')[0];
+        }
     }
 
     const startPath = startDate.replace(/-/g, '/');
     const endPath   = endDate.replace(/-/g, '/');
     const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/${startPath}/${endPath}` +
-        `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
+        `?lat=${lat}&lng=${lng}&dist=${dist}&includeProvisional=true`;
 
     try {
         const response = await fetch(ebirdUrl, {
             headers: { 'X-eBirdApiToken': apiKey }
         });
+
         if (!response.ok) {
             const errorText = await response.text();
             return res.status(response.status).json({
@@ -67,6 +75,7 @@ module.exports = async (req, res) => {
                 debugHint: 'Ajoutez &debug=1 à l\'URL pour voir l\'URL utilisée.'
             });
         }
+
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
