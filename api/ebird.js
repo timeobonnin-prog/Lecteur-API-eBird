@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
 
     const { lat, lng, dist, start, end } = req.query;
 
-    // Si les dates ne sont pas fournies, utiliser les 30 derniers jours
+    // Dates par défaut : 30 derniers jours
     let startDate = start, endDate = end;
     if (!start || !end) {
         const today = new Date();
@@ -24,11 +24,9 @@ module.exports = async (req, res) => {
         endDate = today.toISOString().split('T')[0];
     }
 
-    // Endpoint historic avec start et end en paramètres
-    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic` +
-        `?lat=${lat}&lng=${lng}&dist=${dist}` +
-        `&start=${startDate}&end=${endDate}` +
-        `&sppLocale=fr&includeProvisional=true`;
+    // Format de l'endpoint historique
+    const ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic/${startDate}/${endDate}` +
+        `?lat=${lat}&lng=${lng}&dist=${dist}&sppLocale=fr&includeProvisional=true`;
 
     try {
         const response = await fetch(ebirdUrl, {
