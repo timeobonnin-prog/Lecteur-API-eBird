@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
-    // Configuration CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-ebird-key');
@@ -12,17 +11,17 @@ module.exports = async (req, res) => {
 
     const apiKey = req.headers['x-user-ebird-key'];
     if (!apiKey) {
-        return res.status(400).json({ error: 'Clé API eBird manquante dans le header x-user-ebird-key.' });
+        return res.status(400).json({ error: 'Clé API eBird manquante.' });
     }
 
     const { lat, lng, dist, start, end, maxResults } = req.query;
 
     if (!lat || !lng) {
-        return res.status(400).json({ error: 'Les paramètres lat et lng sont obligatoires.' });
+        return res.status(400).json({ error: 'lat et lng obligatoires.' });
     }
 
     const radius = parseInt(dist, 10) || 25;
-    const max = parseInt(maxResults, 10) || 10000; // valeur haute pour tout récupérer
+    const max = parseInt(maxResults, 10) || 10000;
 
     let ebirdUrl;
     const baseParams = `&sppLocale=fr&includeProvisional=true&maxResults=${max}`;
@@ -34,26 +33,14 @@ module.exports = async (req, res) => {
 
         if (!isNaN(startDate) && !isNaN(endDate)) {
             const effectiveEnd = endDate > today ? today : endDate;
-            const diffTime = effectiveEnd - startDate;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            // Si la période dépasse 30 jours, on passe en mode "historic"
-            if (diffDays > 30) {
-                ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic` +
-                    `?lat=${lat}&lng=${lng}&dist=${radius}` +
-                    `&startDate=${startDate.toISOString().split('T')[0]}` +
-                    `&endDate=${effectiveEnd.toISOString().split('T')[0]}` +
-                    baseParams;
-            } else {
-                // Période ≤ 30 jours → endpoint "recent" avec back
-                let back = diffDays;
-                if (back <= 0) back = 1;
-                ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/recent` +
-                    `?lat=${lat}&lng=${lng}&dist=${radius}&back=${back}` +
-                    baseParams;
-            }
+            // Toujours utiliser l'endpoint historic pour respecter la plage exacte
+            ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/historic` +
+                `?lat=${lat}&lng=${lng}&dist=${radius}` +
+                `&startDate=${startDate.toISOString().split('T')[0]}` +
+                `&endDate=${effectiveEnd.toISOString().split('T')[0]}` +
+                baseParams;
         } else {
-            // Dates invalides, on met une valeur par défaut (14 jours)
+            // Dates invalides → fallback 14 jours via recent
             ebirdUrl = `https://api.ebird.org/v2/data/obs/geo/recent` +
                 `?lat=${lat}&lng=${lng}&dist=${radius}&back=14` +
                 baseParams;
