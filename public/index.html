@@ -339,7 +339,8 @@
             end = today.toISOString().split('T')[0];
         }
 
-        const url = `/api/ebird?lat=${center[0]}&lng=${center[1]}&dist=${radius}&start=${start}&end=${end}`;
+        // 🔥 Ajout de maxResults=10000 pour éviter les troncatures
+        const url = `/api/ebird?lat=${center[0]}&lng=${center[1]}&dist=${radius}&start=${start}&end=${end}&maxResults=10000`;
         try {
             const res = await fetch(url, {
                 headers: { 'x-user-ebird-key': userApiKey }
@@ -448,7 +449,7 @@
             return matchPlace || matchSpecies;
         });
 
-        // 🔥 Compteur basé sur les checklists filtrées
+        // Compteur basé sur les checklists filtrées
         const distinctFilteredSpecies = new Set();
         filtered.forEach(cl => cl.species.forEach(s => distinctFilteredSpecies.add(s.name)));
         document.getElementById('speciesTotal').textContent = distinctFilteredSpecies.size + ' espèce(s) distincte(s)';
