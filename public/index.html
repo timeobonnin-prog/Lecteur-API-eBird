@@ -242,6 +242,7 @@
     let markerRefs = {};
     let cardRefs = {};
     let nightMode = true;
+    let autocompleteTimer; // pour le debounce
 
     function toggleTheme(force = null) {
         nightMode = force !== null ? force : !nightMode;
@@ -300,6 +301,16 @@
         githubPopup.addEventListener('mouseenter', () => clearTimeout(githubTimeout));
         githubPopup.addEventListener('mouseleave', () => {
             githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
+        });
+
+        // Gestion de la touche Entrée dans la recherche
+        document.getElementById('searchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('autocompleteList').style.display = 'none';
+                clearTimeout(autocompleteTimer);
+                renderChecklists();
+            }
         });
     });
 
@@ -380,22 +391,43 @@
     });
 
     function updateAutocomplete() {
-        const input = document.getElementById('searchInput');
-        const query = normalize(input.value.trim());
-        const list = document.getElementById('autocompleteList');
-        if (!query) { list.style.display = 'none'; renderChecklists(); return; }
-        const uniqueSpecies = new Set();
-        Object.values(checklists).forEach(cl => cl.species.forEach(s => { if (normalize(s.name).includes(query)) uniqueSpecies.add(s.name); }));
-        const suggestions = Array.from(uniqueSpecies).slice(0, 5);
-        if (!suggestions.length) { list.style.display = 'none'; return; }
-        list.innerHTML = suggestions.map(s => `<div class="autocomplete-item">${s}</div>`).join('');
-        list.querySelectorAll('.autocomplete-item').forEach(item => item.addEventListener('click', () => {
-            input.value = item.textContent;
-            list.style.display = 'none';
+        clearTimeout(autocompleteTimer);
+        autocompleteTimer = setTimeout(() => {
+            const input = document.getElementById('searchInput');
+            const query = normalize(input.value.trim());
+            const list = document.getElementById('autocompleteList');
+
+            if (!query) {
+                list.style.display = 'none';
+            } else {
+                const uniqueSpecies = new Set();
+                Object.values(checklists).forEach(cl =>
+                    cl.species.forEach(s => {
+                        if (normalize(s.name).includes(query)) uniqueSpecies.add(s.name);
+                    })
+                );
+                const suggestions = Array.from(uniqueSpecies).slice(0, 5);
+                if (suggestions.length) {
+                    list.innerHTML = suggestions
+                        .map(s => `<div class="autocomplete-item">${escapeHtml(s)}</div>`)
+                        .join('');
+                    list.querySelectorAll('.autocomplete-item').forEach(item =>
+                        item.addEventListener('click', () => {
+                            input.value = item.textContent;
+                            list.style.display = 'none';
+                            renderChecklists(); // déclenchement immédiat au clic
+                        })
+                    );
+                    list.style.display = 'block';
+                } else {
+                    list.style.display = 'none';
+                }
+            }
+
             renderChecklists();
-        }));
-        list.style.display = 'block';
+        }, 300);
     }
+
     document.addEventListener('click', (e) => {
         const list = document.getElementById('autocompleteList');
         const input = document.getElementById('searchInput');
@@ -416,9 +448,10 @@
             return matchPlace || matchSpecies;
         });
 
-        const allSpecies = new Set();
-        Object.values(checklists).forEach(cl => cl.species.forEach(s => allSpecies.add(s.name)));
-        document.getElementById('speciesTotal').textContent = allSpecies.size + ' espèce(s) distincte(s)';
+        // 🔥 Compteur basé sur les checklists filtrées
+        const distinctFilteredSpecies = new Set();
+        filtered.forEach(cl => cl.species.forEach(s => distinctFilteredSpecies.add(s.name)));
+        document.getElementById('speciesTotal').textContent = distinctFilteredSpecies.size + ' espèce(s) distincte(s)';
         document.getElementById('checklistCount').textContent = filtered.length;
 
         if (!filtered.length) {
