@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta name="msvalidate.01" content="70219DEF0FF5D70391AB886208A1806D" />
-    <meta name="description" content="Lecteur API eBird personnel – explorez les observations d'oiseaux en temps réel.">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://mon-api-ten.vercel.app/">
     <script src="https://cdn.jsdelivr.net/gh/IdreesInc/Pocket-Bird@main/dist/web/birb.embed.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="icon" type="image/png" href="API Ebird.png" />
     <style>
+        /* ... ton style inchangé ... */
         :root {
             --neon: #10b981;
             --glow: rgba(16, 185, 129, 0.25);
@@ -248,6 +245,11 @@
     let nightMode = true;
     let autocompleteTimer; // pour le debounce
 
+    // NOUVEAU : taxonomie et mode espèce
+    let taxonomy = [];            // tableau d'objets { speciesCode, comName, ... }
+    let currentSpeciesCode = null; // si on est en mode recherche par espèce
+    let speciesChecklists = {};    // checklists obtenues via nearest (même structure que `checklists`)
+
     function toggleTheme(force = null) {
         nightMode = force !== null ? force : !nightMode;
         document.body.className = nightMode ? '' : 'light';
@@ -288,6 +290,10 @@
 
         map.on('click', (e) => {
             center = [e.latlng.lat, e.latlng.lng];
+            // On réinitialise le mode espèce si on clique sur la carte
+            currentSpeciesCode = null;
+            speciesChecklists = {};
+            document.getElementById('searchInput').value = '';
             if (userApiKey) runScan();
         });
 
@@ -313,16 +319,156 @@
                 e.preventDefault();
                 document.getElementById('autocompleteList').style.display = 'none';
                 clearTimeout(autocompleteTimer);
-                renderChecklists();
+                // Si on a un code espèce en cours, on refait la recherche nearest
+                if (currentSpeciesCode) {
+                    fetchSpeciesChecklists(currentSpeciesCode);
+                } else {
+                    // Sinon, on affiche les checklists normales filtrées
+                    renderChecklists();
+                }
             }
         });
     });
 
+    // NOUVEAU : Chargement de la taxonomie après la clé
+    async function loadTaxonomy() {
+        try {
+            const res = await fetch('/api/ebird-taxonomy', {
+                headers: { 'x-user-ebird-key': userApiKey }
+            });
+            if (!res.ok) throw new Error('Erreur chargement taxonomie');
+            taxonomy = await res.json();
+        } catch (err) {
+            console.error('Impossible de charger la taxonomie:', err);
+        }
+    }
+
+    // NOUVEAU : Recherche du code espèce à partir du nom français
+    function findSpeciesCode(frenchName) {
+        const normalizedInput = normalize(frenchName);
+        const match = taxonomy.find(s => normalize(s.comName) === normalizedInput);
+        return match ? match.speciesCode : null;
+    }
+
+    // NOUVEAU : Récupère les observations d'une espèce via nearest
+    async function fetchSpeciesChecklists(speciesCode) {
+        document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px; text-align:center; color:var(--neon);">Recherche de l\'espèce…</div>';
+        const radius = document.getElementById('radiusSelect').value;
+        let start = document.getElementById('startDate').value;
+        // calcule le back (nombre de jours)
+        let back = 30;
+        if (start) {
+            const startDate = new Date(start.replace(/\//g, '-'));
+            const today = new Date(); today.setHours(0,0,0,0);
+            if (!isNaN(startDate)) {
+                const diffDays = Math.ceil((today - startDate) / 86400000) + 1;
+                back = Math.max(1, Math.min(30, diffDays));
+            }
+        }
+        const url = `/api/ebird-nearest?lat=${center[0]}&lng=${center[1]}&code=${speciesCode}&back=${back}&maxResults=10000`;
+        try {
+            const res = await fetch(url, { headers: { 'x-user-ebird-key': userApiKey } });
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+            // data est un tableau d'observations (même structure que recent)
+            buildSpeciesChecklists(data);
+        } catch (err) {
+            document.getElementById('checklistContainer').innerHTML = `<div style="padding:20px; color:#f87171;">${escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    // NOUVEAU : Construit les checklists à partir des données nearest
+    function buildSpeciesChecklists(observations) {
+        speciesChecklists = {};
+        observations.forEach(obs => {
+            const subId = obs.subId;
+            if (!subId) return;
+            if (!speciesChecklists[subId]) {
+                speciesChecklists[subId] = {
+                    id: subId, name: obs.locName || 'Lieu inconnu', lat: obs.lat, lng: obs.lng,
+                    observer: obs.userDisplayName || 'Anonyme', lastDate: obs.obsDt,
+                    dateObj: new Date(obs.obsDt), species: [], totalBirds: 0
+                };
+            }
+            const existing = speciesChecklists[subId].species.find(s => s.name === obs.comName);
+            if (existing) existing.count += (obs.howMany || 1);
+            else speciesChecklists[subId].species.push({ name: obs.comName || 'Inconnu', sci: obs.sciName || '', count: obs.howMany || 1 });
+            speciesChecklists[subId].totalBirds += (obs.howMany || 1);
+            if (new Date(obs.obsDt) > speciesChecklists[subId].dateObj) {
+                speciesChecklists[subId].dateObj = new Date(obs.obsDt);
+                speciesChecklists[subId].lastDate = obs.obsDt;
+            }
+        });
+        // On met à jour l'affichage avec ces nouvelles checklists
+        renderSpeciesChecklists();
+    }
+
+    function renderSpeciesChecklists() {
+        layerGroup.eachLayer(l => { if (l instanceof L.Marker) layerGroup.removeLayer(l); });
+        markerRefs = {}; cardRefs = {};
+        const container = document.getElementById('checklistContainer');
+        container.innerHTML = '';
+        const sort = document.getElementById('sortSelect').value;
+
+        let filtered = Object.values(speciesChecklists);
+        const distinctFilteredSpecies = new Set();
+        filtered.forEach(cl => cl.species.forEach(s => distinctFilteredSpecies.add(s.name)));
+        document.getElementById('speciesTotal').textContent = distinctFilteredSpecies.size + ' espèce(s) distincte(s)';
+        document.getElementById('checklistCount').textContent = filtered.length;
+
+        if (!filtered.length) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted);">Aucune checklist trouvée pour cette espèce.</div>';
+            return;
+        }
+
+        if (sort === 'alpha') filtered.sort((a,b) => a.name.localeCompare(b.name));
+        else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
+        else if (sort === 'date') filtered.sort((a,b) => b.dateObj - a.dateObj);
+
+        filtered.forEach(cl => {
+            const dateStr = formatDate(cl.lastDate);
+            const marker = L.marker([cl.lat, cl.lng], { icon: markerIcon }).addTo(layerGroup);
+            markerRefs[cl.id] = marker;
+
+            marker.on('click', () => {
+                const card = cardRefs[cl.id];
+                if (card) {
+                    card.scrollIntoView({ behavior:'smooth', block:'center' });
+                    card.classList.add('highlight');
+                    if (!card.classList.contains('expanded')) card.classList.add('expanded');
+                    setTimeout(() => card.classList.remove('highlight'), 1500);
+                }
+            });
+
+            const card = document.createElement('div');
+            card.className = 'checklist-card';
+            card.innerHTML = `
+                <div class="checklist-name">${escapeHtml(cl.name)}</div>
+                <div class="checklist-sub">🕒 ${escapeHtml(dateStr)} · 👤 ${escapeHtml(cl.observer)}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div>
+                <div class="species-list">
+                    <ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)}</span> <span class="qty">x${s.count}</span></li>`).join('')}</ul>
+                    <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir la checklist eBird</a>
+                </div>`;
+
+            card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
+            card.addEventListener('click', () => {
+                map.setView([cl.lat, cl.lng], 14);
+                card.classList.toggle('expanded');
+            });
+
+            cardRefs[cl.id] = card;
+            container.appendChild(card);
+        });
+    }
+
+    // Fonctions existantes (inchangées sauf updateAutocomplete)
     function startRadar() {
         const token = document.getElementById('apiKeyField').value.trim();
         if (!token) return alert("Saisis ta clé eBird !");
         userApiKey = token;
         document.getElementById('authScreen').classList.add('hidden');
+        // Charger la taxonomie en arrière-plan
+        loadTaxonomy();
         setTimeout(() => {
             map.invalidateSize();
             runScan();
@@ -331,6 +477,9 @@
 
     async function runScan() {
         if (!userApiKey) return;
+        // Si on est en mode espèce, ne pas écraser avec le scan général
+        if (currentSpeciesCode) return;
+
         document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px; text-align:center; color:var(--neon);">Scan en cours…</div>';
 
         const radius = document.getElementById('radiusSelect').value;
@@ -343,7 +492,6 @@
             end = today.toISOString().split('T')[0];
         }
 
-        // 🔥 Ajout de maxResults=10000 pour éviter les troncatures
         const url = `/api/ebird?lat=${center[0]}&lng=${center[1]}&dist=${radius}&start=${start}&end=${end}&maxResults=10000`;
         try {
             const res = await fetch(url, {
@@ -404,32 +552,58 @@
 
             if (!query) {
                 list.style.display = 'none';
-            } else {
+                // Réinitialiser le mode espèce si champ vide
+                if (currentSpeciesCode) {
+                    currentSpeciesCode = null;
+                    speciesChecklists = {};
+                    renderChecklists(); // retour à l'affichage normal
+                }
+                return;
+            }
+
+            // Suggestions basées sur la taxonomie (si chargée)
+            const suggestions = [];
+            if (taxonomy.length > 0) {
+                const matchingSpecies = taxonomy.filter(s => normalize(s.comName).includes(query));
+                matchingSpecies.slice(0, 5).forEach(s => suggestions.push(s.comName));
+            }
+            // Si peu ou pas de taxonomie, on utilise les checklists comme avant
+            if (suggestions.length === 0) {
                 const uniqueSpecies = new Set();
                 Object.values(checklists).forEach(cl =>
                     cl.species.forEach(s => {
                         if (normalize(s.name).includes(query)) uniqueSpecies.add(s.name);
                     })
                 );
-                const suggestions = Array.from(uniqueSpecies).slice(0, 5);
-                if (suggestions.length) {
-                    list.innerHTML = suggestions
-                        .map(s => `<div class="autocomplete-item">${escapeHtml(s)}</div>`)
-                        .join('');
-                    list.querySelectorAll('.autocomplete-item').forEach(item =>
-                        item.addEventListener('click', () => {
-                            input.value = item.textContent;
-                            list.style.display = 'none';
-                            renderChecklists(); // déclenchement immédiat au clic
-                        })
-                    );
-                    list.style.display = 'block';
-                } else {
-                    list.style.display = 'none';
-                }
+                Array.from(uniqueSpecies).slice(0, 5).forEach(s => suggestions.push(s));
             }
 
-            renderChecklists();
+            if (suggestions.length) {
+                list.innerHTML = suggestions
+                    .map(s => `<div class="autocomplete-item">${escapeHtml(s)}</div>`)
+                    .join('');
+                list.querySelectorAll('.autocomplete-item').forEach(item =>
+                    item.addEventListener('click', () => {
+                        const speciesName = item.textContent;
+                        input.value = speciesName;
+                        list.style.display = 'none';
+                        // Recherche par espèce
+                        const code = findSpeciesCode(speciesName);
+                        if (code) {
+                            currentSpeciesCode = code;
+                            fetchSpeciesChecklists(code);
+                        } else {
+                            alert('Code espèce introuvable. Rechargez la taxonomie.');
+                        }
+                    })
+                );
+                list.style.display = 'block';
+            } else {
+                list.style.display = 'none';
+            }
+
+            // Si l'utilisateur tape sans cliquer sur une suggestion, on ne change pas de mode
+            // S'il efface tout, on repasse en mode normal (géré plus haut)
         }, 300);
     }
 
@@ -440,6 +614,12 @@
     });
 
     function renderChecklists() {
+        // Si on est en mode espèce, ne pas interférer
+        if (currentSpeciesCode) {
+            renderSpeciesChecklists();
+            return;
+        }
+
         layerGroup.eachLayer(l => { if (l instanceof L.Marker) layerGroup.removeLayer(l); });
         markerRefs = {}; cardRefs = {};
         const container = document.getElementById('checklistContainer');
@@ -453,7 +633,6 @@
             return matchPlace || matchSpecies;
         });
 
-        // Compteur basé sur les checklists filtrées
         const distinctFilteredSpecies = new Set();
         filtered.forEach(cl => cl.species.forEach(s => distinctFilteredSpecies.add(s.name)));
         document.getElementById('speciesTotal').textContent = distinctFilteredSpecies.size + ' espèce(s) distincte(s)';
