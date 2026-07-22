@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
     if (!lat || !lng) return res.status(400).json({ error: 'lat et lng obligatoires.' });
 
     const radius = parseInt(dist, 10) || 25;
-    const maxResults = 10000;  // Fixé à 10000 pour être sûr
+    const maxResults = 10000;  // 🔥 Évite toute troncature
 
     let back = 30;
     if (start) {
