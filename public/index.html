@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur API eBird – Pro</title>
+    <title>Lecteur API eBird – Personnel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="icon" type="image/png" href="API Ebird.png" />
     <style>
@@ -17,7 +17,6 @@
             --muted: #94a3b8;
             --input-bg: rgba(0, 0, 0, 0.45);
             --card-bg: rgba(255, 255, 255, 0.04);
-            --danger: #ef4444;
         }
         body.light {
             --neon: #059669;
@@ -29,7 +28,6 @@
             --muted: #475569;
             --input-bg: rgba(255, 255, 255, 0.8);
             --card-bg: rgba(0, 0, 0, 0.02);
-            --danger: #dc2626;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg); color:var(--text); font-family:system-ui, sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; transition:0.3s; }
@@ -67,7 +65,7 @@
             background:var(--panel); backdrop-filter:blur(12px); border-bottom:1px solid var(--border);
             padding:10px 18px; z-index:2000; display:flex; flex-direction:column; gap:10px;
         }
-        .top-row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; }
+        .top-row { display:flex; justify-content:space-between; align-items:center; }
         .brand { display:flex; align-items:center; gap:10px; }
         .brand img { width:44px; height:44px; filter:drop-shadow(0 0 6px var(--neon)); }
         .brand span { font-weight:900; letter-spacing:2px; text-transform:uppercase; font-size:1.1rem; }
@@ -78,7 +76,6 @@
             cursor:pointer; transition:0.2s; font-size:1.1rem;
         }
         .icon-btn:hover { background:rgba(16,185,129,0.15); }
-        .icon-btn.active { background:var(--neon); color:#fff; }
 
         .github-container { position:relative; display:flex; align-items:center; }
         .github-popup {
@@ -96,17 +93,15 @@
 
         .quick-filters { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
         .quick-filters select, .quick-filters input { background:var(--input-bg); border:1px solid var(--border); color:var(--text); padding:7px 12px; border-radius:8px; font-size:0.85rem; outline:none; }
-        .date-presets { display:flex; gap:4px; }
-        .preset-btn {
-            background:var(--input-bg); border:1px solid var(--border); color:var(--text);
-            padding:5px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer; transition:0.2s;
-        }
-        .preset-btn:hover, .preset-btn.active { background:var(--neon); color:#fff; border-color:var(--neon); }
+        .region-search-wrapper { position:relative; }
+        .region-autocomplete { position:absolute; top:100%; left:0; right:0; background:var(--panel); border:1px solid var(--neon); border-radius:0 0 8px 8px; max-height:150px; overflow-y:auto; display:none; z-index:20; }
+        .region-autocomplete-item { padding:8px 12px; cursor:pointer; font-size:0.82rem; border-bottom:1px solid var(--border); }
+        .region-autocomplete-item:hover { background:rgba(16,185,129,0.2); }
 
         .main-area { flex:1; position:relative; display:flex; }
         #map { position:absolute; inset:0; background:var(--bg); z-index:1; }
         .sidebar {
-            position:absolute; top:12px; right:12px; bottom:12px; width:340px;
+            position:absolute; top:12px; right:12px; bottom:12px; width:310px;
             background:var(--panel); backdrop-filter:blur(12px); border:1px solid var(--border);
             border-radius:20px; z-index:999; display:flex; flex-direction:column; overflow:hidden;
             box-shadow:0 10px 30px rgba(0,0,0,0.4);
@@ -120,9 +115,6 @@
         .autocomplete-item { padding:8px 12px; cursor:pointer; font-size:0.8rem; border-bottom:1px solid var(--border); }
         .autocomplete-item:hover { background:rgba(16,185,129,0.2); }
         .sort-select { width:100%; padding:8px; border-radius:8px; background:var(--input-bg); border:1px solid var(--border); color:var(--text); font-size:0.8rem; }
-        .tabs { display:flex; gap:4px; margin-bottom:4px; }
-        .tab-btn { background:var(--input-bg); border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:8px; font-size:0.75rem; cursor:pointer; }
-        .tab-btn.active { background:var(--neon); color:#fff; border-color:var(--neon); }
         .checklist-scroller { flex:1; overflow-y:auto; padding:8px; }
         .checklist-card {
             padding:12px; border-radius:10px; margin-bottom:8px; cursor:pointer;
@@ -135,23 +127,16 @@
         .species-list { display:none; margin-top:10px; padding-top:8px; border-top:1px solid var(--border); font-size:0.8rem; }
         .checklist-card.expanded .species-list { display:block; }
         .species-list ul { list-style:none; padding:0; margin:0; }
-        .species-list li { display:flex; justify-content:space-between; margin-bottom:2px; align-items:center; }
+        .species-list li { display:flex; justify-content:space-between; margin-bottom:2px; }
         .species-list .qty { color:var(--neon); font-weight:bold; }
         .ebird-link { display:inline-block; margin-top:8px; color:var(--neon); font-size:0.75rem; font-weight:bold; text-decoration:none; border:1px solid var(--border); padding:3px 8px; border-radius:6px; }
         .ebird-link:hover { background:rgba(16,185,129,0.15); }
-        .favorite-star { cursor:pointer; color:var(--muted); margin-left:auto; font-size:1.1rem; }
-        .favorite-star.active { color:#fbbf24; }
-        .notable-badge { background:var(--danger); color:#fff; font-size:0.6rem; padding:2px 6px; border-radius:4px; margin-left:6px; }
+
         .map-marker svg { width:26px; height:26px; fill:var(--neon); animation:bounce 1.8s infinite alternate; }
-        .map-marker.notable svg { fill:var(--danger); }
         @keyframes bounce { 0%{transform:translateY(0);} 100%{transform:translateY(-3px);} }
-        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; display:none; align-items:center; justify-content:center; }
-        .modal.active { display:flex; }
-        .modal-content { background:var(--panel); border:1px solid var(--neon); border-radius:16px; padding:24px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; color:var(--text); }
-        .modal-close { float:right; cursor:pointer; font-size:1.4rem; }
 
         @media (max-width:767px) {
-            .sidebar { top:auto; left:8px; right:8px; bottom:8px; width:auto; height:280px; }
+            .sidebar { top:auto; left:8px; right:8px; bottom:8px; width:auto; height:220px; }
             .checklist-scroller { display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; }
             .checklist-card { flex:0 0 230px; border-left:none; border-bottom:3px solid transparent; }
         }
@@ -159,19 +144,21 @@
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
 <div id="authScreen">
     <div class="auth-box">
-        <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo"><img src="API Ebird.png" alt="logo" /></a>
-        <h1>Lecteur eBird Pro</h1>
-        <p>Favoris · Raretés · Régions</p>
+        <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo" title="Obtenir une clé eBird">
+            <img src="API Ebird.png" alt="logo" />
+        </a>
+        <h1>Lecteur eBird</h1>
+        <p>Sécurisé • Vercel</p>
         <input type="password" id="apiKeyField" class="api-input" placeholder="Colle ta clé API eBird…" autocomplete="off" />
         <button class="btn-primary" onclick="startRadar()">🔍 Activer le Scanner</button>
-        <div class="help-text"><kbd>Entrée</kbd> pour valider • Clé sur <a href="https://ebird.org/api/keygen" target="_blank" style="color:var(--neon);">ebird.org/api/keygen</a></div>
+        <div class="help-text">
+            <kbd>Entrée</kbd> pour valider • Clé sur <a href="https://ebird.org/api/keygen" target="_blank" style="color:var(--neon);">ebird.org/api/keygen</a>
+        </div>
     </div>
 </div>
 
-<!-- TOP BAR -->
 <header class="top-bar">
     <div class="top-row">
         <div class="brand">
@@ -179,12 +166,7 @@
             <span>Lecteur API eBird</span>
         </div>
         <div class="actions">
-            <select id="langSelect" onchange="changeLanguage(this.value)" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:5px;border-radius:6px;">
-                <option value="fr">FR</option><option value="en">EN</option><option value="es">ES</option>
-            </select>
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
-            <button class="icon-btn" id="autoRefreshBtn" onclick="toggleAutoRefresh()" title="Rafraîchir auto">🔄</button>
-            <button class="icon-btn" onclick="loadNotableObs()" title="Observations notables">🔴</button>
             <div class="github-container" id="githubContainer">
                 <div class="icon-btn" id="githubIcon">
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -202,23 +184,10 @@
             <option value="25" selected>25 km</option>
             <option value="50">50 km</option>
         </select>
-        <select id="regionSelect" onchange="goToRegion(this.value)">
-            <option value="">🌍 Choisir région</option>
-            <option value="FR-CVL-37">Indre-et-Loire</option>
-            <option value="FR-CVL-45">Loiret</option>
-            <option value="FR-CVL-41">Loir-et-Cher</option>
-            <option value="FR-CVL-18">Cher</option>
-            <option value="FR-CVL-28">Eure-et-Loir</option>
-            <option value="FR-CVL-36">Indre</option>
-        </select>
-        <div class="date-presets">
-            <button class="preset-btn active" onclick="setDatePreset(7, this)">7j</button>
-            <button class="preset-btn" onclick="setDatePreset(14, this)">14j</button>
-            <button class="preset-btn" onclick="setDatePreset(30, this)">30j</button>
+        <div class="region-search-wrapper">
+            <input type="text" id="regionSearch" placeholder="🌍 Chercher une région..." oninput="searchRegion()" autocomplete="off" />
+            <div class="region-autocomplete" id="regionAutocompleteList"></div>
         </div>
-        <input type="date" id="startDate" onchange="runScan()" />
-        <input type="date" id="endDate" onchange="runScan()" />
-        <button class="icon-btn" onclick="clearDates(); runScan();">✕</button>
     </div>
 </header>
 
@@ -226,13 +195,11 @@
     <div id="map"></div>
     <div class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title"><span>Checklists</span><span id="checklistCount" style="color:#fff; background:var(--neon); padding:2px 8px; border-radius:12px;">0</span></div>
-            <div id="speciesTotal" style="font-size:0.7rem; color:var(--muted); text-align:center;">0 espèce distincte</div>
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('all')">Toutes</button>
-                <button class="tab-btn" onclick="switchTab('favorites')">⭐ Favoris</button>
-                <button class="tab-btn" onclick="switchTab('notable')">🔴 Raretés</button>
+            <div class="sidebar-title">
+                <span>Checklists</span>
+                <span id="checklistCount" style="color:#fff; background:var(--neon); padding:2px 8px; border-radius:12px;">0</span>
             </div>
+            <div id="speciesTotal" style="font-size:0.7rem; color:var(--muted); text-align:center;">0 espèce distincte</div>
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 Lieu ou espèce..." oninput="updateAutocomplete()" autocomplete="off" />
                 <div class="autocomplete" id="autocompleteList"></div>
@@ -249,40 +216,27 @@
     </div>
 </main>
 
-<!-- MODAL CHECKLIST DETAILS -->
-<div class="modal" id="checklistModal">
-    <div class="modal-content">
-        <span class="modal-close" onclick="closeModal()">&times;</span>
-        <div id="modalBody"></div>
-    </div>
-</div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const escapeHtml = (str) => String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g,'').toLowerCase();
 
-    // ─── État global ────────────────────────────
     let userApiKey = null;
     let map, layerGroup, tileLayer;
     let center = [47.3941, 0.6848];
     let rawObservations = [];
     let checklists = {};
-    let notableObservations = [];
-    let notableChecklists = {};
     let markerRefs = {};
     let cardRefs = {};
     let nightMode = true;
     let autocompleteTimer;
+    let regionSearchTimer;
+
+    // Taxonomie et mode espèce
     let taxonomy = [];
     let currentSpeciesCode = null;
     let speciesChecklists = {};
-    let favorites = JSON.parse(localStorage.getItem('ebirdFavorites') || '[]');
-    let activeTab = 'all';
-    let autoRefreshInterval = null;
-    let currentLang = 'fr';
 
-    // ─── Utilitaires ────────────────────────────
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -290,24 +244,9 @@
         const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
-    function formatDate(dt) {
-        if (!dt) return '?';
-        const [date, time] = dt.split(' ');
-        const [y,m,d] = date.split('-');
-        return `${d}/${m}/${y} ${time||''}`;
-    }
-    function toggleFavorite(name) {
-        const idx = favorites.indexOf(name);
-        if (idx > -1) favorites.splice(idx, 1);
-        else favorites.push(name);
-        localStorage.setItem('ebirdFavorites', JSON.stringify(favorites));
-        renderChecklists();
-    }
-    function isFavorite(name) { return favorites.includes(name); }
 
-    // ─── Thème ──────────────────────────────────
-    function toggleTheme(f = null) {
-        nightMode = f !== null ? f : !nightMode;
+    function toggleTheme(force = null) {
+        nightMode = force !== null ? force : !nightMode;
         document.body.className = nightMode ? '' : 'light';
         document.getElementById('themeBtn').innerText = nightMode ? '🌙' : '☀️';
         if (tileLayer) map.removeLayer(tileLayer);
@@ -317,413 +256,54 @@
         ).addTo(map);
     }
 
-    // ─── Dates ──────────────────────────────────
-    function setDatePreset(days, btn) {
-        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const end = new Date();
-        const start = new Date(end.getTime() - days*86400000);
-        document.getElementById('startDate').value = start.toISOString().split('T')[0];
-        document.getElementById('endDate').value = end.toISOString().split('T')[0];
-        runScan();
-    }
-    function clearDates() {
-        document.getElementById('startDate').value = '';
-        document.getElementById('endDate').value = '';
-        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-    }
+    // ─── Recherche de région ────────────────────
+    async function searchRegion() {
+        clearTimeout(regionSearchTimer);
+        regionSearchTimer = setTimeout(async () => {
+            const input = document.getElementById('regionSearch');
+            const query = input.value.trim();
+            const list = document.getElementById('regionAutocompleteList');
+            if (query.length < 2) { list.style.display = 'none'; return; }
 
-    // ─── Langues ────────────────────────────────
-    async function changeLanguage(lang) {
-        currentLang = lang;
-        await loadTaxonomy();
-        if (currentSpeciesCode) fetchSpeciesChecklists(currentSpeciesCode);
-        else runScan();
-    }
+            try {
+                const res = await fetch(`/api/ebird-region-search?q=${encodeURIComponent(query)}`, {
+                    headers: { 'x-user-ebird-key': userApiKey }
+                });
+                if (!res.ok) throw new Error('Erreur recherche');
+                const regions = await res.json();
 
-    // ─── Onglets ────────────────────────────────
-    function switchTab(tab) {
-        activeTab = tab;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector(`.tab-btn.${tab==='all'?'active':''}`)?.classList.add('active');
-        if (tab === 'notable') renderNotableChecklists();
-        else renderChecklists();
-    }
+                if (!regions.length) { list.style.display = 'none'; return; }
 
-    // ─── Auto-refresh ───────────────────────────
-    function toggleAutoRefresh() {
-        const btn = document.getElementById('autoRefreshBtn');
-        if (autoRefreshInterval) {
-            clearInterval(autoRefreshInterval);
-            autoRefreshInterval = null;
-            btn.classList.remove('active');
-        } else {
-            autoRefreshInterval = setInterval(() => {
-                if (activeTab === 'notable') loadNotableObs();
-                else runScan();
-            }, 60000);
-            btn.classList.add('active');
-        }
-    }
+                list.innerHTML = regions.map(r => 
+                    `<div class="region-autocomplete-item" data-lat="${r.lat}" data-lng="${r.lng}" data-name="${escapeHtml(r.name)}">${escapeHtml(r.name)}</div>`
+                ).join('');
 
-    // ─── Modal ──────────────────────────────────
-    function openModal(content) {
-        document.getElementById('modalBody').innerHTML = content;
-        document.getElementById('checklistModal').classList.add('active');
-    }
-    function closeModal() {
-        document.getElementById('checklistModal').classList.remove('active');
-    }
-
-    // ─── Détail checklist ───────────────────────
-    async function showChecklistDetails(subId) {
-        try {
-            const res = await fetch(`/api/ebird-checklist-view?subId=${subId}`, {
-                headers: { 'x-user-ebird-key': userApiKey }
-            });
-            const d = await res.json();
-            const obs = d.obs || d;
-            openModal(`
-                <h3>${escapeHtml(obs.locName || 'Checklist')}</h3>
-                <p>🕒 ${obs.obsDt}</p>
-                <p>👤 ${obs.userDisplayName || 'Anonyme'}</p>
-                <p>⏱️ ${obs.durationHrs || '?'}h · 📏 ${obs.distanceTraveledKm || 0} km</p>
-                <p>📋 ${obs.protocol || 'inconnu'}</p>
-                <p>💬 ${obs.comments || ''}</p>
-            `);
-        } catch (e) {
-            alert('Erreur lors du chargement des détails.');
-        }
-    }
-
-    // ─── Observations notables ──────────────────
-    async function loadNotableObs() {
-        const radius = document.getElementById('radiusSelect').value;
-        let back = 30;
-        const start = document.getElementById('startDate').value;
-        if (start) {
-            const sd = new Date(start.replace(/\//g, '-'));
-            const today = new Date(); today.setHours(0,0,0,0);
-            if (!isNaN(sd)) back = Math.max(1, Math.min(30, Math.ceil((today-sd)/86400000)+1));
-        }
-        try {
-            const res = await fetch(`/api/ebird-notable?lat=${center[0]}&lng=${center[1]}&dist=${radius}&back=${back}`, {
-                headers: { 'x-user-ebird-key': userApiKey }
-            });
-            const data = await res.json();
-            notableObservations = data;
-            buildNotableChecklists();
-            switchTab('notable');
-        } catch (e) {
-            alert('Erreur chargement observations notables');
-        }
-    }
-
-    function buildNotableChecklists() {
-        notableChecklists = {};
-        notableObservations.forEach(obs => {
-            const id = obs.subId; if (!id) return;
-            if (!notableChecklists[id]) {
-                notableChecklists[id] = {
-                    id, name: obs.locName || 'Lieu inconnu', lat: obs.lat, lng: obs.lng,
-                    observer: obs.userDisplayName || 'Anonyme', lastDate: obs.obsDt,
-                    dateObj: new Date(obs.obsDt), species: [], totalBirds: 0
-                };
-            }
-            const ex = notableChecklists[id].species.find(s => s.name === obs.comName);
-            if (ex) ex.count += (obs.howMany || 1);
-            else notableChecklists[id].species.push({ name: obs.comName || 'Inconnu', sci: obs.sciName || '', count: obs.howMany || 1 });
-            notableChecklists[id].totalBirds += (obs.howMany || 1);
-            if (new Date(obs.obsDt) > notableChecklists[id].dateObj) {
-                notableChecklists[id].dateObj = new Date(obs.obsDt);
-                notableChecklists[id].lastDate = obs.obsDt;
-            }
-        });
-        renderNotableChecklists();
-    }
-
-    function renderNotableChecklists() {
-        layerGroup.eachLayer(l => { if (l instanceof L.Marker) layerGroup.removeLayer(l); });
-        markerRefs = {}; cardRefs = {};
-        const container = document.getElementById('checklistContainer');
-        container.innerHTML = '';
-        const filtered = Object.values(notableChecklists);
-        document.getElementById('speciesTotal').textContent = filtered.length + ' checklist(s) notable(s)';
-        document.getElementById('checklistCount').textContent = filtered.length;
-        if (!filtered.length) {
-            container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Aucune observation notable.</div>';
-            return;
-        }
-        filtered.sort((a,b) => b.dateObj - a.dateObj);
-        filtered.forEach(cl => {
-            const marker = L.marker([cl.lat, cl.lng], {
-                icon: L.divIcon({ className:'map-marker notable', html:'<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>', iconSize:[26,26], iconAnchor:[13,26] })
-            }).addTo(layerGroup);
-            const card = document.createElement('div'); card.className = 'checklist-card';
-            card.innerHTML = `<div class="checklist-name">🔴 ${escapeHtml(cl.name)}</div><div class="checklist-sub">🕒 ${formatDate(cl.lastDate)} · 👤 ${escapeHtml(cl.observer)}<br>🦅 ${cl.species.length} espèce(s)</div><div class="species-list"><ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)}</span><span class="qty">x${s.count}</span></li>`).join('')}</ul><a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a></div>`;
-            card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
-            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 14); card.classList.toggle('expanded'); });
-            container.appendChild(card);
-        });
-    }
-
-    // ─── Taxonomie ──────────────────────────────
-    async function loadTaxonomy() {
-        try {
-            const res = await fetch('/api/ebird-taxonomy', {
-                headers: { 'x-user-ebird-key': userApiKey }
-            });
-            if (!res.ok) throw new Error('Erreur taxonomie');
-            taxonomy = await res.json();
-        } catch (err) { console.error(err); }
-    }
-    function findSpeciesCode(name) {
-        const norm = normalize(name);
-        const match = taxonomy.find(s => normalize(s.comName) === norm);
-        return match ? match.speciesCode : null;
-    }
-
-    // ─── Recherche par espèce (nearest) ─────────
-    async function fetchSpeciesChecklists(speciesCode) {
-        document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px;text-align:center;color:var(--neon);">Recherche…</div>';
-        const radius = parseInt(document.getElementById('radiusSelect').value, 10);
-        let start = document.getElementById('startDate').value, back = 30;
-        if (start) {
-            const sd = new Date(start.replace(/\//g, '-')), today = new Date(); today.setHours(0,0,0,0);
-            if (!isNaN(sd)) back = Math.max(1, Math.min(30, Math.ceil((today-sd)/86400000)+1));
-        }
-        const url = `/api/ebird-nearest?lat=${center[0]}&lng=${center[1]}&code=${speciesCode}&back=${back}&maxResults=2000`;
-        try {
-            const res = await fetch(url, { headers: { 'x-user-ebird-key': userApiKey } });
-            const data = await res.json();
-            const filtered = data.filter(obs => calculateDistance(center[0], center[1], obs.lat, obs.lng) <= radius);
-            buildSpeciesChecklists(filtered);
-        } catch (err) {
-            document.getElementById('checklistContainer').innerHTML = `<div style="padding:20px;color:#f87171;">${escapeHtml(err.message)}</div>`;
-        }
-    }
-
-    function buildSpeciesChecklists(observations) {
-        speciesChecklists = {};
-        observations.forEach(obs => {
-            const id = obs.subId; if (!id) return;
-            if (!speciesChecklists[id]) {
-                speciesChecklists[id] = {
-                    id, name: obs.locName || 'Lieu inconnu', lat: obs.lat, lng: obs.lng,
-                    observer: obs.userDisplayName || 'Anonyme', lastDate: obs.obsDt,
-                    dateObj: new Date(obs.obsDt), species: [], totalBirds: 0
-                };
-            }
-            const ex = speciesChecklists[id].species.find(s => s.name === obs.comName);
-            if (ex) ex.count += (obs.howMany || 1);
-            else speciesChecklists[id].species.push({ name: obs.comName || 'Inconnu', sci: obs.sciName || '', count: obs.howMany || 1 });
-            speciesChecklists[id].totalBirds += (obs.howMany || 1);
-            if (new Date(obs.obsDt) > speciesChecklists[id].dateObj) {
-                speciesChecklists[id].dateObj = new Date(obs.obsDt);
-                speciesChecklists[id].lastDate = obs.obsDt;
-            }
-        });
-        renderSpeciesChecklists();
-    }
-
-    function renderSpeciesChecklists() {
-        layerGroup.eachLayer(l => { if (l instanceof L.Marker) layerGroup.removeLayer(l); });
-        markerRefs = {}; cardRefs = {};
-        const container = document.getElementById('checklistContainer'); container.innerHTML = '';
-        const filtered = Object.values(speciesChecklists);
-        const distinct = new Set(); filtered.forEach(c => c.species.forEach(s => distinct.add(s.name)));
-        document.getElementById('speciesTotal').textContent = distinct.size + ' espèce(s) distincte(s)';
-        document.getElementById('checklistCount').textContent = filtered.length;
-        if (!filtered.length) {
-            container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Aucune checklist trouvée pour cette espèce.</div>';
-            return;
-        }
-        const sort = document.getElementById('sortSelect').value;
-        if (sort === 'alpha') filtered.sort((a,b) => a.name.localeCompare(b.name));
-        else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
-        else filtered.sort((a,b) => b.dateObj - a.dateObj);
-        filtered.forEach(cl => {
-            const marker = L.marker([cl.lat, cl.lng], { icon: markerIcon }).addTo(layerGroup);
-            markerRefs[cl.id] = marker;
-            marker.on('click', () => {
-                const card = cardRefs[cl.id];
-                if (card) { card.scrollIntoView({ behavior:'smooth', block:'center' }); card.classList.add('highlight'); if(!card.classList.contains('expanded')) card.classList.add('expanded'); setTimeout(() => card.classList.remove('highlight'), 1500); }
-            });
-            const card = document.createElement('div'); card.className = 'checklist-card';
-            card.innerHTML = `<div class="checklist-name">${escapeHtml(cl.name)}</div><div class="checklist-sub">🕒 ${formatDate(cl.lastDate)} · 👤 ${escapeHtml(cl.observer)}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div><div class="species-list"><ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)}</span> <span class="qty">x${s.count}</span></li>`).join('')}</ul><a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir la checklist eBird</a></div>`;
-            card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
-            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 14); card.classList.toggle('expanded'); });
-            cardRefs[cl.id] = card; container.appendChild(card);
-        });
-    }
-
-    // ─── Scan général ───────────────────────────
-    async function runScan() {
-        if (!userApiKey || activeTab === 'notable') return;
-        document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px;text-align:center;color:var(--neon);">Scan en cours…</div>';
-        const radius = document.getElementById('radiusSelect').value;
-        let start = document.getElementById('startDate').value;
-        let end = document.getElementById('endDate').value;
-        if (!start || !end) {
-            const today = new Date(), past = new Date(today.getTime() - 30*86400000);
-            start = past.toISOString().split('T')[0];
-            end = today.toISOString().split('T')[0];
-        }
-        const url = `/api/ebird?lat=${center[0]}&lng=${center[1]}&dist=${radius}&start=${start}&end=${end}&maxResults=10000`;
-        try {
-            const res = await fetch(url, { headers: { 'x-user-ebird-key': userApiKey } });
-            const data = await res.json();
-            rawObservations = data;
-            buildChecklists();
-        } catch (err) {
-            document.getElementById('checklistContainer').innerHTML = `<div style="padding:20px;color:#f87171;">${escapeHtml(err.message)}</div>`;
-        }
-    }
-
-    function buildChecklists() {
-        checklists = {};
-        rawObservations.forEach(obs => {
-            const id = obs.subId; if (!id) return;
-            if (!checklists[id]) {
-                checklists[id] = {
-                    id, name: obs.locName || 'Lieu inconnu', lat: obs.lat, lng: obs.lng,
-                    observer: obs.userDisplayName || 'Anonyme', lastDate: obs.obsDt,
-                    dateObj: new Date(obs.obsDt), species: [], totalBirds: 0
-                };
-            }
-            const ex = checklists[id].species.find(s => s.name === obs.comName);
-            if (ex) ex.count += (obs.howMany || 1);
-            else checklists[id].species.push({ name: obs.comName || 'Inconnu', sci: obs.sciName || '', count: obs.howMany || 1 });
-            checklists[id].totalBirds += (obs.howMany || 1);
-            if (new Date(obs.obsDt) > checklists[id].dateObj) {
-                checklists[id].dateObj = new Date(obs.obsDt);
-                checklists[id].lastDate = obs.obsDt;
-            }
-        });
-        layerGroup.clearLayers();
-        L.circle(center, { color:'#10b981', fillColor:'#10b981', fillOpacity:0.04, radius: document.getElementById('radiusSelect').value*1000, weight:1 }).addTo(layerGroup);
-        renderChecklists();
-    }
-
-    // ─── Rendu principal ────────────────────────
-    const markerIcon = L.divIcon({
-        className: 'map-marker',
-        html: '<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
-        iconSize: [26,26], iconAnchor: [13,26], popupAnchor: [0,-26]
-    });
-
-    function updateAutocomplete() {
-        clearTimeout(autocompleteTimer);
-        autocompleteTimer = setTimeout(() => {
-            const input = document.getElementById('searchInput');
-            const query = normalize(input.value.trim());
-            const list = document.getElementById('autocompleteList');
-            if (!query) {
-                list.style.display = 'none';
-                if (currentSpeciesCode) { currentSpeciesCode = null; speciesChecklists = {}; renderChecklists(); }
-                return;
-            }
-            const suggestions = [];
-            if (taxonomy.length > 0) {
-                const matching = taxonomy.filter(s => normalize(s.comName).includes(query));
-                matching.slice(0,5).forEach(s => suggestions.push(s.comName));
-            }
-            if (suggestions.length === 0) {
-                const unique = new Set();
-                Object.values(checklists).forEach(cl => cl.species.forEach(s => { if (normalize(s.name).includes(query)) unique.add(s.name); }));
-                Array.from(unique).slice(0,5).forEach(s => suggestions.push(s));
-            }
-            if (suggestions.length) {
-                list.innerHTML = suggestions.map(s => `<div class="autocomplete-item">${escapeHtml(s)}</div>`).join('');
-                list.querySelectorAll('.autocomplete-item').forEach(item => item.addEventListener('click', () => {
-                    const name = item.textContent;
-                    input.value = name; list.style.display = 'none';
-                    const code = findSpeciesCode(name);
-                    if (code) { currentSpeciesCode = code; fetchSpeciesChecklists(code); }
-                    else alert('Code espèce introuvable. Rechargez la taxonomie.');
-                }));
+                list.querySelectorAll('.region-autocomplete-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const lat = parseFloat(item.dataset.lat);
+                        const lng = parseFloat(item.dataset.lng);
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            center = [lat, lng];
+                            map.setView(center, 10);
+                            input.value = item.dataset.name;
+                            list.style.display = 'none';
+                            runScan();
+                        }
+                    });
+                });
                 list.style.display = 'block';
-            } else list.style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                list.style.display = 'none';
+            }
         }, 300);
     }
 
     document.addEventListener('click', (e) => {
-        const list = document.getElementById('autocompleteList');
-        const input = document.getElementById('searchInput');
+        const list = document.getElementById('regionAutocompleteList');
+        const input = document.getElementById('regionSearch');
         if (e.target !== input && e.target !== list) list.style.display = 'none';
     });
-
-    function renderChecklists() {
-        if (activeTab === 'notable') { renderNotableChecklists(); return; }
-        if (currentSpeciesCode) { renderSpeciesChecklists(); return; }
-
-        layerGroup.eachLayer(l => { if (l instanceof L.Marker) layerGroup.removeLayer(l); });
-        markerRefs = {}; cardRefs = {};
-        const container = document.getElementById('checklistContainer'); container.innerHTML = '';
-        const query = normalize(document.getElementById('searchInput').value);
-        const sort = document.getElementById('sortSelect').value;
-
-        let dataSource = activeTab === 'favorites'
-            ? Object.values(checklists).filter(cl => cl.species.some(s => favorites.includes(s.name)))
-            : Object.values(checklists);
-
-        let filtered = dataSource.filter(cl => {
-            const matchPlace = normalize(cl.name).includes(query);
-            const matchSpecies = cl.species.some(s => normalize(s.name).includes(query));
-            return matchPlace || matchSpecies;
-        });
-
-        const distinct = new Set(); filtered.forEach(c => c.species.forEach(s => distinct.add(s.name)));
-        document.getElementById('speciesTotal').textContent = distinct.size + ' espèce(s) distincte(s)';
-        document.getElementById('checklistCount').textContent = filtered.length;
-
-        if (!filtered.length) {
-            container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Aucune checklist trouvée.</div>';
-            return;
-        }
-
-        if (sort === 'alpha') filtered.sort((a,b) => a.name.localeCompare(b.name));
-        else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
-        else filtered.sort((a,b) => b.dateObj - a.dateObj);
-
-        filtered.forEach(cl => {
-            const marker = L.marker([cl.lat, cl.lng], { icon: markerIcon }).addTo(layerGroup);
-            markerRefs[cl.id] = marker;
-            marker.on('click', () => {
-                const card = cardRefs[cl.id];
-                if (card) { card.scrollIntoView({ behavior:'smooth', block:'center' }); card.classList.add('highlight'); if(!card.classList.contains('expanded')) card.classList.add('expanded'); setTimeout(() => card.classList.remove('highlight'), 1500); }
-            });
-
-            const card = document.createElement('div'); card.className = 'checklist-card';
-            card.innerHTML = `
-                <div class="checklist-name">${escapeHtml(cl.name)}</div>
-                <div class="checklist-sub">🕒 ${formatDate(cl.lastDate)} · 👤 ${escapeHtml(cl.observer)}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div>
-                <div class="species-list">
-                    <ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)} ${isFavorite(s.name)?'⭐':''}</span> <span class="qty">x${s.count} <span class="favorite-star ${isFavorite(s.name)?'active':''}" onclick="event.stopPropagation();toggleFavorite('${s.name.replace(/'/g,"\\'")}')">★</span></span></li>`).join('')}</ul>
-                    <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a>
-                    <button class="ebird-link" onclick="event.stopPropagation();showChecklistDetails('${cl.id}')" style="margin-left:6px;">📋 Détails</button>
-                </div>`;
-            card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
-            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 14); card.classList.toggle('expanded'); });
-            cardRefs[cl.id] = card;
-            container.appendChild(card);
-        });
-    }
-
-    // ─── Régions (centrage) ─────────────────────
-    const regionCoords = {
-        'FR-CVL-37': [47.3941, 0.6848],
-        'FR-CVL-45': [47.9027, 1.909],
-        'FR-CVL-41': [47.5875, 1.335],
-        'FR-CVL-18': [47.081, 2.398],
-        'FR-CVL-28': [48.446, 1.488],
-        'FR-CVL-36': [46.811, 1.691]
-    };
-    function goToRegion(code) {
-        if (!code) return;
-        const coord = regionCoords[code];
-        if (coord) { center = coord; map.setView(coord, 10); runScan(); }
-    }
 
     // ─── Démarrage ──────────────────────────────
     function startRadar() {
@@ -738,6 +318,253 @@
         }, 400);
     }
 
+    async function loadTaxonomy() {
+        try {
+            const res = await fetch('/api/ebird-taxonomy', { headers: { 'x-user-ebird-key': userApiKey } });
+            if (!res.ok) throw new Error('Erreur taxonomie');
+            taxonomy = await res.json();
+        } catch (err) { console.error('Taxonomie indisponible.'); }
+    }
+
+    function findSpeciesCode(frenchName) {
+        const normalizedInput = normalize(frenchName);
+        const match = taxonomy.find(s => normalize(s.comName) === normalizedInput);
+        return match ? match.speciesCode : null;
+    }
+
+    // ─── Scan général (30 jours par défaut) ─────
+    async function runScan() {
+        if (!userApiKey || currentSpeciesCode) return;
+        document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px; text-align:center; color:var(--neon);">Scan en cours…</div>';
+
+        const radius = document.getElementById('radiusSelect').value;
+        // Pas de dates → le proxy utilise back=30 automatiquement
+        const url = `/api/ebird?lat=${center[0]}&lng=${center[1]}&dist=${radius}&maxResults=10000`;
+        try {
+            const res = await fetch(url, { headers: { 'x-user-ebird-key': userApiKey } });
+            if (!res.ok) throw new Error("Erreur serveur : " + await res.text());
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            rawObservations = data;
+            buildChecklists();
+        } catch (err) {
+            document.getElementById('checklistContainer').innerHTML = `<div style="padding:20px; color:#f87171;">${escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    function buildChecklists() {
+        checklists = {};
+        rawObservations.forEach(obs => {
+            const subId = obs.subId; if (!subId) return;
+            if (!checklists[subId]) {
+                checklists[subId] = {
+                    id: subId, name: obs.locName || 'Lieu inconnu', lat: obs.lat, lng: obs.lng,
+                    observer: obs.userDisplayName || 'Anonyme', lastDate: obs.obsDt,
+                    dateObj: new Date(obs.obsDt), species: [], totalBirds: 0
+                };
+            }
+            const existing = checklists[subId].species.find(s => s.name === obs.comName);
+            if (existing) existing.count += (obs.howMany || 1);
+            else checklists[subId].species.push({ name: obs.comName || 'Inconnu', sci: obs.sciName || '', count: obs.howMany || 1 });
+            checklists[subId].totalBirds += (obs.howMany || 1);
+            if (new Date(obs.obsDt) > checklists[subId].dateObj) {
+                checklists[subId].dateObj = new Date(obs.obsDt);
+                checklists[subId].lastDate = obs.obsDt;
+            }
+        });
+        layerGroup.clearLayers();
+        L.circle(center, { color:'#10b981', fillColor:'#10b981', fillOpacity:0.04, radius: document.getElementById('radiusSelect').value*1000, weight:1 }).addTo(layerGroup);
+        renderChecklists();
+    }
+
+    const markerIcon = L.divIcon({
+        className: 'map-marker',
+        html: '<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
+        iconSize: [26,26], iconAnchor: [13,26], popupAnchor: [0,-26]
+    });
+
+    // ─── Autocomplétion espèce ──────────────────
+    function updateAutocomplete() {
+        clearTimeout(autocompleteTimer);
+        autocompleteTimer = setTimeout(() => {
+            const input = document.getElementById('searchInput');
+            const query = normalize(input.value.trim());
+            const list = document.getElementById('autocompleteList');
+
+            if (!query) {
+                list.style.display = 'none';
+                if (currentSpeciesCode) { currentSpeciesCode = null; speciesChecklists = {}; renderChecklists(); }
+                return;
+            }
+
+            const suggestions = [];
+            if (taxonomy.length > 0) {
+                const matching = taxonomy.filter(s => normalize(s.comName).includes(query));
+                matching.slice(0,5).forEach(s => suggestions.push(s.comName));
+            }
+            if (suggestions.length === 0) {
+                const unique = new Set();
+                Object.values(checklists).forEach(cl => cl.species.forEach(s => { if (normalize(s.name).includes(query)) unique.add(s.name); }));
+                Array.from(unique).slice(0,5).forEach(s => suggestions.push(s));
+            }
+
+            if (suggestions.length) {
+                list.innerHTML = suggestions.map(s => `<div class="autocomplete-item">${escapeHtml(s)}</div>`).join('');
+                list.querySelectorAll('.autocomplete-item').forEach(item => item.addEventListener('click', () => {
+                    const name = item.textContent;
+                    input.value = name; list.style.display = 'none';
+                    const code = findSpeciesCode(name);
+                    if (code) { currentSpeciesCode = code; fetchSpeciesChecklists(code); }
+                    else alert('Code espèce introuvable. Rechargez la taxonomie.');
+                }));
+                list.style.display = 'block';
+            } else list.style.display = 'none';
+        }, 300);
+    }
+
+    // ─── Recherche par espèce (nearest) ─────────
+    async function fetchSpeciesChecklists(speciesCode) {
+        document.getElementById('checklistContainer').innerHTML = '<div style="padding:20px; text-align:center; color:var(--neon);">Recherche de l\'espèce…</div>';
+        const radius = parseInt(document.getElementById('radiusSelect').value, 10);
+        // back=30 par défaut
+        const url = `/api/ebird-nearest?lat=${center[0]}&lng=${center[1]}&code=${speciesCode}&back=30&maxResults=2000`;
+        try {
+            const res = await fetch(url, { headers: { 'x-user-ebird-key': userApiKey } });
+            const data = await res.json();
+            const filteredData = data.filter(obs => calculateDistance(center[0], center[1], obs.lat, obs.lng) <= radius);
+            buildSpeciesChecklists(filteredData);
+        } catch (err) {
+            document.getElementById('checklistContainer').innerHTML = `<div style="padding:20px; color:#f87171;">${escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    function buildSpeciesChecklists(observations) {
+        speciesChecklists = {};
+        observations.forEach(obs => {
+            const subId = obs.subId; if (!subId) return;
+            if (!speciesChecklists[subId]) {
+                speciesChecklists[subId] = {
+                    id: subId, name: obs.locName || 'Lieu inconnu', lat: obs.lat, lng: obs.lng,
+                    observer: obs.userDisplayName || 'Anonyme', lastDate: obs.obsDt,
+                    dateObj: new Date(obs.obsDt), species: [], totalBirds: 0
+                };
+            }
+            const existing = speciesChecklists[subId].species.find(s => s.name === obs.comName);
+            if (existing) existing.count += (obs.howMany || 1);
+            else speciesChecklists[subId].species.push({ name: obs.comName || 'Inconnu', sci: obs.sciName || '', count: obs.howMany || 1 });
+            speciesChecklists[subId].totalBirds += (obs.howMany || 1);
+            if (new Date(obs.obsDt) > speciesChecklists[subId].dateObj) {
+                speciesChecklists[subId].dateObj = new Date(obs.obsDt);
+                speciesChecklists[subId].lastDate = obs.obsDt;
+            }
+        });
+        renderSpeciesChecklists();
+    }
+
+    function renderSpeciesChecklists() {
+        layerGroup.eachLayer(l => { if (l instanceof L.Marker) layerGroup.removeLayer(l); });
+        markerRefs = {}; cardRefs = {};
+        const container = document.getElementById('checklistContainer'); container.innerHTML = '';
+        const sort = document.getElementById('sortSelect').value;
+
+        let filtered = Object.values(speciesChecklists);
+        const distinctFilteredSpecies = new Set();
+        filtered.forEach(cl => cl.species.forEach(s => distinctFilteredSpecies.add(s.name)));
+        document.getElementById('speciesTotal').textContent = distinctFilteredSpecies.size + ' espèce(s) distincte(s)';
+        document.getElementById('checklistCount').textContent = filtered.length;
+
+        if (!filtered.length) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted);">Aucune checklist trouvée pour cette espèce.</div>';
+            return;
+        }
+
+        if (sort === 'alpha') filtered.sort((a,b) => a.name.localeCompare(b.name));
+        else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
+        else if (sort === 'date') filtered.sort((a,b) => b.dateObj - a.dateObj);
+
+        filtered.forEach(cl => {
+            const dateStr = formatDate(cl.lastDate);
+            const marker = L.marker([cl.lat, cl.lng], { icon: markerIcon }).addTo(layerGroup);
+            markerRefs[cl.id] = marker;
+            marker.on('click', () => {
+                const card = cardRefs[cl.id];
+                if (card) { card.scrollIntoView({ behavior:'smooth', block:'center' }); card.classList.add('highlight'); if (!card.classList.contains('expanded')) card.classList.add('expanded'); setTimeout(() => card.classList.remove('highlight'), 1500); }
+            });
+
+            const card = document.createElement('div'); card.className = 'checklist-card';
+            card.innerHTML = `
+                <div class="checklist-name">${escapeHtml(cl.name)}</div>
+                <div class="checklist-sub">🕒 ${escapeHtml(dateStr)} · 👤 ${escapeHtml(cl.observer)}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div>
+                <div class="species-list">
+                    <ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)}</span> <span class="qty">x${s.count}</span></li>`).join('')}</ul>
+                    <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir la checklist eBird</a>
+                </div>`;
+            card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
+            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 14); card.classList.toggle('expanded'); });
+            cardRefs[cl.id] = card; container.appendChild(card);
+        });
+    }
+
+    // ─── Rendu principal ────────────────────────
+    function renderChecklists() {
+        if (currentSpeciesCode) { renderSpeciesChecklists(); return; }
+
+        layerGroup.eachLayer(l => { if (l instanceof L.Marker) layerGroup.removeLayer(l); });
+        markerRefs = {}; cardRefs = {};
+        const container = document.getElementById('checklistContainer'); container.innerHTML = '';
+        const query = normalize(document.getElementById('searchInput').value);
+        const sort = document.getElementById('sortSelect').value;
+
+        let filtered = Object.values(checklists).filter(cl => {
+            const matchPlace = normalize(cl.name).includes(query);
+            const matchSpecies = cl.species.some(s => normalize(s.name).includes(query));
+            return matchPlace || matchSpecies;
+        });
+
+        const distinctFilteredSpecies = new Set();
+        filtered.forEach(cl => cl.species.forEach(s => distinctFilteredSpecies.add(s.name)));
+        document.getElementById('speciesTotal').textContent = distinctFilteredSpecies.size + ' espèce(s) distincte(s)';
+        document.getElementById('checklistCount').textContent = filtered.length;
+
+        if (!filtered.length) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted);">Aucune checklist trouvée.</div>';
+            return;
+        }
+
+        if (sort === 'alpha') filtered.sort((a,b) => a.name.localeCompare(b.name));
+        else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
+        else if (sort === 'date') filtered.sort((a,b) => b.dateObj - a.dateObj);
+
+        filtered.forEach(cl => {
+            const dateStr = formatDate(cl.lastDate);
+            const marker = L.marker([cl.lat, cl.lng], { icon: markerIcon }).addTo(layerGroup);
+            markerRefs[cl.id] = marker;
+            marker.on('click', () => {
+                const card = cardRefs[cl.id];
+                if (card) { card.scrollIntoView({ behavior:'smooth', block:'center' }); card.classList.add('highlight'); if (!card.classList.contains('expanded')) card.classList.add('expanded'); setTimeout(() => card.classList.remove('highlight'), 1500); }
+            });
+
+            const card = document.createElement('div'); card.className = 'checklist-card';
+            card.innerHTML = `
+                <div class="checklist-name">${escapeHtml(cl.name)}</div>
+                <div class="checklist-sub">🕒 ${escapeHtml(dateStr)} · 👤 ${escapeHtml(cl.observer)}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div>
+                <div class="species-list">
+                    <ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)}</span> <span class="qty">x${s.count}</span></li>`).join('')}</ul>
+                    <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir la checklist eBird</a>
+                </div>`;
+            card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
+            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 14); card.classList.toggle('expanded'); });
+            cardRefs[cl.id] = card; container.appendChild(card);
+        });
+    }
+
+    function formatDate(dt) {
+        if (!dt) return '?';
+        const [date, time] = dt.split(' ');
+        const [y,m,d] = date.split('-');
+        return `${d}/${m}/${y} ${time||''}`;
+    }
+
     // ─── Initialisation ─────────────────────────
     document.addEventListener("DOMContentLoaded", () => {
         map = L.map('map', { zoomControl: false }).setView(center, 10);
@@ -745,12 +572,13 @@
         layerGroup = L.layerGroup().addTo(map);
         toggleTheme(new Date().getHours() >= 21 || new Date().getHours() < 8);
 
-        document.getElementById('apiKeyField').focus();
-        document.getElementById('apiKeyField').addEventListener('keydown', e => {
+        const keyField = document.getElementById('apiKeyField');
+        keyField.focus();
+        keyField.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); startRadar(); }
         });
 
-        map.on('click', e => {
+        map.on('click', (e) => {
             center = [e.latlng.lat, e.latlng.lng];
             currentSpeciesCode = null;
             speciesChecklists = {};
@@ -759,13 +587,20 @@
         });
 
         // GitHub popup
-        const gh = document.getElementById('githubContainer');
-        const popup = document.getElementById('githubPopup');
-        let t;
-        gh.addEventListener('mouseenter', () => { clearTimeout(t); popup.style.display = 'block'; });
-        gh.addEventListener('mouseleave', () => { t = setTimeout(() => popup.style.display = 'none', 200); });
-        popup.addEventListener('mouseenter', () => clearTimeout(t));
-        popup.addEventListener('mouseleave', () => { t = setTimeout(() => popup.style.display = 'none', 200); });
+        const githubContainer = document.getElementById('githubContainer');
+        const githubPopup = document.getElementById('githubPopup');
+        let githubTimeout;
+        githubContainer.addEventListener('mouseenter', () => {
+            clearTimeout(githubTimeout);
+            githubPopup.style.display = 'block';
+        });
+        githubContainer.addEventListener('mouseleave', () => {
+            githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
+        });
+        githubPopup.addEventListener('mouseenter', () => clearTimeout(githubTimeout));
+        githubPopup.addEventListener('mouseleave', () => {
+            githubTimeout = setTimeout(() => { githubPopup.style.display = 'none'; }, 200);
+        });
 
         // Entrée dans la recherche
         document.getElementById('searchInput').addEventListener('keydown', function(e) {
