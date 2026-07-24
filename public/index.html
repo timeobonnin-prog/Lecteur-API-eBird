@@ -135,8 +135,20 @@
         .map-marker svg { width:26px; height:26px; fill:var(--neon); animation:bounce 1.8s infinite alternate; }
         @keyframes bounce { 0%{transform:translateY(0);} 100%{transform:translateY(-3px);} }
 
+        /* Bouton bascule mobile */
+        .toggle-list-btn {
+            display:none; background:var(--neon); color:#fff; border:none; border-radius:8px;
+            padding:6px 10px; font-size:0.8rem; cursor:pointer; position:absolute; top:6px; right:6px; z-index:1000;
+        }
+
         @media (max-width:767px) {
-            .sidebar { top:auto; left:0; right:0; bottom:0; width:100%; height:40vh; max-height:350px; border-radius:20px 20px 0 0; }
+            .sidebar {
+                top:auto; left:0; right:0; bottom:0; width:100%; height:30vh; max-height:250px;
+                border-radius:20px 20px 0 0; transition:height 0.3s;
+            }
+            .sidebar.collapsed { height:40px; }
+            .sidebar.collapsed .sidebar-header, .sidebar.collapsed .checklist-scroller { display:none; }
+            .toggle-list-btn { display:block; }
         }
     </style>
 </head>
@@ -188,7 +200,8 @@
 
 <main class="main-area">
     <div id="map"></div>
-    <div class="sidebar">
+    <button class="toggle-list-btn" id="toggleListBtn">▼</button>
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-title"><span>Checklists</span><span id="checklistCount" style="color:#fff; background:var(--neon); padding:2px 8px; border-radius:12px;">0</span></div>
             <div id="speciesTotal" style="font-size:0.7rem; color:var(--muted); text-align:center;">0 espèce distincte</div>
@@ -439,7 +452,7 @@
                     <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a>
                 </div>`;
             card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
-            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 14); card.classList.toggle('expanded'); });
+            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 12); card.classList.toggle('expanded'); });
             cardRefs[cl.id] = card; container.appendChild(card);
         });
     }
@@ -482,7 +495,7 @@
                     <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a>
                 </div>`;
             card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
-            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 14); card.classList.toggle('expanded'); });
+            card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 12); card.classList.toggle('expanded'); });
             cardRefs[cl.id] = card; container.appendChild(card);
         });
     }
@@ -494,8 +507,22 @@
         return `${d}/${m}/${y} ${time||''}`;
     }
 
+    // Gestion du bouton mobile pour réduire/agrandir la liste
+    const toggleBtn = document.getElementById('toggleListBtn');
+    const sidebar = document.getElementById('sidebar');
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        toggleBtn.textContent = sidebar.classList.contains('collapsed') ? '▲' : '▼';
+        // recentrer la carte en cas de repli
+        if (sidebar.classList.contains('collapsed')) {
+            map.invalidateSize();
+        } else {
+            setTimeout(() => map.invalidateSize(), 300);
+        }
+    });
+
     document.addEventListener("DOMContentLoaded", () => {
-        map = L.map('map', { zoomControl: false }).setView(center, 10);
+        map = L.map('map', { zoomControl: false, maxZoom: 14 }).setView(center, 10);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         layerGroup = L.layerGroup().addTo(map);
         toggleTheme(new Date().getHours() >= 21 || new Date().getHours() < 8);
