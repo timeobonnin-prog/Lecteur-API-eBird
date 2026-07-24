@@ -43,7 +43,6 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg); color:var(--text); font-family:system-ui, sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; transition:0.3s; }
 
-        /* Auth Screen */
         #authScreen {
             position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center;
             z-index:99999; padding:24px; transition:0.4s;
@@ -72,7 +71,6 @@
         .help-text { margin-top:14px; font-size:0.75rem; color:var(--muted); }
         .help-text kbd { background:rgba(255,255,255,0.1); padding:1px 6px; border-radius:4px; }
 
-        /* Barre supérieure */
         .top-bar {
             background:var(--panel); backdrop-filter:blur(12px); border-bottom:1px solid var(--border);
             padding:10px 12px; z-index:2000; display:flex; flex-direction:column; gap:8px;
@@ -101,15 +99,7 @@
         .github-popup a:hover { background:var(--glow); color:var(--neon); }
 
         .quick-filters { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
-        .quick-filters select, .quick-filters input { background:var(--input-bg); border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:8px; font-size:0.85rem; outline:none; }
-        .region-search-wrapper { position:relative; flex:1; min-width:160px; }
-        .region-search-wrapper input { width:100%; }
-        .region-autocomplete {
-            position:absolute; top:100%; left:0; right:0; background:var(--panel); border:1px solid var(--neon);
-            border-radius:0 0 8px 8px; max-height:160px; overflow-y:auto; display:none; z-index:20;
-        }
-        .region-autocomplete-item { padding:10px 12px; cursor:pointer; font-size:0.85rem; border-bottom:1px solid var(--border); }
-        .region-autocomplete-item:hover { background:rgba(16,185,129,0.2); }
+        .quick-filters select { background:var(--input-bg); border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:8px; font-size:0.85rem; outline:none; }
 
         .main-area { flex:1; position:relative; display:flex; }
         #map { position:absolute; inset:0; background:var(--bg); z-index:1; }
@@ -152,11 +142,10 @@
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
 <div id="authScreen">
     <div class="auth-box">
         <a href="https://ebird.org/api/keygen" target="_blank" class="auth-logo"><img src="API Ebird.png" alt="logo" /></a>
-        <h1>Lecteur eBird</h1>
+        <h1>Lecteur API eBird</h1>
         <p>Sécurisé • Vercel</p>
         <input type="password" id="apiKeyField" class="api-input" placeholder="Colle ta clé API eBird…" autocomplete="off" />
         <div class="captcha-container">
@@ -169,12 +158,11 @@
     </div>
 </div>
 
-<!-- TOP BAR -->
 <header class="top-bar">
     <div class="top-row">
         <div class="brand">
-            <img src="API Ebird.png" alt="Lecteur" />
-            <span>Lecteur eBird</span>
+            <img src="API Ebird.png" alt="Lecteur API eBird" />
+            <span>Lecteur API eBird</span>
         </div>
         <div class="actions">
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
@@ -190,17 +178,11 @@
         </div>
     </div>
     <div class="quick-filters">
-        <!-- MODIFICATION ICI : rayon par défaut 50 km, options jusqu'à 100 km -->
         <select id="radiusSelect" onchange="runScan()">
             <option value="10">10 km</option>
             <option value="25">25 km</option>
             <option value="50" selected>50 km</option>
-            <option value="100">100 km</option>
         </select>
-        <div class="region-search-wrapper">
-            <input type="text" id="regionSearch" placeholder="🌍 Chercher une région..." oninput="searchRegion()" autocomplete="off" />
-            <div class="region-autocomplete" id="regionAutocompleteList"></div>
-        </div>
     </div>
 </header>
 
@@ -239,7 +221,7 @@
     let markerRefs = {};
     let cardRefs = {};
     let nightMode = true;
-    let autocompleteTimer, regionSearchTimer;
+    let autocompleteTimer;
     let taxonomy = [];
     let currentSpeciesCode = null;
     let speciesChecklists = {};
@@ -263,56 +245,6 @@
         ).addTo(map);
     }
 
-    // --- Recherche de région (prédiction automatique dès 2 caractères) ---
-    async function searchRegion() {
-        clearTimeout(regionSearchTimer);
-        regionSearchTimer = setTimeout(async () => {
-            const input = document.getElementById('regionSearch');
-            const query = input.value.trim();
-            const list = document.getElementById('regionAutocompleteList');
-            if (query.length < 2) { list.style.display = 'none'; return; }
-
-            try {
-                const res = await fetch(`/api/ebird-region-search?q=${encodeURIComponent(query)}`, {
-                    headers: { 'x-user-ebird-key': userApiKey }
-                });
-                if (!res.ok) throw new Error('Erreur recherche');
-                const regions = await res.json();
-
-                if (!regions.length) { list.style.display = 'none'; return; }
-
-                list.innerHTML = regions.map(r => 
-                    `<div class="region-autocomplete-item" data-lat="${r.lat}" data-lng="${r.lng}" data-name="${escapeHtml(r.name)}">${escapeHtml(r.name)}</div>`
-                ).join('');
-
-                list.querySelectorAll('.region-autocomplete-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const lat = parseFloat(item.dataset.lat);
-                        const lng = parseFloat(item.dataset.lng);
-                        if (!isNaN(lat) && !isNaN(lng)) {
-                            center = [lat, lng];
-                            map.setView(center, 10);
-                            input.value = item.dataset.name;
-                            list.style.display = 'none';
-                            runScan();
-                        }
-                    });
-                });
-                list.style.display = 'block';
-            } catch (err) {
-                console.error(err);
-                list.style.display = 'none';
-            }
-        }, 300);
-    }
-
-    document.addEventListener('click', (e) => {
-        const list = document.getElementById('regionAutocompleteList');
-        const input = document.getElementById('regionSearch');
-        if (e.target !== input && e.target !== list) list.style.display = 'none';
-    });
-
-    // --- Démarrage avec CAPTCHA ---
     async function startRadar() {
         const token = document.getElementById('apiKeyField').value.trim();
         if (!token) return alert("Saisis ta clé eBird !");
@@ -562,7 +494,6 @@
         return `${d}/${m}/${y} ${time||''}`;
     }
 
-    // Initialisation
     document.addEventListener("DOMContentLoaded", () => {
         map = L.map('map', { zoomControl: false }).setView(center, 10);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
