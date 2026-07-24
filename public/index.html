@@ -190,10 +190,12 @@
         </div>
     </div>
     <div class="quick-filters">
+        <!-- MODIFICATION ICI : rayon par défaut 50 km, options jusqu'à 100 km -->
         <select id="radiusSelect" onchange="runScan()">
             <option value="10">10 km</option>
-            <option value="25" selected>25 km</option>
-            <option value="50">50 km</option>
+            <option value="25">25 km</option>
+            <option value="50" selected>50 km</option>
+            <option value="100">100 km</option>
         </select>
         <div class="region-search-wrapper">
             <input type="text" id="regionSearch" placeholder="🌍 Chercher une région..." oninput="searchRegion()" autocomplete="off" />
@@ -261,7 +263,7 @@
         ).addTo(map);
     }
 
-    // --- Recherche de région ---
+    // --- Recherche de région (prédiction automatique dès 2 caractères) ---
     async function searchRegion() {
         clearTimeout(regionSearchTimer);
         regionSearchTimer = setTimeout(async () => {
@@ -315,7 +317,6 @@
         const token = document.getElementById('apiKeyField').value.trim();
         if (!token) return alert("Saisis ta clé eBird !");
 
-        // Vérifie que hCaptcha a été résolu
         const hcaptchaResponse = hcaptcha.getResponse();
         if (!hcaptchaResponse) return alert("Veuillez résoudre le CAPTCHA.");
 
@@ -331,7 +332,6 @@
             return alert("Échec vérification CAPTCHA : " + err.message);
         }
 
-        // Si tout est OK, on passe à la suite
         userApiKey = token;
         document.getElementById('authScreen').classList.add('hidden');
         loadTaxonomy();
