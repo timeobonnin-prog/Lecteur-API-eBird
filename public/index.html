@@ -145,10 +145,8 @@
         .species-list .qty { color:var(--neon); font-weight:bold; }
         .ebird-link { display:inline-block; margin-top:6px; color:var(--neon); font-size:0.7rem; font-weight:bold; text-decoration:none; border:1px solid var(--border); padding:2px 6px; border-radius:6px; }
         .ebird-link:hover { background:rgba(16,185,129,0.15); }
-        .copy-btn { background:transparent; border:1px solid var(--border); color:var(--text); padding:2px 6px; border-radius:4px; cursor:pointer; font-size:0.7rem; margin-left:6px; }
 
         .map-marker svg { width:26px; height:26px; animation:bounce 1.8s infinite alternate; }
-        /* La couleur de remplissage est maintenant gérée dynamiquement */
         @keyframes bounce { 0%{transform:translateY(0);} 100%{transform:translateY(-3px);} }
 
         .toggle-list-btn {
@@ -254,7 +252,12 @@
                 <label>
                     <input type="checkbox" id="showSciNames" onchange="renderChecklists()"> Noms scientifiques
                 </label>
-                <button class="ebird-link" onclick="downloadCSV()" style="margin-left:auto;">📥 CSV</button>
+                <select id="exportFormat" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:6px;font-size:0.7rem;">
+                    <option value="csv">CSV</option>
+                    <option value="txt">TXT</option>
+                    <option value="json">JSON</option>
+                </select>
+                <button class="ebird-link" onclick="exportData()">📥 Exporter</button>
             </div>
         </div>
         <div class="checklist-scroller" id="checklistContainer">
@@ -282,8 +285,7 @@
     let speciesChecklists = {};
     let userPosition = null;
 
-    // Couleur des marqueurs adaptée au thème
-    let markerColor = '#ffffff'; // par défaut pour le mode sombre
+    let markerColor = '#ffffff';
 
     const mapLayers = {
         dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
@@ -297,7 +299,6 @@
         markerColor = nightMode ? '#ffffff' : '#000000';
     }
 
-    // Icône dynamique
     function getMarkerIcon() {
         return L.divIcon({
             className: 'map-marker',
@@ -323,7 +324,6 @@
         document.body.className = nightMode ? '' : 'light';
         document.getElementById('themeBtn').innerText = nightMode ? '🌙' : '☀️';
         updateMarkerColor();
-        // Redessiner les marqueurs si des données sont déjà chargées
         if (Object.keys(checklists).length > 0 || Object.keys(speciesChecklists).length > 0) {
             renderChecklists();
         }
@@ -339,7 +339,7 @@
 
     function centerOnUser() {
         if (!navigator.geolocation) {
-            alert("La géolocalisation n'est pas supportée par votre navigateur.");
+            alert("La géolocalisation n'est pas supportée.");
             return;
         }
         navigator.geolocation.getCurrentPosition(
@@ -563,7 +563,7 @@
         else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
         else filtered.sort((a,b) => b.dateObj - a.dateObj);
 
-        const icon = getMarkerIcon(); // icône avec la bonne couleur
+        const icon = getMarkerIcon();
 
         filtered.forEach(cl => {
             const marker = L.marker([cl.lat, cl.lng], { icon }).addTo(layerGroup);
@@ -586,7 +586,6 @@
                 <div class="species-list">
                     <ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)} ${showSci ? `<em>(${escapeHtml(s.sci)})</em>` : ''}</span> <span class="qty">x${s.count}</span></li>`).join('')}</ul>
                     <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a>
-                    <button class="copy-btn" onclick="event.stopPropagation(); copyChecklistSpecies('${cl.id}')">📋 Copier</button>
                 </div>`;
             card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
             card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 12); card.classList.toggle('expanded'); });
@@ -643,7 +642,6 @@
                 <div class="species-list">
                     <ul>${cl.species.map(s => `<li><span>${escapeHtml(s.name)} ${showSci ? `<em>(${escapeHtml(s.sci)})</em>` : ''}</span> <span class="qty">x${s.count}</span></li>`).join('')}</ul>
                     <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a>
-                    <button class="copy-btn" onclick="event.stopPropagation(); copyChecklistSpecies('${cl.id}')">📋 Copier</button>
                 </div>`;
             card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
             card.addEventListener('click', () => { map.setView([cl.lat, cl.lng], 12); card.classList.toggle('expanded'); });
@@ -651,20 +649,9 @@
         });
     }
 
-    function copyChecklistSpecies(subId) {
-        let cl = checklists[subId] || speciesChecklists[subId];
-        if (!cl) return;
-        const lines = cl.species.map(s => `${s.name} : ${s.count}`);
-        const text = lines.join('\n');
-        navigator.clipboard.writeText(text).then(() => {
-            const btn = event.target;
-            const original = btn.textContent;
-            btn.textContent = '✓ Copié';
-            setTimeout(() => btn.textContent = original, 1500);
-        }).catch(err => alert('Échec de la copie'));
-    }
-
-    function downloadCSV() {
+    // Nouvelle fonction d'export multi-format
+    function exportData() {
+        // Récupérer les checklists actuellement affichées
         let dataSource;
         if (currentSpeciesCode) {
             dataSource = Object.values(speciesChecklists);
@@ -680,17 +667,64 @@
             alert('Aucune donnée à exporter.');
             return;
         }
-        let csv = 'Lieu,Date,Observateur,Espèce,Nombre\n';
+
+        // Regrouper par espèce
+        const speciesMap = new Map();
+        let minDate = null, maxDate = null;
         dataSource.forEach(cl => {
+            if (!minDate || cl.dateObj < minDate) minDate = cl.dateObj;
+            if (!maxDate || cl.dateObj > maxDate) maxDate = cl.dateObj;
             cl.species.forEach(s => {
-                csv += `"${cl.name.replace(/"/g, '""')}","${cl.lastDate}","${cl.observer.replace(/"/g, '""')}","${s.name.replace(/"/g, '""')}",${s.count}\n`;
+                const key = s.name;
+                if (!speciesMap.has(key)) {
+                    speciesMap.set(key, { name: s.name, sci: s.sci, count: 0 });
+                }
+                speciesMap.get(key).count += s.count;
             });
         });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+        const speciesList = Array.from(speciesMap.values());
+        // Trier par nom d'espèce (insensible à la casse)
+        speciesList.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+
+        const format = document.getElementById('exportFormat').value;
+        const startDateStr = minDate ? minDate.toISOString().split('T')[0] : 'debut';
+        const endDateStr = maxDate ? maxDate.toISOString().split('T')[0] : 'fin';
+        const period = `${startDateStr}_${endDateStr}`;
+
+        let content, mime, extension;
+        if (format === 'csv') {
+            // En-tête : Espèce,Nom scientifique,Nombre
+            content = 'Espèce,Nom scientifique,Nombre\n';
+            content += speciesList.map(s => `"${s.name.replace(/"/g, '""')}","${s.sci.replace(/"/g, '""')}",${s.count}`).join('\n');
+            mime = 'text/csv;charset=utf-8;';
+            extension = 'csv';
+        } else if (format === 'txt') {
+            // Format texte aligné
+            const maxNameLen = Math.max(...speciesList.map(s => s.name.length), 6);
+            const maxSciLen = Math.max(...speciesList.map(s => s.sci.length), 15);
+            content = `Période : ${startDateStr} au ${endDateStr}\n\n`;
+            content += 'Espèce'.padEnd(maxNameLen) + ' | ' + 'Nom scientifique'.padEnd(maxSciLen) + ' | Nombre\n';
+            content += '-'.repeat(maxNameLen + maxSciLen + 10) + '\n';
+            speciesList.forEach(s => {
+                content += s.name.padEnd(maxNameLen) + ' | ' + s.sci.padEnd(maxSciLen) + ' | ' + s.count.toString().padStart(6) + '\n';
+            });
+            mime = 'text/plain;charset=utf-8;';
+            extension = 'txt';
+        } else if (format === 'json') {
+            content = JSON.stringify({
+                period: { start: startDateStr, end: endDateStr },
+                species: speciesList.map(s => ({ name: s.name, scientificName: s.sci, count: s.count }))
+            }, null, 2);
+            mime = 'application/json;charset=utf-8;';
+            extension = 'json';
+        }
+
+        const blob = new Blob([content], { type: mime });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'ebird_observations.csv';
+        link.download = `ebird_${period}.${extension}`;
         link.click();
         URL.revokeObjectURL(url);
     }
@@ -702,7 +736,7 @@
         return `${d}/${m}/${y} ${time||''}`;
     }
 
-    // Gestion du bouton mobile
+    // Bouton mobile
     const toggleBtn = document.getElementById('toggleListBtn');
     const sidebar = document.getElementById('sidebar');
     toggleBtn.addEventListener('click', () => {
@@ -716,7 +750,7 @@
     });
 
     document.addEventListener("DOMContentLoaded", () => {
-        // Restauration du thème
+        // Restauration thème
         const savedTheme = localStorage.getItem('themeMode');
         if (savedTheme === 'light') {
             nightMode = false;
@@ -727,7 +761,6 @@
             document.body.className = '';
             document.getElementById('themeBtn').innerText = '🌙';
         } else {
-            // Défaut selon l'heure
             const hour = new Date().getHours();
             nightMode = !(hour >= 6 && hour < 21);
             document.body.className = nightMode ? '' : 'light';
@@ -736,19 +769,15 @@
         }
         updateMarkerColor();
 
-        // Restauration du fond de carte
+        // Restauration fond de carte
         const savedMapLayer = localStorage.getItem('mapLayer');
         const initialLayer = savedMapLayer || 'dark';
-        // Appliquer le fond (la carte n'existe pas encore, on va le faire juste après)
         currentMapLayer = initialLayer;
         document.getElementById('mapLayerSelect').value = initialLayer;
 
-        // Création de la carte
         map = L.map('map', { zoomControl: false, maxZoom: 14 }).setView(center, 10);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         layerGroup = L.layerGroup().addTo(map);
-
-        // Appliquer le fond de carte restauré
         changeMapLayer(initialLayer);
 
         document.getElementById('apiKeyField').focus();
