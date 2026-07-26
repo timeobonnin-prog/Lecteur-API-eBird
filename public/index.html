@@ -147,7 +147,8 @@
         .ebird-link:hover { background:rgba(16,185,129,0.15); }
         .copy-btn { background:transparent; border:1px solid var(--border); color:var(--text); padding:2px 6px; border-radius:4px; cursor:pointer; font-size:0.7rem; margin-left:6px; }
 
-        .map-marker svg { width:26px; height:26px; fill:var(--neon); animation:bounce 1.8s infinite alternate; }
+        .map-marker svg { width:26px; height:26px; animation:bounce 1.8s infinite alternate; }
+        /* La couleur de remplissage est maintenant gérée dynamiquement */
         @keyframes bounce { 0%{transform:translateY(0);} 100%{transform:translateY(-3px);} }
 
         .toggle-list-btn {
@@ -155,7 +156,6 @@
             padding:6px 10px; font-size:0.8rem; cursor:pointer; position:absolute; top:6px; right:6px; z-index:1000;
         }
 
-        /* Spinner */
         .spinner {
             border: 3px solid var(--border);
             border-top: 3px solid var(--neon);
@@ -280,9 +280,11 @@
     let taxonomy = [];
     let currentSpeciesCode = null;
     let speciesChecklists = {};
-    let userPosition = null; // stocké après géolocalisation
+    let userPosition = null;
 
-    // Fonds de carte disponibles
+    // Couleur des marqueurs adaptée au thème
+    let markerColor = '#ffffff'; // par défaut pour le mode sombre
+
     const mapLayers = {
         dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
         light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
@@ -291,12 +293,40 @@
     };
     let currentMapLayer = 'dark';
 
+    function updateMarkerColor() {
+        markerColor = nightMode ? '#ffffff' : '#000000';
+    }
+
+    // Icône dynamique
+    function getMarkerIcon() {
+        return L.divIcon({
+            className: 'map-marker',
+            html: `<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${markerColor}"/></svg>`,
+            iconSize: [26,26],
+            iconAnchor: [13,26],
+            popupAnchor: [0,-26]
+        });
+    }
+
     function changeMapLayer(layerName) {
         currentMapLayer = layerName;
+        localStorage.setItem('mapLayer', layerName);
         if (tileLayer) map.removeLayer(tileLayer);
         tileLayer = L.tileLayer(mapLayers[layerName], {
             attribution: layerName === 'satellite' ? 'Esri' : layerName === 'topo' ? 'OpenTopoMap' : 'CartoDB'
         }).addTo(map);
+    }
+
+    function toggleTheme(force = null) {
+        nightMode = force !== null ? force : !nightMode;
+        localStorage.setItem('themeMode', nightMode ? 'dark' : 'light');
+        document.body.className = nightMode ? '' : 'light';
+        document.getElementById('themeBtn').innerText = nightMode ? '🌙' : '☀️';
+        updateMarkerColor();
+        // Redessiner les marqueurs si des données sont déjà chargées
+        if (Object.keys(checklists).length > 0 || Object.keys(speciesChecklists).length > 0) {
+            renderChecklists();
+        }
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -305,13 +335,6 @@
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-
-    function toggleTheme(force = null) {
-        nightMode = force !== null ? force : !nightMode;
-        document.body.className = nightMode ? '' : 'light';
-        document.getElementById('themeBtn').innerText = nightMode ? '🌙' : '☀️';
-        // Ne change plus le fond de carte, seulement les couleurs CSS
     }
 
     function centerOnUser() {
@@ -324,7 +347,6 @@
                 userPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 center = [userPosition.lat, userPosition.lng];
                 map.setView(center, 12);
-                // Recalculer les distances affichées
                 renderChecklists();
             },
             (err) => {
@@ -449,12 +471,6 @@
         renderChecklists();
     }
 
-    const markerIcon = L.divIcon({
-        className: 'map-marker',
-        html: '<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
-        iconSize: [26,26], iconAnchor: [13,26], popupAnchor: [0,-26]
-    });
-
     function updateAutocomplete() {
         clearTimeout(autocompleteTimer);
         autocompleteTimer = setTimeout(() => {
@@ -546,8 +562,11 @@
         if (sort === 'alpha') filtered.sort((a,b) => a.name.localeCompare(b.name));
         else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
         else filtered.sort((a,b) => b.dateObj - a.dateObj);
+
+        const icon = getMarkerIcon(); // icône avec la bonne couleur
+
         filtered.forEach(cl => {
-            const marker = L.marker([cl.lat, cl.lng], { icon: markerIcon }).addTo(layerGroup);
+            const marker = L.marker([cl.lat, cl.lng], { icon }).addTo(layerGroup);
             markerRefs[cl.id] = marker;
             marker.on('click', () => {
                 const card = cardRefs[cl.id];
@@ -600,8 +619,11 @@
         if (sort === 'alpha') filtered.sort((a,b) => a.name.localeCompare(b.name));
         else if (sort === 'count') filtered.sort((a,b) => b.totalBirds - a.totalBirds);
         else if (sort === 'date') filtered.sort((a,b) => b.dateObj - a.dateObj);
+
+        const icon = getMarkerIcon();
+
         filtered.forEach(cl => {
-            const marker = L.marker([cl.lat, cl.lng], { icon: markerIcon }).addTo(layerGroup);
+            const marker = L.marker([cl.lat, cl.lng], { icon }).addTo(layerGroup);
             markerRefs[cl.id] = marker;
             marker.on('click', () => {
                 const card = cardRefs[cl.id];
@@ -630,13 +652,11 @@
     }
 
     function copyChecklistSpecies(subId) {
-        // Chercher dans les deux dictionnaires
         let cl = checklists[subId] || speciesChecklists[subId];
         if (!cl) return;
         const lines = cl.species.map(s => `${s.name} : ${s.count}`);
         const text = lines.join('\n');
         navigator.clipboard.writeText(text).then(() => {
-            // feedback rapide (peut être amélioré)
             const btn = event.target;
             const original = btn.textContent;
             btn.textContent = '✓ Copié';
@@ -645,7 +665,6 @@
     }
 
     function downloadCSV() {
-        // Récupérer les checklists actuellement affichées
         let dataSource;
         if (currentSpeciesCode) {
             dataSource = Object.values(speciesChecklists);
@@ -697,12 +716,40 @@
     });
 
     document.addEventListener("DOMContentLoaded", () => {
+        // Restauration du thème
+        const savedTheme = localStorage.getItem('themeMode');
+        if (savedTheme === 'light') {
+            nightMode = false;
+            document.body.className = 'light';
+            document.getElementById('themeBtn').innerText = '☀️';
+        } else if (savedTheme === 'dark') {
+            nightMode = true;
+            document.body.className = '';
+            document.getElementById('themeBtn').innerText = '🌙';
+        } else {
+            // Défaut selon l'heure
+            const hour = new Date().getHours();
+            nightMode = !(hour >= 6 && hour < 21);
+            document.body.className = nightMode ? '' : 'light';
+            document.getElementById('themeBtn').innerText = nightMode ? '🌙' : '☀️';
+            localStorage.setItem('themeMode', nightMode ? 'dark' : 'light');
+        }
+        updateMarkerColor();
+
+        // Restauration du fond de carte
+        const savedMapLayer = localStorage.getItem('mapLayer');
+        const initialLayer = savedMapLayer || 'dark';
+        // Appliquer le fond (la carte n'existe pas encore, on va le faire juste après)
+        currentMapLayer = initialLayer;
+        document.getElementById('mapLayerSelect').value = initialLayer;
+
+        // Création de la carte
         map = L.map('map', { zoomControl: false, maxZoom: 14 }).setView(center, 10);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         layerGroup = L.layerGroup().addTo(map);
-        // Initialiser le fond de carte
-        changeMapLayer('dark');
-        toggleTheme(new Date().getHours() >= 21 || new Date().getHours() < 8);
+
+        // Appliquer le fond de carte restauré
+        changeMapLayer(initialLayer);
 
         document.getElementById('apiKeyField').focus();
         document.getElementById('apiKeyField').addEventListener('keydown', (e) => {
