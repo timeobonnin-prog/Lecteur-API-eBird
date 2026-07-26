@@ -13,8 +13,8 @@
     <meta name="twitter:title" content="Lecteur API eBird" />
     <meta name="twitter:description" content="Explorez les observations d'oiseaux avec l'API eBird." />
     <meta name="twitter:image" content="https://mon-api-ten.vercel.app/API%20Ebird.png" />
-    <!-- Icône du site (globe terrestre) -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%2310b981' stroke='white' stroke-width='4'/><ellipse cx='50' cy='50' rx='18' ry='48' fill='none' stroke='white' stroke-width='3'/><line x1='2' y1='50' x2='98' y2='50' stroke='white' stroke-width='3'/></svg>" />
+    <!-- Favicon original (PNG) -->
+    <link rel="icon" type="image/png" href="API Ebird.png" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <style>
@@ -667,7 +667,6 @@
     function doExport() {
         let dataSource;
         if (currentSpeciesCode) {
-            // observations via nearest
             dataSource = Object.values(speciesChecklists).flatMap(cl => cl.species.map(s => ({
                 ...s, locName: cl.name, lat: cl.lat, lng: cl.lng, obsDt: cl.lastDate, subId: cl.id, observer: cl.observer
             })));
