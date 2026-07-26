@@ -1,4 +1,5 @@
-https://mon-api-ten.vercel.app/API%20Ebird.png
+<img width="1080" height="1080" alt="image" src="https://github.com/user-attachments/assets/6898c3ef-8f53-4ff2-8874-dd5ea4ed84e8" />
+
 # eBird Search and Map
 
 Site statique frontend plus fonction serverless pour interroger l'API eBird de façon sécurisée.
