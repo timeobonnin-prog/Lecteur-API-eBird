@@ -10,6 +10,7 @@ let markerRefs = {};
 let cardRefs = {};
 let nightMode = true;
 let autocompleteTimer;
+let locationAutocompleteTimer;   // Nouveau timer pour l'autocomplétion des lieux
 let taxonomy = [];
 let currentSpeciesCode = null;
 let speciesChecklists = {};
@@ -385,7 +386,43 @@ function renderChecklists() {
     });
 }
 
-// ========== GÉOCODAGE ==========
+// ========== GÉOCODAGE AVEC AUTOCOMPLÉTION ==========
+async function updateLocationAutocomplete() {
+    clearTimeout(locationAutocompleteTimer);
+    locationAutocompleteTimer = setTimeout(async () => {
+        const input = document.getElementById('locationSearch');
+        const query = input.value.trim();
+        const list = document.getElementById('locationAutocompleteList');
+        if (query.length < 2) { list.style.display = 'none'; return; }
+
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+            const places = await res.json();
+            if (places.length === 0) { list.style.display = 'none'; return; }
+
+            list.innerHTML = places.map(p => `<div class="autocomplete-item" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${escapeHtml(p.display_name)}">${escapeHtml(p.display_name)}</div>`).join('');
+            list.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const lat = parseFloat(item.dataset.lat);
+                    const lon = parseFloat(item.dataset.lon);
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        center = [lat, lon];
+                        map.setView(center, 12);
+                        input.value = item.dataset.name;
+                        list.style.display = 'none';
+                        runScan();
+                    }
+                });
+            });
+            list.style.display = 'block';
+        } catch (err) {
+            console.error(err);
+            list.style.display = 'none';
+        }
+    }, 300);
+}
+
+// Recherche directe (bouton loupe ou Entrée)
 async function geocodeAndGo() {
     const query = document.getElementById('locationSearch').value.trim();
     if (!query) return;
@@ -407,33 +444,8 @@ async function geocodeAndGo() {
     }
 }
 
-// ========== STATISTIQUES HOTSPOT ==========
-async function showHotspotStats() {
-    const locId = document.getElementById('hotspotIdInput').value.trim();
-    if (!locId) return alert('Veuillez entrer un identifiant de hotspot (ex: L12697805).');
-    try {
-        const res = await fetch(`/api/ebird-hotspot-stats?locId=${locId}`, {
-            headers: { 'x-user-ebird-key': userApiKey }
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const stats = await res.json();
-        let html = `<h3>Statistiques pour ${locId}</h3><ul style="list-style:none; padding:0;">`;
-        stats.forEach(s => {
-            html += `<li style="margin-bottom:4px;"><strong>${escapeHtml(s.comName)}</strong> – ${(s.frequency * 100).toFixed(1)}%</li>`;
-        });
-        html += '</ul>';
-        document.getElementById('modalTitle').textContent = `Statistiques du hotspot ${locId}`;
-        document.getElementById('modalBody').innerHTML = html + `<button style="background:transparent; border:1px solid var(--border); color:var(--text); padding:8px 16px; border-radius:8px; margin-top:12px; width:100%; cursor:pointer;" onclick="closeModal()">Fermer</button>`;
-        openModal();
-    } catch (err) {
-        alert('Erreur lors du chargement des stats : ' + err.message);
-    }
-}
-
-// ========== MODALE & EXPORT ==========
-function openModal() {
-    document.getElementById('exportModal').classList.add('active');
-}
+// ========== EXPORT ==========
+function openExportModal() { document.getElementById('exportModal').classList.add('active'); }
 function closeModal() {
     document.getElementById('exportModal').classList.remove('active');
     // Restaurer le contenu de l'export
@@ -583,6 +595,19 @@ toggleBtn.addEventListener('click', () => {
     toggleBtn.textContent = sidebar.classList.contains('collapsed') ? '▲' : '▼';
     if (sidebar.classList.contains('collapsed')) map.invalidateSize();
     else setTimeout(() => map.invalidateSize(), 300);
+});
+
+// Cacher les listes d'autocomplétion quand on clique ailleurs
+document.addEventListener('click', (e) => {
+    // Pour les espèces
+    const speciesList = document.getElementById('autocompleteList');
+    const speciesInput = document.getElementById('searchInput');
+    if (e.target !== speciesInput && e.target !== speciesList) speciesList.style.display = 'none';
+
+    // Pour les lieux
+    const locationList = document.getElementById('locationAutocompleteList');
+    const locationInput = document.getElementById('locationSearch');
+    if (e.target !== locationInput && e.target !== locationList) locationList.style.display = 'none';
 });
 
 // Initialisation
