@@ -73,7 +73,11 @@
                 <option value="25">25 km</option>
                 <option value="50" selected>50 km</option>
             </select>
-            <input type="text" id="locationSearch" placeholder="🔎 Chercher un lieu..." onkeydown="if(event.key==='Enter') geocodeAndGo()" style="background:var(--input-bg); border:1px solid var(--border); color:var(--text); padding:7px 10px; border-radius:8px; font-size:0.85rem; flex:1;" />
+            <!-- Recherche de lieu avec autocomplétion -->
+            <div class="search-box" style="flex:1; min-width:200px;">
+                <input type="text" id="locationSearch" placeholder="🔎 Chercher un lieu..." oninput="updateLocationAutocomplete()" onkeydown="if(event.key==='Enter'){ event.preventDefault(); geocodeAndGo(); }" autocomplete="off" />
+                <div class="autocomplete" id="locationAutocompleteList"></div>
+            </div>
             <button class="icon-btn" onclick="geocodeAndGo()" title="Rechercher">🔍</button>
         </div>
     </header>
@@ -96,13 +100,11 @@
                     <option value="count">🔢 Nombre d'oiseaux</option>
                     <option value="date">🕒 Plus récent</option>
                 </select>
-                <div class="sidebar-options" style="flex-wrap: wrap;">
+                <div class="sidebar-options">
                     <label>
                         <input type="checkbox" id="showSciNames" onchange="renderChecklists()"> Noms scientifiques
                     </label>
                     <button class="ebird-link" onclick="openExportModal()">📥 Exporter</button>
-                    <input type="text" id="hotspotIdInput" placeholder="Hotspot ID (L1234567)" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:6px;font-size:0.7rem;width:100px;margin-left:8px;" />
-                    <button class="ebird-link" onclick="showHotspotStats()">📊 Stats</button>
                 </div>
             </div>
             <div class="checklist-scroller" id="checklistContainer">
@@ -111,7 +113,7 @@
         </div>
     </main>
 
-    <!-- MODALE (utilisée pour l'export et les stats) -->
+    <!-- MODALE EXPORT -->
     <div class="modal" id="exportModal">
         <div class="modal-content">
             <h3 id="modalTitle">Exporter les observations</h3>
