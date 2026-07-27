@@ -1,27 +1,31 @@
-<img width="1080" height="1080" alt="image" src="https://github.com/user-attachments/assets/6898c3ef-8f53-4ff2-8874-dd5ea4ed84e8" />
+<!-- Centrer l'image et le titre -->
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/6898c3ef-8f53-4ff2-8874-dd5ea4ed84e8" alt="Lecteur API eBird" width="300"/>
+</p>
 
-# eBird Search and Map
+<h1 align="center">Lecteur API eBird</h1>
 
-Site statique frontend plus fonction serverless pour interroger l'API eBird de façon sécurisée.
+<p align="center">
+  <strong>Exploration en temps réel des observations d’oiseaux</strong><br>
+  Interface cartographique connectée à l’API eBird 2.0, protégée par CAPTCHA et hébergée sur Vercel.
+</p>
 
-vous pouvez dempander une clé api ebird [ici](https://ebird.org/api/keygen) 
+<p align="center">
+  <a href="https://mon-api-ten.vercel.app">🌐 Site en ligne</a> •
+  <a href="https://ebird.org/api/keygen">🔑 Obtenir une clé API eBird</a>
+</p>
 
-## Structure
-- index.html : frontend public
-- api/ebird.js : fonction serverless pour Vercel
-- package.json : dépendances
+---
 
-## Déploiement Vercel
-1. Créer un repo GitHub et pousser les fichiers.
-2. Sur Vercel, New Project, connecter le repo.
-3. Dans Project Settings > Environment Variables ajouter EBIRD_API_KEY avec ta clé eBird.
-4. Déployer. L'endpoint sera `https://<ton-projet>.vercel.app/api/ebird`.
+## ✨ Fonctionnalités
 
-## Utilisation frontend
-- Pour Vercel laisser `API_BASE = '/api/ebird'` dans index.html.
+- 🔐 **Authentification sécurisée** : clé API eBird saisie une seule fois, vérifiée côté serveur, puis stockée localement (auto-connexion).
+- 🤖 **Protection anti-bots** : CAPTCHA hCaptcha obligatoire à la première utilisation.
+- 🗺️ **Carte interactive** : zoom, centrage automatique sur votre position, recherche de lieu par nom (géocodage avec suggestions).
+- 🐦 **Checklists d’observations** : regroupées par lieu, triables par nom, nombre d’oiseaux ou date.
+- 🔍 **Recherche par espèce** : autocomplétion des noms français grâce à la taxonomie eBird, résultats filtrés par distance.
+- 🎨 **Thèmes multiples** : mode sombre / clair, fonds de carte variés (sombre, clair, satellite, topographique).
+- 📤 **Export des données** : CSV, TXT ou JSON avec les colonnes officielles eBird.
+- 📱 **Responsive** : interface adaptée aux mobiles avec un panneau escamotable.
 
-## Sécurité
-Ne jamais mettre EBIRD_API_KEY dans le code client ou dans un repo public. Toujours stocker la clé dans les variables d'environnement de la plateforme.
-
-## Tests locaux
-- Vercel CLI : `vercel dev`
+## 📁 Structure du projet
