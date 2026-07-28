@@ -1,23 +1,94 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <!-- Validation et identité -->
     <meta name="msvalidate.01" content="70219DEF0FF5D70391AB886208A1806D" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur API eBird – Observatoire ornithologique interactif</title>
-    <meta name="description" content="Application gratuite et open source pour explorer les observations d'oiseaux en temps réel avec l'API eBird. Cartographie, recherche par espèce, fonds de carte multiples et export de données." />
-    <meta name="keywords" content="eBird, API, oiseaux, ornithologie, carte, observations, nature, biodiversité, open source" />
+
+    <!-- Balises SEO principales (optimisées avec mots-clés étendus) -->
+    <title>Lecteur API eBird – Observatoire ornithologique interactif – Cartographie et données en temps réel</title>
+    <meta name="description" content="Lecteur API eBird – Application web gratuite et open source pour explorer les observations d'oiseaux en temps réel grâce à l'API eBird. Cartographie interactive, recherche par espèce, autocomplétion géographique, fonds de carte multiples (sombre, clair, satellite, topographique), export de données en CSV, TXT et JSON. Idéal pour les ornithologues, naturalistes, chercheurs et amateurs de biodiversité. Visualisez les checklists, filtrez par espèce, et partagez vos observations. Interface adaptative mobile, sécurisée et respectueuse de la vie privée. Explorez la nature et contribuez à la science participative avec cet outil puissant et facile d'utilisation." />
+    <meta name="keywords" content="eBird, API eBird, observations d'oiseaux, ornithologie, biodiversité, carte interactive, données en temps réel, recherche d'espèces, checklist, export CSV, JSON, TXT, nature, environnement, open source, gratuit, application web, France, monde, cartographie, géolocalisation, autocomplétion, taxonomie, science participative, naturaliste, chercheur, amateur d'oiseaux, fonds de carte, satellite, topographique, données ornithologiques, API REST, visualisation, exploration, découverte, environnement, écologie, conservation, oiseaux migrateurs, espèces rares, observation terrain, partage, données libres, outil pédagogique, éducation à la nature" />
     <meta name="author" content="Timéo Bonnin" />
-    <meta property="og:title" content="Lecteur API eBird" />
-    <meta property="og:description" content="Explorez les oiseaux autour de vous – carte interactive et données en direct." />
+    <meta name="copyright" content="Timéo Bonnin, sous licence MIT" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="revisit-after" content="7 days" />
+    <meta name="language" content="fr" />
+    <meta name="geo.region" content="FR" />
+    <meta name="geo.placename" content="France" />
+    <meta name="geo.position" content="46.603354;1.888334" />
+    <meta name="ICBM" content="46.603354, 1.888334" />
+    <link rel="canonical" href="https://timeobonnin-prog.github.io/Lecteur-API-eBird/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Lecteur API eBird – Observatoire ornithologique interactif" />
+    <meta property="og:description" content="Application web libre pour visualiser les observations d'oiseaux en temps réel via l'API eBird. Carte interactive, recherche d'espèces, export de données, fonds de carte multiples. Idéal pour les ornithologues et amoureux de la nature." />
     <meta property="og:image" content="https://raw.githubusercontent.com/timeobonnin-prog/Lecteur-API-eBird/main/public/API%20Ebird.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:url" content="https://timeobonnin-prog.github.io/Lecteur-API-eBird/" />
     <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Lecteur API eBird" />
-    <meta name="twitter:description" content="Explorez les oiseaux autour de vous." />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:site_name" content="Lecteur API eBird" />
+    <meta property="og:updated_time" content="2026-07-28T10:00:00+02:00" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Lecteur API eBird – Observatoire ornithologique interactif" />
+    <meta name="twitter:description" content="Application web libre pour visualiser les observations d'oiseaux en temps réel via l'API eBird. Carte interactive, recherche d'espèces, export de données, fonds de carte multiples." />
     <meta name="twitter:image" content="https://raw.githubusercontent.com/timeobonnin-prog/Lecteur-API-eBird/main/public/API%20Ebird.png" />
+    <meta name="twitter:image:alt" content="Logo Lecteur API eBird – Une boussole stylisée avec une plume d'oiseau" />
+    <meta name="twitter:creator" content="@timeobonnin" />
+    <meta name="twitter:site" content="@timeobonnin" />
+
+    <!-- Dublin Core (norme ISO) -->
+    <meta name="DC.title" content="Lecteur API eBird – Observatoire ornithologique interactif" />
+    <meta name="DC.creator" content="Timéo Bonnin" />
+    <meta name="DC.description" content="Application web pour explorer les observations d'oiseaux en temps réel avec l'API eBird. Cartographie, recherche, export de données." />
+    <meta name="DC.type" content="Text" />
+    <meta name="DC.format" content="text/html" />
+    <meta name="DC.language" content="fr" />
+    <meta name="DC.publisher" content="Timéo Bonnin" />
+    <meta name="DC.subject" content="ornithologie, oiseaux, eBird, biodiversité, cartographie" />
+    <meta name="DC.date" content="2026-07-28" />
+
+    <!-- Données structurées JSON-LD (WebApplication + Organisation) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Lecteur API eBird",
+      "description": "Application web gratuite et open source pour explorer les observations d'oiseaux en temps réel grâce à l'API eBird. Cartographie interactive, recherche par espèce, autocomplétion géographique, fonds de carte multiples, export de données en CSV, TXT et JSON.",
+      "url": "https://timeobonnin-prog.github.io/Lecteur-API-eBird/",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "JavaScript, HTML5",
+      "softwareVersion": "1.0",
+      "author": {
+        "@type": "Person",
+        "name": "Timéo Bonnin",
+        "url": "https://github.com/timeobonnin-prog"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Timéo Bonnin",
+        "url": "https://github.com/timeobonnin-prog"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://timeobonnin-prog.github.io/Lecteur-API-eBird/"
+      }
+    }
+    </script>
+
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/timeobonnin-prog/Lecteur-API-eBird/main/public/API%20Ebird.png" />
+
     <style>
         :root {
             --neon: #10b981;
@@ -324,7 +395,7 @@
     </div>
 
     <script>
-        // Particules animées (identiques à la version précédente)
+        // Particules animées
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
         let width, height;
