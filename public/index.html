@@ -92,6 +92,76 @@
     <!-- MAIN -->
     <main class="main-area">
         <div id="map"></div>
+        
+        <!-- Bouton bascule mobile (remplace l'ancien toggle) -->
+        <button class="mobile-toggle-btn" id="toggleListBtn" onclick="toggleMobileList()">📋 Voir la liste</button>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title"><span>Checklists</span><span id="checklistCount" style="color:#fff; background:var(--neon); padding:2px 8px; border-radius:12px;">0</span></div>
+                <div id="speciesTotal" style="font-size:0.7rem; color:var(--muted); text-align:center;">0 espèce distincte</div>
+                <div id="totalBirdsCount" style="font-size:0.7rem; color:var(--muted); text-align:center;">0 individus</div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Lieu ou espèce..." oninput="updateAutocomplete()" autocomplete="off" />
+                    <div class="autocomplete" id="autocompleteList"></div>
+                </div>
+                <select class="sort-select" id="sortSelect" onchange="renderChecklists()">
+                    <option value="alpha">🔤 Alphabétique</option>
+                    <option value="count">🔢 Nombre d'oiseaux</option>
+                    <option value="date">🕒 Plus récent</option>
+                </select>
+                <div class="sidebar-options">
+                    <label>
+                        <input type="checkbox" id="showSciNames" onchange="renderChecklists()"> Noms scientifiques
+                    </label>
+                    <button class="ebird-link" onclick="openExportModal()">📥 Exporter</button>
+                </div>
+            </div>
+            <div class="checklist-scroller" id="checklistContainer">
+                <div style="padding:20px; text-align:center; color:var(--muted);">Prêt à scanner…</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODALE EXPORT -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Exporter les observations</h3>
+            <div id="modalBody">
+                <p style="text-align:center; margin-bottom:12px;">Format :</p>
+                <div class="format-options">
+                    <label><input type="radio" name="exportFormat" value="csv" checked> CSV</label>
+                    <label><input type="radio" name="exportFormat" value="txt"> TXT</label>
+                    <label><input type="radio" name="exportFormat" value="json"> JSON</label>
+                </div>
+                <button class="modal-btn" onclick="doExport()">📥 Télécharger</button>
+                <button style="background:transparent; border:1px solid var(--border); color:var(--text); padding:8px 16px; border-radius:8px; margin-top:8px; width:100%; cursor:pointer;" onclick="closeModal()">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+        <div class="quick-filters">
+            <select id="radiusSelect" onchange="runScan()">
+                <option value="10">10 km</option>
+                <option value="25">25 km</option>
+                <option value="50" selected>50 km</option>
+            </select>
+            <!-- Recherche de lieu avec autocomplétion -->
+            <div class="search-box" style="flex:1; min-width:200px;">
+                <input type="text" id="locationSearch" placeholder="🔎 Chercher un lieu..." oninput="updateLocationAutocomplete()" onkeydown="if(event.key==='Enter'){ event.preventDefault(); geocodeAndGo(); }" autocomplete="off" />
+                <div class="autocomplete" id="locationAutocompleteList"></div>
+            </div>
+            <button class="icon-btn" onclick="geocodeAndGo()" title="Rechercher">🔍</button>
+        </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="main-area">
+        <div id="map"></div>
         <button class="toggle-list-btn" id="toggleListBtn">▼</button>
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
