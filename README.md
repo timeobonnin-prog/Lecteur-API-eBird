@@ -2,10 +2,6 @@
   <img src="https://github.com/user-attachments/assets/6898c3ef-8f53-4ff2-8874-dd5ea4ed84e8" alt="Lecteur API eBird" width="300"/>
 </p>
 
-<h1 align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=35&pause=1000&color=3B82F6&center=true&vCenter=true&width=600&lines=Lecteur+API+eBird;Exploration+en+temps+réel;Interface+cartographique+connectée" alt="Typing SVG" />
-</h1>
-
 <p align="center">
   <strong>Exploration en temps réel des observations d’oiseaux</strong><br>
   Interface cartographique connectée à l’API eBird 2.0, protégée par CAPTCHA et hébergée sur Vercel.
