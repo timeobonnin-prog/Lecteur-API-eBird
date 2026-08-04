@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://mon-api-ten.vercel.app">🌐 Site en ligne</a> •
+  <a href="https://lecteur-api-ebird.vercel.app">🌐 Site en ligne</a> •
   <a href="https://ebird.org/api/keygen">🔑 Obtenir une clé API eBird</a> •
   <a href="https://github.com/timeobonnin-prog/Lecteur-API-eBird/blob/main/LICENSE">📄 Licence</a>
 </p>
