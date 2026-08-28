@@ -1,6 +1,6 @@
 <div align="center">
 
-![Lecteur API eBird](https://github.com/user-attachments/assets/6898c3ef-8f53-4ff2-8874-dd5ea4ed84e8)
+<img src="https://github.com/user-attachments/assets/6898c3ef-8f53-4ff2-8874-dd5ea4ed84e8" alt="Lecteur API eBird" width="180" />
 
 # Lecteur API eBird
 
