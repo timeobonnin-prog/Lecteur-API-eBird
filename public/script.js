@@ -60,14 +60,13 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 }
 
 // ============================================================
-// 2️⃣ Récupère la liste COMPLÈTE d'une checklist (avec retry plus robuste)
+// 2️⃣ Récupère la liste COMPLÈTE d'une checklist (avec retry robuste)
 // ============================================================
 async function fetchFullChecklist(subId, retries = 0) {
     if (!userApiKey) throw new Error('Clé API manquante');
 
-    // Délai initial avant la requête (pour lisser le trafic)
     if (retries === 0) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
@@ -75,8 +74,7 @@ async function fetchFullChecklist(subId, retries = 0) {
     });
 
     if (res.status === 429) {
-        // Attente exponentielle plus longue
-        const delay = Math.min(2000 * Math.pow(2, retries), 30000);
+        const delay = Math.min(3000 * Math.pow(1.5, retries), 30000);
         console.log(`⏳ 429 pour ${subId}, attente ${delay}ms (tentative ${retries + 1})...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return fetchFullChecklist(subId, retries + 1);
@@ -136,7 +134,7 @@ async function fetchFullChecklist(subId, retries = 0) {
 }
 
 // ============================================================
-// 3️⃣ Mise à jour automatique de toutes les checklists (TRÈS LENTE MAIS STABLE)
+// 3️⃣ Mise à jour automatique des checklists (optimisée)
 // ============================================================
 async function fetchAndUpdateAllChecklists() {
     const subIds = Object.keys(checklists);
@@ -145,9 +143,17 @@ async function fetchAndUpdateAllChecklists() {
         return;
     }
 
-    console.log(`📋 Mise à jour de ${subIds.length} checklists (une par une, avec 500ms d'attente)...`);
+    // Filtrer : ignorer les checklists déjà complètes (> 10 espèces)
+    const filteredSubIds = subIds.filter(id => checklists[id].species.length <= 10);
+    const skipped = subIds.length - filteredSubIds.length;
+    console.log(`📋 ${subIds.length} checklists totales, ${skipped} ignorées (déjà complètes), ${filteredSubIds.length} à mettre à jour`);
 
-    // Sauvegarder l'état d'expansion actuel
+    if (filteredSubIds.length === 0) {
+        console.log('✅ Toutes les checklists sont déjà complètes !');
+        return;
+    }
+
+    // Sauvegarder l'état d'expansion
     const expandedState = {};
     for (const id in cardRefs) {
         expandedState[id] = cardRefs[id].classList.contains('expanded');
@@ -155,47 +161,56 @@ async function fetchAndUpdateAllChecklists() {
 
     let updatedCount = 0;
     let errorCount = 0;
+    const concurrency = 2;
+    const delayBetweenBatches = 1200;
 
-    for (let i = 0; i < subIds.length; i++) {
-        const subId = subIds[i];
-        const cl = checklists[subId];
-        if (!cl) continue;
-
-        try {
-            const data = await fetchFullChecklist(subId);
-            if (data.observations && data.observations.length > 0) {
-                const speciesMap = new Map();
-                data.observations.forEach(obs => {
-                    const name = obs.comName || obs.commonName || obs.speciesCode || 'Inconnu';
-                    if (!speciesMap.has(name)) {
-                        speciesMap.set(name, {
-                            name: name,
-                            sci: obs.sciName || obs.scientificName || '',
-                            count: 0,
-                            speciesCode: obs.speciesCode || ''
-                        });
-                    }
-                    speciesMap.get(name).count += (obs.howMany || 1);
-                });
-                cl.species = Array.from(speciesMap.values());
-                cl.totalBirds = cl.species.reduce((sum, s) => sum + s.count, 0);
-                updatedCount++;
-                console.log(`✅ ${i+1}/${subIds.length} ${subId} mis à jour (${cl.species.length} espèces)`);
-            } else {
-                console.warn(`⚠️ ${i+1}/${subIds.length} ${subId} : aucune observation`);
+    for (let i = 0; i < filteredSubIds.length; i += concurrency) {
+        const batch = filteredSubIds.slice(i, i + concurrency);
+        const promises = batch.map(async (subId, index) => {
+            if (index > 0) {
+                await new Promise(resolve => setTimeout(resolve, 200));
             }
-        } catch (err) {
-            errorCount++;
-            console.error(`❌ ${i+1}/${subIds.length} ${subId} : ${err.message}`);
-        }
 
-        // 🔥 ATTENTE OBLIGATOIRE de 500ms entre chaque requête
-        if (i < subIds.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            const cl = checklists[subId];
+            if (!cl) return;
+
+            try {
+                const data = await fetchFullChecklist(subId);
+                if (data.observations && data.observations.length > 0) {
+                    const speciesMap = new Map();
+                    data.observations.forEach(obs => {
+                        const name = obs.comName || obs.commonName || obs.speciesCode || 'Inconnu';
+                        if (!speciesMap.has(name)) {
+                            speciesMap.set(name, {
+                                name: name,
+                                sci: obs.sciName || obs.scientificName || '',
+                                count: 0,
+                                speciesCode: obs.speciesCode || ''
+                            });
+                        }
+                        speciesMap.get(name).count += (obs.howMany || 1);
+                    });
+                    cl.species = Array.from(speciesMap.values());
+                    cl.totalBirds = cl.species.reduce((sum, s) => sum + s.count, 0);
+                    updatedCount++;
+                    console.log(`✅ ${i+index+1}/${filteredSubIds.length} ${subId} mis à jour (${cl.species.length} espèces)`);
+                } else {
+                    console.warn(`⚠️ ${i+index+1}/${filteredSubIds.length} ${subId} : aucune observation`);
+                }
+            } catch (err) {
+                errorCount++;
+                console.error(`❌ ${i+index+1}/${filteredSubIds.length} ${subId} : ${err.message}`);
+            }
+        });
+
+        await Promise.all(promises);
+
+        if (i + concurrency < filteredSubIds.length) {
+            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
         }
     }
 
-    // Un seul rafraîchissement à la fin
+    // Rafraîchir l'affichage
     renderChecklists();
 
     // Restaurer l'état d'expansion
@@ -507,7 +522,7 @@ function buildSpeciesChecklists(observations) {
 }
 
 // ============================================================
-// 6️⃣ Affichage des cartes (checklist cards) – avec préservation de l'état
+// 6️⃣ Affichage des cartes (checklist cards)
 // ============================================================
 function renderChecklistCards(filtered, container, showSci) {
     filtered.forEach(cl => {
@@ -536,7 +551,7 @@ function renderChecklistCards(filtered, container, showSci) {
         `).join('');
 
         const wasExpanded = cardRefs[cl.id] && cardRefs[cl.id].classList.contains('expanded');
-        
+
         card.innerHTML = `
             <div class="checklist-name">${escapeHtml(cl.name)}</div>
             <div class="checklist-sub">🕒 ${formatDate(cl.lastDate)} · 👤 ${escapeHtml(cl.observer)}${distanceHtml}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div>
