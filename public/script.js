@@ -16,12 +16,8 @@ let currentSpeciesCode = null;
 let speciesChecklists = {};
 let userPosition = null;
 
-// Cache pour les photos
 const photoCache = new Map();
 
-// ============================================================
-// 1️⃣ Récupère une photo depuis notre backend (iNaturalist / Wikipedia)
-// ============================================================
 async function fetchBirdPhoto(speciesCode, sciName) {
     if (!sciName) return null;
     const cacheKey = speciesCode || sciName;
@@ -42,7 +38,7 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 }
 
 // ============================================================
-// 2️⃣ Récupère la liste COMPLÈTE d'une checklist (avec includeObservations=true)
+// 🔥 Récupère la liste COMPLÈTE d'une checklist (via l'API)
 // ============================================================
 async function fetchFullChecklist(subId) {
     if (!userApiKey) throw new Error('Clé API manquante');
@@ -59,71 +55,44 @@ async function fetchFullChecklist(subId) {
     const data = await res.json();
     console.log('📡 Réponse eBird (checklist complète) :', data);
 
-    // Cas 1 : la réponse est directement un tableau d'observations
-    if (Array.isArray(data)) {
-        return { observations: data };
-    }
-
-    // Cas 2 : la réponse contient un champ "observations"
+    // Détection automatique du format
+    if (Array.isArray(data)) return { observations: data };
     if (data.observations && Array.isArray(data.observations)) {
-        // Vérifier si c'est un tableau d'observations avec comName ou commonName
-        if (data.observations.length > 0) {
-            const first = data.observations[0];
-            if (first.comName || first.commonName || first.sciName || first.scientificName) {
-                return { observations: data.observations };
-            }
-        }
         return { observations: data.observations };
     }
-
-    // Cas 3 : la réponse contient un champ "species" (ancien format)
-    if (data.species && Array.isArray(data.species)) {
-        return { observations: data.species };
-    }
-
-    // Cas 4 : la réponse contient un champ "spp" (format historique)
-    if (data.spp && Array.isArray(data.spp)) {
-        return { observations: data.spp };
-    }
-
-    // Cas 5 : la réponse contient un champ "checklist" (format imbriqué)
-    if (data.checklist && data.checklist.observations && Array.isArray(data.checklist.observations)) {
+    if (data.species && Array.isArray(data.species)) return { observations: data.species };
+    if (data.spp && Array.isArray(data.spp)) return { observations: data.spp };
+    if (data.checklist && data.checklist.observations) {
         return { observations: data.checklist.observations };
     }
-
-    // Cas 6 : c'est une seule observation (non listée)
     if (data.comName || data.sciName || data.commonName || data.scientificName) {
-        const obs = {
+        return { observations: [{
             comName: data.comName || data.commonName || 'Inconnu',
             sciName: data.sciName || data.scientificName || '',
             howMany: data.howMany || data.count || 1,
             speciesCode: data.speciesCode || data.taxonCode || ''
-        };
-        return { observations: [obs] };
+        }]};
     }
-
-    // Cas 7 : la checklist est privée ou vide (on a les métadonnées mais pas les observations)
     if (data.subId && data.locId) {
-        console.warn('⚠️ Checklist trouvée mais observations non disponibles (privée ou vide) :', data);
+        console.warn('⚠️ Checklist privée ou vide');
         return { observations: [] };
     }
 
-    // Cas 8 : on cherche n'importe quel champ qui semble être un tableau d'observations
+    // Recherche de n'importe quel tableau d'observations
     for (const key in data) {
         if (Array.isArray(data[key]) && data[key].length > 0) {
             const first = data[key][0];
-            if (first && (first.comName || first.commonName || first.sciName || first.scientificName || first.speciesCode)) {
+            if (first && (first.comName || first.commonName || first.sciName || first.scientificName)) {
                 return { observations: data[key] };
             }
         }
     }
 
-    // Dernier recours : erreur avec aperçu
     throw new Error(`Format inattendu : ${JSON.stringify(data).substring(0, 200)}`);
 }
 
 // ============================================================
-// 3️⃣ Fonds de carte (sans "dark")
+// Fonds de carte
 // ============================================================
 const mapLayers = {
     light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -413,9 +382,6 @@ function buildSpeciesChecklists(observations) {
     renderSpeciesChecklists();
 }
 
-// ============================================================
-// 4️⃣ Affichage des cartes (checklist cards)
-// ============================================================
 function renderChecklistCards(filtered, container, showSci) {
     filtered.forEach(cl => {
         const marker = L.marker([cl.lat, cl.lng], { icon: getMarkerIcon() }).addTo(layerGroup);
@@ -442,7 +408,8 @@ function renderChecklistCards(filtered, container, showSci) {
             </li>
         `).join('');
 
-        // Le bouton n'apparaît que si la checklist a plus de 30 espèces
+        // 🔥 LE BOUTON APPARAÎT SI LA CHECKLIST A PLUS DE 30 ESPÈCES
+        // Si tu veux qu'il apparaisse pour TOUTES, remplace > 30 par > 0
         const showFullListBtn = cl.species.length > 30;
         const fullListBtnHtml = showFullListBtn 
             ? `<button class="full-checklist-btn" data-subid="${cl.id}" style="margin-top:8px; background:var(--neon); color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:0.7rem; cursor:pointer;">📋 Voir la liste complète</button>` 
@@ -515,9 +482,6 @@ function renderChecklists() {
     renderChecklistCards(filtered, container, showSci);
 }
 
-// ============================================================
-// 5️⃣ Géocodage
-// ============================================================
 async function updateLocationAutocomplete() {
     clearTimeout(locationAutocompleteTimer);
     locationAutocompleteTimer = setTimeout(async () => {
@@ -574,9 +538,6 @@ async function geocodeAndGo() {
     }
 }
 
-// ============================================================
-// 6️⃣ Export
-// ============================================================
 function openExportModal() { document.getElementById('exportModal').classList.add('active'); }
 function closeModal() {
     document.getElementById('exportModal').classList.remove('active');
@@ -718,9 +679,6 @@ function formatDate(dt) {
     return `${d}/${m}/${y} ${time||''}`;
 }
 
-// ============================================================
-// 7️⃣ Mobile toggle & divers
-// ============================================================
 const toggleBtn = document.getElementById('toggleListBtn');
 const sidebar = document.getElementById('sidebar');
 toggleBtn.addEventListener('click', () => {
@@ -740,11 +698,7 @@ document.addEventListener('click', (e) => {
     if (e.target !== locationInput && e.target !== locationList) locationList.style.display = 'none';
 });
 
-// ============================================================
-// 8️⃣ INITIALISATION
-// ============================================================
 document.addEventListener("DOMContentLoaded", async () => {
-    // --- Thème ---
     const savedTheme = localStorage.getItem('themeMode');
     if (savedTheme === 'light') {
         nightMode = false;
@@ -762,7 +716,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem('themeMode', nightMode ? 'dark' : 'light');
     }
 
-    // --- Fonds de carte ---
     let savedMapLayer = localStorage.getItem('mapLayer');
     if (savedMapLayer === 'dark') savedMapLayer = 'light';
     const initialLayer = savedMapLayer || 'light';
@@ -788,7 +741,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (userApiKey) runScan();
     });
 
-    // --- GitHub popup ---
     const githubContainer = document.getElementById('githubContainer');
     const githubPopup = document.getElementById('githubPopup');
     let githubTimeout;
@@ -807,9 +759,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // ============================================================
-    // 🔥 ÉVÉNEMENTS : PHOTOS & LISTE COMPLÈTE (VERSION DÉFINITIVE)
-    // ============================================================
     const container = document.getElementById('checklistContainer');
     
     // --- Clic sur 📷 (photo) ---
@@ -842,7 +791,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // --- Clic sur "Voir la liste complète" (API en priorité) ---
+    // ============================================================
+    // 🔥 BOUTON "VOIR LA LISTE COMPLÈTE" (appelle l'API en priorité)
+    // ============================================================
     container.addEventListener('click', async (e) => {
         const btn = e.target.closest('.full-checklist-btn');
         if (!btn) return;
@@ -858,12 +809,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.disabled = true;
 
         try {
-            // 1️⃣ ON APPELLE D'ABORD L'API (avec includeObservations=true)
+            // 1️⃣ ON APPELLE L'API AVEC includeObservations=true
             const checklistData = await fetchFullChecklist(subId);
             
-            // Vérification si on a des observations
             if (checklistData.observations && checklistData.observations.length > 0) {
-                // ✅ On a des données complètes via l'API
                 const card = btn.closest('.checklist-card');
                 const listContainer = card.querySelector('.species-list');
                 if (!listContainer) throw new Error('Conteneur introuvable');
@@ -907,8 +856,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // 2️⃣ FALLBACK : si l'API n'a rien renvoyé (checklist privée ou vide)
-            // On essaye avec les données locales
+            // 2️⃣ FALLBACK : si l'API n'a rien renvoyé (checklist privée)
             const localData = rawObservations.filter(obs => obs.subId === subId);
             if (localData.length > 0) {
                 const card = btn.closest('.checklist-card');
@@ -954,7 +902,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // 3️⃣ Ni API ni données locales : message d'information
+            // 3️⃣ Ni API ni données locales
             btn.textContent = '⚠️ Pas de données';
             btn.disabled = false;
             btn.style.background = '#f59e0b';
@@ -974,7 +922,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // --- Connexion automatique ---
     const autoLoggedIn = await tryAutoLogin();
     if (!autoLoggedIn) {
         document.getElementById('authScreen').classList.remove('hidden');
