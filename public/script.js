@@ -59,54 +59,58 @@ async function fetchFullChecklist(subId) {
     }
 
     const data = await res.json();
-
-    // 🔍 LOG POUR VOIR LA RÉPONSE BRUTE (utile pour debug)
     console.log('📡 Réponse brute de eBird (checklist) :', data);
 
     // --- DÉTECTION AUTOMATIQUE DU FORMAT ---
 
-    // 1. Si la réponse est un tableau, on le transforme en objet
+    // 1. Si la réponse est un tableau
     if (Array.isArray(data)) {
         return { observations: data };
     }
 
-    // 2. Si la réponse contient un champ "error" ou "message"
+    // 2. Erreur explicite
     if (data.error) throw new Error(data.error);
     if (data.message) throw new Error(data.message);
 
-    // 3. Si la réponse a un champ "checklist" (format ancien)
-    if (data.checklist && Array.isArray(data.checklist.observations)) {
-        return { observations: data.checklist.observations };
-    }
-
-    // 4. Si la réponse a directement "observations"
+    // 3. Observations à la racine
     if (data.observations && Array.isArray(data.observations)) {
         return data;
     }
 
-    // 5. Si la réponse a un champ "species" (ancien format eBird)
+    // 4. Checklist imbriquée
+    if (data.checklist && data.checklist.observations && Array.isArray(data.checklist.observations)) {
+        return { observations: data.checklist.observations };
+    }
+
+    // 5. Ancien champ "species"
     if (data.species && Array.isArray(data.species)) {
         return { observations: data.species };
     }
 
-    // 6. Si la réponse a un champ "spp" (autre ancien format)
+    // 6. Ancien champ "spp"
     if (data.spp && Array.isArray(data.spp)) {
         return { observations: data.spp };
     }
 
-    // 7. Dernier recours : on cherche n'importe quel champ qui est un tableau d'observations
+    // 7. Recherche d'un tableau contenant des oiseaux
     for (const key in data) {
         if (Array.isArray(data[key]) && data[key].length > 0 && data[key][0].comName) {
             return { observations: data[key] };
         }
     }
 
-    // 8. Si c'est une seule observation (pas dans un tableau)
+    // 8. Une seule observation (pas dans un tableau)
     if (data.comName || data.sciName) {
         return { observations: [data] };
     }
 
-    // 9. Si rien ne correspond, on jette une erreur avec un aperçu
+    // 9. ✅ NOUVEAU : Checklist vide ou privée (on a les métadonnées mais pas les observations)
+    if (data.subId && data.locId) {
+        console.warn('⚠️ Checklist trouvée mais aucune observation (privée ou vide) :', data);
+        return { observations: [] };
+    }
+
+    // 10. Dernier recours : erreur avec aperçu
     const preview = JSON.stringify(data).substring(0, 300);
     throw new Error(`Format inattendu : ${preview}`);
 }
@@ -431,13 +435,19 @@ function renderChecklistCards(filtered, container, showSci) {
             </li>
         `).join('');
 
+        // ✅ Règle : le bouton "Voir la liste complète" n'apparaît que si la checklist a plus de 30 espèces
+        const showFullListBtn = cl.species.length > 30;
+        const fullListBtnHtml = showFullListBtn 
+            ? `<button class="full-checklist-btn" data-subid="${cl.id}" style="margin-top:8px; background:var(--neon); color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:0.7rem; cursor:pointer;">📋 Voir la liste complète</button>` 
+            : '';
+
         card.innerHTML = `
             <div class="checklist-name">${escapeHtml(cl.name)}</div>
             <div class="checklist-sub">🕒 ${formatDate(cl.lastDate)} · 👤 ${escapeHtml(cl.observer)}${distanceHtml}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div>
             <div class="species-list">
                 <ul>${speciesHtml}</ul>
                 <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a>
-                <button class="full-checklist-btn" data-subid="${cl.id}" style="margin-top:8px; background:var(--neon); color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:0.7rem; cursor:pointer;">📋 Voir la liste complète</button>
+                ${fullListBtnHtml}
             </div>`;
         card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
         card.addEventListener('click', (e) => {
