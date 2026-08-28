@@ -19,7 +19,9 @@ let userPosition = null;
 // Cache pour les photos
 const photoCache = new Map();
 
-// Récupère une photo via notre backend (iNaturalist / Wikipedia)
+// ============================================================
+// 1️⃣ Récupère une photo depuis notre backend (iNaturalist / Wikipedia)
+// ============================================================
 async function fetchBirdPhoto(speciesCode, sciName) {
     if (!sciName) return null;
     const cacheKey = speciesCode || sciName;
@@ -39,32 +41,79 @@ async function fetchBirdPhoto(speciesCode, sciName) {
     return null;
 }
 
-// Récupère la liste COMPLÈTE d'une checklist
+// ============================================================
+// 2️⃣ Récupère la liste COMPLÈTE d'une checklist (format tolérant)
+// ============================================================
 async function fetchFullChecklist(subId) {
     if (!userApiKey) {
         throw new Error('Clé API manquante');
     }
+
     const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
         headers: { 'x-user-ebird-key': userApiKey }
     });
+
     if (!res.ok) {
         const errorText = await res.text();
         throw new Error(`Erreur ${res.status}: ${errorText}`);
     }
+
     const data = await res.json();
-    // Si l'API renvoie une erreur dans le JSON
-    if (data.error) throw new Error(data.error);
-    // Si la réponse n'a pas de propriété 'observations', on lance une erreur explicite
-    if (!data.observations || !Array.isArray(data.observations)) {
-        console.error('Réponse eBird inattendue :', data);
-        throw new Error('La réponse ne contient pas de liste d\'observations (format inattendu)');
+
+    // 🔍 LOG POUR VOIR LA RÉPONSE BRUTE (utile pour debug)
+    console.log('📡 Réponse brute de eBird (checklist) :', data);
+
+    // --- DÉTECTION AUTOMATIQUE DU FORMAT ---
+
+    // 1. Si la réponse est un tableau, on le transforme en objet
+    if (Array.isArray(data)) {
+        return { observations: data };
     }
-    return data;
+
+    // 2. Si la réponse contient un champ "error" ou "message"
+    if (data.error) throw new Error(data.error);
+    if (data.message) throw new Error(data.message);
+
+    // 3. Si la réponse a un champ "checklist" (format ancien)
+    if (data.checklist && Array.isArray(data.checklist.observations)) {
+        return { observations: data.checklist.observations };
+    }
+
+    // 4. Si la réponse a directement "observations"
+    if (data.observations && Array.isArray(data.observations)) {
+        return data;
+    }
+
+    // 5. Si la réponse a un champ "species" (ancien format eBird)
+    if (data.species && Array.isArray(data.species)) {
+        return { observations: data.species };
+    }
+
+    // 6. Si la réponse a un champ "spp" (autre ancien format)
+    if (data.spp && Array.isArray(data.spp)) {
+        return { observations: data.spp };
+    }
+
+    // 7. Dernier recours : on cherche n'importe quel champ qui est un tableau d'observations
+    for (const key in data) {
+        if (Array.isArray(data[key]) && data[key].length > 0 && data[key][0].comName) {
+            return { observations: data[key] };
+        }
+    }
+
+    // 8. Si c'est une seule observation (pas dans un tableau)
+    if (data.comName || data.sciName) {
+        return { observations: [data] };
+    }
+
+    // 9. Si rien ne correspond, on jette une erreur avec un aperçu
+    const preview = JSON.stringify(data).substring(0, 300);
+    throw new Error(`Format inattendu : ${preview}`);
 }
 
-// ---------------------------------------------------
-// Fonds de carte (sans "dark")
-// ---------------------------------------------------
+// ============================================================
+// 3️⃣ Fonds de carte (sans "dark")
+// ============================================================
 const mapLayers = {
     light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -353,6 +402,9 @@ function buildSpeciesChecklists(observations) {
     renderSpeciesChecklists();
 }
 
+// ============================================================
+// 4️⃣ Affichage des cartes (checklist cards)
+// ============================================================
 function renderChecklistCards(filtered, container, showSci) {
     filtered.forEach(cl => {
         const marker = L.marker([cl.lat, cl.lng], { icon: getMarkerIcon() }).addTo(layerGroup);
@@ -446,6 +498,9 @@ function renderChecklists() {
     renderChecklistCards(filtered, container, showSci);
 }
 
+// ============================================================
+// 5️⃣ Géocodage
+// ============================================================
 async function updateLocationAutocomplete() {
     clearTimeout(locationAutocompleteTimer);
     locationAutocompleteTimer = setTimeout(async () => {
@@ -502,6 +557,9 @@ async function geocodeAndGo() {
     }
 }
 
+// ============================================================
+// 6️⃣ Export
+// ============================================================
 function openExportModal() { document.getElementById('exportModal').classList.add('active'); }
 function closeModal() {
     document.getElementById('exportModal').classList.remove('active');
@@ -643,6 +701,9 @@ function formatDate(dt) {
     return `${d}/${m}/${y} ${time||''}`;
 }
 
+// ============================================================
+// 7️⃣ Mobile toggle & divers
+// ============================================================
 const toggleBtn = document.getElementById('toggleListBtn');
 const sidebar = document.getElementById('sidebar');
 toggleBtn.addEventListener('click', () => {
@@ -662,7 +723,11 @@ document.addEventListener('click', (e) => {
     if (e.target !== locationInput && e.target !== locationList) locationList.style.display = 'none';
 });
 
+// ============================================================
+// 8️⃣ INITIALISATION
+// ============================================================
 document.addEventListener("DOMContentLoaded", async () => {
+    // --- Thème ---
     const savedTheme = localStorage.getItem('themeMode');
     if (savedTheme === 'light') {
         nightMode = false;
@@ -680,6 +745,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem('themeMode', nightMode ? 'dark' : 'light');
     }
 
+    // --- Fonds de carte ---
     let savedMapLayer = localStorage.getItem('mapLayer');
     if (savedMapLayer === 'dark') savedMapLayer = 'light';
     const initialLayer = savedMapLayer || 'light';
@@ -705,6 +771,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (userApiKey) runScan();
     });
 
+    // --- GitHub popup ---
     const githubContainer = document.getElementById('githubContainer');
     const githubPopup = document.getElementById('githubPopup');
     let githubTimeout;
@@ -723,12 +790,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // -------------------------------------------------
-    // Gestion des photos et listes complètes (CORRIGÉ)
-    // -------------------------------------------------
+    // ============================================================
+    // 9️⃣ ÉVÉNEMENTS : PHOTOS & LISTE COMPLÈTE
+    // ============================================================
     const container = document.getElementById('checklistContainer');
     
-    // Clic sur 📷 (photo)
+    // --- Clic sur 📷 (photo) ---
     container.addEventListener('click', async (e) => {
         const trigger = e.target.closest('.photo-trigger');
         if (!trigger) return;
@@ -758,7 +825,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Clic sur "Voir la liste complète" - AVEC VÉRIFICATIONS DE SÉCURITÉ
+    // --- Clic sur "Voir la liste complète" ---
     container.addEventListener('click', async (e) => {
         const btn = e.target.closest('.full-checklist-btn');
         if (!btn) return;
@@ -776,7 +843,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const checklistData = await fetchFullChecklist(subId);
             
-            // ✅ ICI LA VÉRIFICATION QUI ÉVITE L'ERREUR .map
+            // Vérification de sécurité
             if (!checklistData.observations || !Array.isArray(checklistData.observations)) {
                 throw new Error('Format de réponse inattendu (pas de liste d\'observations)');
             }
@@ -812,14 +879,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             btn.disabled = false;
 
         } catch (err) {
-            // 🚨 On affiche l'erreur exacte sur le bouton
             btn.textContent = `❌ ${err.message}`;
             btn.disabled = false;
             console.error('Erreur liste complète :', err);
         }
     });
 
-    // Connexion automatique
+    // --- Connexion automatique ---
     const autoLoggedIn = await tryAutoLogin();
     if (!autoLoggedIn) {
         document.getElementById('authScreen').classList.remove('hidden');
