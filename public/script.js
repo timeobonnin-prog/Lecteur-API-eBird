@@ -65,8 +65,9 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 async function fetchFullChecklist(subId, retries = 0) {
     if (!userApiKey) throw new Error('Clé API manquante');
 
+    // Délai initial de 200ms pour lisser le trafic
     if (retries === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
@@ -74,7 +75,7 @@ async function fetchFullChecklist(subId, retries = 0) {
     });
 
     if (res.status === 429) {
-        const delay = Math.min(3000 * Math.pow(1.5, retries), 30000);
+        const delay = Math.min(2000 * Math.pow(2, retries), 30000);
         console.log(`⏳ 429 pour ${subId}, attente ${delay}ms (tentative ${retries + 1})...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return fetchFullChecklist(subId, retries + 1);
@@ -134,7 +135,7 @@ async function fetchFullChecklist(subId, retries = 0) {
 }
 
 // ============================================================
-// 3️⃣ Mise à jour automatique des checklists (optimisée)
+// 3️⃣ Mise à jour automatique des checklists (ULTRA-STABLE)
 // ============================================================
 async function fetchAndUpdateAllChecklists() {
     const subIds = Object.keys(checklists);
@@ -143,8 +144,8 @@ async function fetchAndUpdateAllChecklists() {
         return;
     }
 
-    // Filtrer : ignorer les checklists déjà complètes (> 10 espèces)
-    const filteredSubIds = subIds.filter(id => checklists[id].species.length <= 10);
+    // 🔥 Filtrer : ignorer les checklists déjà complètes (>= 5 espèces)
+    const filteredSubIds = subIds.filter(id => checklists[id].species.length < 5);
     const skipped = subIds.length - filteredSubIds.length;
     console.log(`📋 ${subIds.length} checklists totales, ${skipped} ignorées (déjà complètes), ${filteredSubIds.length} à mettre à jour`);
 
@@ -161,52 +162,56 @@ async function fetchAndUpdateAllChecklists() {
 
     let updatedCount = 0;
     let errorCount = 0;
-    const concurrency = 2;
-    const delayBetweenBatches = 1200;
+    let globalPause = false;
 
-    for (let i = 0; i < filteredSubIds.length; i += concurrency) {
-        const batch = filteredSubIds.slice(i, i + concurrency);
-        const promises = batch.map(async (subId, index) => {
-            if (index > 0) {
-                await new Promise(resolve => setTimeout(resolve, 200));
+    // 🔥 Une seule requête à la fois (parallélisme 1) + délai 1.5s
+    for (let i = 0; i < filteredSubIds.length; i++) {
+        const subId = filteredSubIds[i];
+
+        // Si on a eu une 429, on ajoute une pause supplémentaire
+        if (globalPause) {
+            console.log('⏳ Pause de 5s après une 429...');
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            globalPause = false;
+        }
+
+        const cl = checklists[subId];
+        if (!cl) continue;
+
+        try {
+            const data = await fetchFullChecklist(subId);
+            if (data.observations && data.observations.length > 0) {
+                const speciesMap = new Map();
+                data.observations.forEach(obs => {
+                    const name = obs.comName || obs.commonName || obs.speciesCode || 'Inconnu';
+                    if (!speciesMap.has(name)) {
+                        speciesMap.set(name, {
+                            name: name,
+                            sci: obs.sciName || obs.scientificName || '',
+                            count: 0,
+                            speciesCode: obs.speciesCode || ''
+                        });
+                    }
+                    speciesMap.get(name).count += (obs.howMany || 1);
+                });
+                cl.species = Array.from(speciesMap.values());
+                cl.totalBirds = cl.species.reduce((sum, s) => sum + s.count, 0);
+                updatedCount++;
+                console.log(`✅ ${i+1}/${filteredSubIds.length} ${subId} mis à jour (${cl.species.length} espèces)`);
+            } else {
+                console.warn(`⚠️ ${i+1}/${filteredSubIds.length} ${subId} : aucune observation`);
             }
-
-            const cl = checklists[subId];
-            if (!cl) return;
-
-            try {
-                const data = await fetchFullChecklist(subId);
-                if (data.observations && data.observations.length > 0) {
-                    const speciesMap = new Map();
-                    data.observations.forEach(obs => {
-                        const name = obs.comName || obs.commonName || obs.speciesCode || 'Inconnu';
-                        if (!speciesMap.has(name)) {
-                            speciesMap.set(name, {
-                                name: name,
-                                sci: obs.sciName || obs.scientificName || '',
-                                count: 0,
-                                speciesCode: obs.speciesCode || ''
-                            });
-                        }
-                        speciesMap.get(name).count += (obs.howMany || 1);
-                    });
-                    cl.species = Array.from(speciesMap.values());
-                    cl.totalBirds = cl.species.reduce((sum, s) => sum + s.count, 0);
-                    updatedCount++;
-                    console.log(`✅ ${i+index+1}/${filteredSubIds.length} ${subId} mis à jour (${cl.species.length} espèces)`);
-                } else {
-                    console.warn(`⚠️ ${i+index+1}/${filteredSubIds.length} ${subId} : aucune observation`);
-                }
-            } catch (err) {
-                errorCount++;
-                console.error(`❌ ${i+index+1}/${filteredSubIds.length} ${subId} : ${err.message}`);
+        } catch (err) {
+            errorCount++;
+            console.error(`❌ ${i+1}/${filteredSubIds.length} ${subId} : ${err.message}`);
+            if (err.message.includes('429')) {
+                globalPause = true;
             }
-        });
+        }
 
-        await Promise.all(promises);
-
-        if (i + concurrency < filteredSubIds.length) {
-            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+        // 🔥 Délai de 1500ms entre chaque requête
+        if (i < filteredSubIds.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
         }
     }
 
