@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
     if (!subId) return res.status(400).json({ error: 'subId requis.' });
 
     try {
-        // ✅ Paramètre includeObservations=true pour avoir TOUTES les espèces
+        // ✅ LE BON ENDPOINT AVEC LE BON PARAMÈTRE
         const url = `https://api.ebird.org/v2/product/checklist/view/${subId}?includeObservations=true`;
         const response = await fetch(url, {
             headers: { 'X-eBirdApiToken': apiKey }
