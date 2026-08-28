@@ -1,5 +1,4 @@
 // api/ebird-checklist.js
-// Utilisation de fetch natif (Node.js 18+ ou Vercel)
 module.exports = async (req, res) => {
     // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,6 +19,7 @@ module.exports = async (req, res) => {
 
     try {
         const url = `https://api.ebird.org/v2/product/checklist/view/${subId}`;
+        // Utilisation du fetch NATIF (Node.js 18+). Plus besoin de node-fetch !
         const response = await fetch(url, {
             headers: { 'X-eBirdApiToken': apiKey }
         });
