@@ -58,8 +58,8 @@
             <div class="actions">
                 <button class="icon-btn" onclick="centerOnUser()" title="Centrer sur ma position">📍</button>
                 <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+                <!-- ✅ SUPPRESSION DE L'OPTION "Sombre" (carte inexistante) -->
                 <select id="mapLayerSelect" onchange="changeMapLayer(this.value)" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:6px;font-size:0.75rem;">
-                    <option value="dark">Sombre</option>
                     <option value="light">Clair</option>
                     <option value="satellite">Satellite</option>
                     <option value="topo">Topographique</option>
@@ -139,7 +139,49 @@
         </div>
     </div>
 
+    <!-- ✅ NOUVEAU : MODALE JURIDIQUE (Mentions légales, Confidentialité, CGU) -->
+    <div class="modal" id="legalModal">
+        <div class="modal-content" style="max-width:500px; max-height:80vh; overflow-y:auto;">
+            <h3 style="margin-bottom:8px;">⚖️ Informations légales</h3>
+            <div style="font-size:0.85rem; line-height:1.6; color:var(--text);">
+                <h4 style="margin-top:12px; color:var(--neon);">📌 Mentions légales</h4>
+                <p><strong>Éditeur :</strong> timeobonnin-prog (projet personnel)<br>
+                <strong>Hébergement :</strong> Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, USA.<br>
+                <strong>Contact :</strong> via <a href="https://github.com/timeobonnin-prog/mon-api" target="_blank" style="color:var(--neon);">GitHub</a><br>
+                <strong>Nature du site :</strong> Outil de visualisation des données ornithologiques via l'API eBird. Aucune activité commerciale.</p>
+
+                <h4 style="margin-top:16px; color:var(--neon);">🔒 Politique de confidentialité (RGPD)</h4>
+                <p>Ce site <strong>ne stocke aucune donnée personnelle</strong> sur ses serveurs. Toutes les données sensibles restent dans votre navigateur.</p>
+                <ul style="padding-left:20px; margin:8px 0;">
+                    <li><strong>Clé API eBird :</strong> Stockée uniquement dans le <code>localStorage</code> de votre navigateur. Jamais transmise à nos serveurs.</li>
+                    <li><strong>hCaptcha :</strong> Utilisé pour lutter contre les bots. Ce service peut collecter IP, mouvements de souris et empreinte navigateur. Voir <a href="https://www.hcaptcha.com/privacy" target="_blank" style="color:var(--neon);">leur politique</a>.</li>
+                    <li><strong>Géolocalisation :</strong> Si vous cliquez sur "📍", vos coordonnées GPS sont utilisées uniquement pour centrer la carte. Elles ne sont ni stockées ni partagées.</li>
+                    <li><strong>Données eBird :</strong> Les observations viennent de l'API publique eBird. Nous ne les stockons pas.</li>
+                </ul>
+                <p><em>Vous pouvez supprimer votre clé à tout moment via le bouton "🏠 Se déconnecter" ou en vidant les données du site dans votre navigateur.</em></p>
+
+                <h4 style="margin-top:16px; color:var(--neon);">📜 Conditions Générales d'Utilisation (CGU)</h4>
+                <ul style="padding-left:20px; margin:8px 0;">
+                    <li>Les données affichées proviennent de l'API publique eBird. Nous ne garantissons ni l'exactitude ni l'exhaustivité des données.</li>
+                    <li>L'utilisation est <strong>gratuite et réservée à un usage personnel, éducatif ou de recherche non commercial</strong>.</li>
+                    <li>L'utilisateur est seul responsable de l'utilisation qu'il fait des données.</li>
+                    <li>Nous nous réservons le droit de modifier ou interrompre le service à tout moment.</li>
+                </ul>
+            </div>
+            <button style="background:var(--neon); color:#fff; border:none; border-radius:8px; padding:10px 20px; margin-top:16px; width:100%; cursor:pointer; font-weight:bold;" onclick="document.getElementById('legalModal').classList.remove('active')">Fermer</button>
+        </div>
+    </div>
+
+    <!-- ✅ NOUVEAU : PIED DE PAGE AVEC LIENS JURIDIQUES -->
+    <footer style="position:fixed; bottom:8px; left:50%; transform:translateX(-50%); z-index:9998; font-size:0.6rem; color:var(--muted); background:var(--panel); padding:4px 16px; border-radius:20px; border:1px solid var(--border); backdrop-filter:blur(6px); display:flex; gap:10px; align-items:center; pointer-events:auto;">
+        <a href="#" onclick="document.getElementById('legalModal').classList.add('active'); return false;" style="color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:4px;">⚖️ Mentions</a>
+        <span style="opacity:0.3;">|</span>
+        <a href="#" onclick="document.getElementById('legalModal').classList.add('active'); return false;" style="color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:4px;">🔒 Confidentialité</a>
+        <span style="opacity:0.3;">|</span>
+        <a href="#" onclick="document.getElementById('legalModal').classList.add('active'); return false;" style="color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:4px;">📜 CGU</a>
+    </footer>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
 </body>
-    </html>
+</html>
