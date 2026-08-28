@@ -11,7 +11,7 @@ Une interface cartographique libre connectée à l'API eBird 2.0 pour explorer l
 
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white) ![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=leaflet&logoColor=white) ![eBird API 2.0](https://img.shields.io/badge/eBird%20API-2.0-4CAF50?style=for-the-badge) ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white) ![MIT License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge) ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 
-[🌐 Présentation intégrale du projet ici](https://lecteur-api-ebird.vercel.app)
+[🌐 Présentation intégrale du projet ici](https://timeobonnin-prog.github.io/Lecteur-API-eBird/)
 
 🐦 **Lecteur API eBird** — Explorez la biodiversité autour de vous.
 
