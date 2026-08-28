@@ -13,8 +13,8 @@ module.exports = async (req, res) => {
     if (!subId) return res.status(400).json({ error: 'subId requis.' });
 
     try {
-        // ✅ Endpoint CORRECT pour récupérer les observations d'une checklist
-        const url = `https://api.ebird.org/v2/data/obs/checklist/${subId}`;
+        // ✅ Ajout du paramètre includeObservations=true
+        const url = `https://api.ebird.org/v2/product/checklist/view/${subId}?includeObservations=true`;
         const response = await fetch(url, {
             headers: { 'X-eBirdApiToken': apiKey }
         });
@@ -24,7 +24,6 @@ module.exports = async (req, res) => {
             return res.status(response.status).json({ error: `eBird ${response.status}: ${text}` });
         }
 
-        // La réponse est directement un tableau d'observations
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
