@@ -19,7 +19,7 @@ let userPosition = null;
 // Cache pour les photos
 const photoCache = new Map();
 
-// 🆕 Récupère une photo via notre backend (iNaturalist / Wikipedia)
+// Récupère une photo via notre backend (iNaturalist / Wikipedia)
 async function fetchBirdPhoto(speciesCode, sciName) {
     if (!sciName) return null;
     const cacheKey = speciesCode || sciName;
@@ -42,7 +42,7 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 // Récupère la liste COMPLÈTE d'une checklist
 async function fetchFullChecklist(subId) {
     if (!userApiKey) {
-        throw new Error('Pas de clé API');
+        throw new Error('Clé API manquante');
     }
     const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
         headers: { 'x-user-ebird-key': userApiKey }
@@ -52,7 +52,13 @@ async function fetchFullChecklist(subId) {
         throw new Error(`Erreur ${res.status}: ${errorText}`);
     }
     const data = await res.json();
+    // Si l'API renvoie une erreur dans le JSON
     if (data.error) throw new Error(data.error);
+    // Si la réponse n'a pas de propriété 'observations', on lance une erreur explicite
+    if (!data.observations || !Array.isArray(data.observations)) {
+        console.error('Réponse eBird inattendue :', data);
+        throw new Error('La réponse ne contient pas de liste d\'observations (format inattendu)');
+    }
     return data;
 }
 
@@ -347,7 +353,6 @@ function buildSpeciesChecklists(observations) {
     renderSpeciesChecklists();
 }
 
-// Fonction générique pour afficher une checklist
 function renderChecklistCards(filtered, container, showSci) {
     filtered.forEach(cl => {
         const marker = L.marker([cl.lat, cl.lng], { icon: getMarkerIcon() }).addTo(layerGroup);
@@ -363,7 +368,6 @@ function renderChecklistCards(filtered, container, showSci) {
         }
         const card = document.createElement('div'); card.className = 'checklist-card';
 
-        // 🆕 On stocke le code ET le nom scientifique pour la recherche de photo
         const speciesHtml = cl.species.map(s => `
             <li>
                 <span>
@@ -720,15 +724,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // -------------------------------------------------
-    // Gestion des photos (nouveau fournisseur) et listes complètes
+    // Gestion des photos et listes complètes (CORRIGÉ)
     // -------------------------------------------------
     const container = document.getElementById('checklistContainer');
     
-    // Clic sur 📷 (photo) – avec stopPropagation
+    // Clic sur 📷 (photo)
     container.addEventListener('click', async (e) => {
         const trigger = e.target.closest('.photo-trigger');
         if (!trigger) return;
-        e.stopPropagation(); // Empêche la carte de se fermer
+        e.stopPropagation();
 
         const code = trigger.dataset.code;
         const sci = trigger.dataset.sci;
@@ -739,10 +743,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         const preview = trigger.parentElement.querySelector('.photo-preview');
         if (!preview) return;
-        if (preview.style.display !== 'none') return; // déjà affichée
+        if (preview.style.display !== 'none') return;
         
         const img = preview.querySelector('img');
-        // 🔥 Appel à notre nouveau backend
         const url = await fetchBirdPhoto(code, sci);
         if (url) {
             img.src = url;
@@ -751,25 +754,32 @@ document.addEventListener("DOMContentLoaded", async () => {
             trigger.title = 'Photo chargée';
         } else {
             trigger.textContent = '❌';
-            trigger.title = 'Aucune photo trouvée sur iNaturalist/Wikipedia';
+            trigger.title = 'Aucune photo trouvée';
         }
     });
 
-    // Clic sur "Voir la liste complète" – avec stopPropagation et affichage de l'erreur
+    // Clic sur "Voir la liste complète" - AVEC VÉRIFICATIONS DE SÉCURITÉ
     container.addEventListener('click', async (e) => {
         const btn = e.target.closest('.full-checklist-btn');
         if (!btn) return;
-        e.stopPropagation(); // Empêche la carte de se fermer
+        e.stopPropagation();
 
         const subId = btn.dataset.subid;
-        if (!subId) return;
+        if (!subId) {
+            btn.textContent = '❌ ID manquant';
+            return;
+        }
 
         btn.textContent = '⏳ Chargement...';
         btn.disabled = true;
 
         try {
             const checklistData = await fetchFullChecklist(subId);
-            if (!checklistData) throw new Error('Données non reçues');
+            
+            // ✅ ICI LA VÉRIFICATION QUI ÉVITE L'ERREUR .map
+            if (!checklistData.observations || !Array.isArray(checklistData.observations)) {
+                throw new Error('Format de réponse inattendu (pas de liste d\'observations)');
+            }
 
             const card = btn.closest('.checklist-card');
             const listContainer = card.querySelector('.species-list');
@@ -777,21 +787,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             const ul = listContainer.querySelector('ul');
             if (!ul) throw new Error('Liste introuvable');
 
-            // Reconstruire la liste avec toutes les observations
-            const speciesHtml = checklistData.observations
-                .map(obs => {
-                    const code = obs.speciesCode || '';
-                    const sci = obs.sciName || '';
-                    return `
-                    <li>
-                        <span>
-                            ${escapeHtml(obs.comName || 'Inconnu')} 
-                            ${sci ? `<em>(${escapeHtml(sci)})</em>` : ''}
-                            ${code || sci ? `<span class="photo-trigger" data-code="${escapeHtml(code)}" data-sci="${escapeHtml(sci)}" style="cursor:pointer; margin-left:6px; font-size:0.7rem; color:var(--neon);" title="Voir la photo">📷</span><span class="photo-preview" style="display:none; margin-left:6px;"><img src="" style="max-width:40px; max-height:40px; border-radius:4px; vertical-align:middle;" /></span>` : ''}
-                        </span>
-                        <span class="qty">x${obs.howMany || 1}</span>
-                    </li>
-                `}).join('');
+            // Construction sécurisée de la nouvelle liste
+            const speciesHtml = checklistData.observations.map(obs => {
+                const code = obs.speciesCode || '';
+                const sci = obs.sciName || '';
+                return `
+                <li>
+                    <span>
+                        ${escapeHtml(obs.comName || 'Inconnu')} 
+                        ${sci ? `<em>(${escapeHtml(sci)})</em>` : ''}
+                        ${code || sci ? `<span class="photo-trigger" data-code="${escapeHtml(code)}" data-sci="${escapeHtml(sci)}" style="cursor:pointer; margin-left:6px; font-size:0.7rem; color:var(--neon);" title="Voir la photo">📷</span><span class="photo-preview" style="display:none; margin-left:6px;"><img src="" style="max-width:40px; max-height:40px; border-radius:4px; vertical-align:middle;" /></span>` : ''}
+                    </span>
+                    <span class="qty">x${obs.howMany || 1}</span>
+                </li>
+            `}).join('');
 
             ul.innerHTML = speciesHtml;
             btn.style.display = 'none';
@@ -803,9 +812,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             btn.disabled = false;
 
         } catch (err) {
-            // 🔥 On affiche le message d'erreur EXACT sur le bouton
+            // 🚨 On affiche l'erreur exacte sur le bouton
             btn.textContent = `❌ ${err.message}`;
             btn.disabled = false;
+            console.error('Erreur liste complète :', err);
         }
     });
 
