@@ -16,9 +16,10 @@ let currentSpeciesCode = null;
 let speciesChecklists = {};
 let userPosition = null;
 
+// ✅ MODIFICATION 1 : on remplace les tuiles CARTO par OpenStreetMap
 const mapLayers = {
-    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-    light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    dark: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     topo: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
 };
@@ -44,8 +45,13 @@ function changeMapLayer(layerName) {
     localStorage.setItem('mapLayer', layerName);
     updateMarkerColor();
     if (tileLayer) map.removeLayer(tileLayer);
+    // ✅ MODIFICATION 2 : on met à jour l'attribution (plus de CartoDB)
+    let attribution = '';
+    if (layerName === 'satellite') attribution = 'Esri';
+    else if (layerName === 'topo') attribution = 'OpenTopoMap';
+    else attribution = 'OpenStreetMap';
     tileLayer = L.tileLayer(mapLayers[layerName], {
-        attribution: layerName === 'satellite' ? 'Esri' : layerName === 'topo' ? 'OpenTopoMap' : 'CartoDB'
+        attribution: attribution
     }).addTo(map);
     if (Object.keys(checklists).length > 0 || Object.keys(speciesChecklists).length > 0) {
         renderChecklists();
