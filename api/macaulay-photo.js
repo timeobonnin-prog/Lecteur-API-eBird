@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
 
     const { code } = req.query;
     if (!code) return res.status(400).json({ error: 'code requis' });
-
+z
     try {
         const url = `https://search.macaulaylibrary.org/catalog.json?taxonCode=${code}&mediaType=photo&sort=rating_rank_desc&limit=1`;
         const response = await fetch(url);
