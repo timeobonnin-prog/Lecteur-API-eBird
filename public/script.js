@@ -10,24 +10,28 @@ let markerRefs = {};
 let cardRefs = {};
 let nightMode = true;
 let autocompleteTimer;
-let locationAutocompleteTimer;   // Nouveau timer pour l'autocomplétion des lieux
+let locationAutocompleteTimer;
 let taxonomy = [];
 let currentSpeciesCode = null;
 let speciesChecklists = {};
 let userPosition = null;
 
-// ✅ MODIFICATION 1 : on remplace les tuiles CARTO par OpenStreetMap
+// ✅ SUPPRESSION du fond "dark" (inexistant) - on garde uniquement les fonds disponibles
 const mapLayers = {
-    dark: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     topo: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
 };
-let currentMapLayer = 'dark';
-let markerColor = '#ffffff';
+let currentMapLayer = 'light'; // Passage par défaut sur "Clair"
+let markerColor = '#000000';
 
 function updateMarkerColor() {
-    markerColor = (currentMapLayer === 'dark') ? '#ffffff' : '#000000';
+    // Pour satellite (fond sombre), on met des marqueurs blancs, sinon noirs
+    if (currentMapLayer === 'satellite') {
+        markerColor = '#ffffff';
+    } else {
+        markerColor = '#000000';
+    }
 }
 
 function getMarkerIcon() {
@@ -45,11 +49,14 @@ function changeMapLayer(layerName) {
     localStorage.setItem('mapLayer', layerName);
     updateMarkerColor();
     if (tileLayer) map.removeLayer(tileLayer);
-    // ✅ MODIFICATION 2 : on met à jour l'attribution (plus de CartoDB)
     let attribution = '';
-    if (layerName === 'satellite') attribution = 'Esri';
-    else if (layerName === 'topo') attribution = 'OpenTopoMap';
-    else attribution = 'OpenStreetMap';
+    if (layerName === 'satellite') {
+        attribution = 'Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+    } else if (layerName === 'topo') {
+        attribution = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © OpenTopoMap';
+    } else {
+        attribution = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    }
     tileLayer = L.tileLayer(mapLayers[layerName], {
         attribution: attribution
     }).addTo(map);
@@ -86,7 +93,6 @@ function centerOnUser() {
     );
 }
 
-// Connexion automatique
 async function tryAutoLogin() {
     const savedKey = localStorage.getItem('ebirdApiKey');
     if (!savedKey) return false;
@@ -392,7 +398,6 @@ function renderChecklists() {
     });
 }
 
-// ========== GÉOCODAGE AVEC AUTOCOMPLÉTION ==========
 async function updateLocationAutocomplete() {
     clearTimeout(locationAutocompleteTimer);
     locationAutocompleteTimer = setTimeout(async () => {
@@ -428,7 +433,6 @@ async function updateLocationAutocomplete() {
     }, 300);
 }
 
-// Recherche directe (bouton loupe ou Entrée)
 async function geocodeAndGo() {
     const query = document.getElementById('locationSearch').value.trim();
     if (!query) return;
@@ -450,11 +454,9 @@ async function geocodeAndGo() {
     }
 }
 
-// ========== EXPORT ==========
 function openExportModal() { document.getElementById('exportModal').classList.add('active'); }
 function closeModal() {
     document.getElementById('exportModal').classList.remove('active');
-    // Restaurer le contenu de l'export
     document.getElementById('modalTitle').textContent = 'Exporter les observations';
     document.getElementById('modalBody').innerHTML = `
         <p style="text-align:center; margin-bottom:12px;">Format :</p>
@@ -593,7 +595,6 @@ function formatDate(dt) {
     return `${d}/${m}/${y} ${time||''}`;
 }
 
-// Mobile toggle
 const toggleBtn = document.getElementById('toggleListBtn');
 const sidebar = document.getElementById('sidebar');
 toggleBtn.addEventListener('click', () => {
@@ -603,22 +604,17 @@ toggleBtn.addEventListener('click', () => {
     else setTimeout(() => map.invalidateSize(), 300);
 });
 
-// Cacher les listes d'autocomplétion quand on clique ailleurs
 document.addEventListener('click', (e) => {
-    // Pour les espèces
     const speciesList = document.getElementById('autocompleteList');
     const speciesInput = document.getElementById('searchInput');
     if (e.target !== speciesInput && e.target !== speciesList) speciesList.style.display = 'none';
 
-    // Pour les lieux
     const locationList = document.getElementById('locationAutocompleteList');
     const locationInput = document.getElementById('locationSearch');
     if (e.target !== locationInput && e.target !== locationList) locationList.style.display = 'none';
 });
 
-// Initialisation
 document.addEventListener("DOMContentLoaded", async () => {
-    // Restauration thème
     const savedTheme = localStorage.getItem('themeMode');
     if (savedTheme === 'light') {
         nightMode = false;
@@ -636,9 +632,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem('themeMode', nightMode ? 'dark' : 'light');
     }
 
-    // Restauration fond de carte
-    const savedMapLayer = localStorage.getItem('mapLayer');
-    const initialLayer = savedMapLayer || 'dark';
+    // ✅ Restauration du fond : si 'dark' était sauvegardé, on le remplace par 'light'
+    let savedMapLayer = localStorage.getItem('mapLayer');
+    if (savedMapLayer === 'dark') savedMapLayer = 'light';
+    const initialLayer = savedMapLayer || 'light';
     currentMapLayer = initialLayer;
     document.getElementById('mapLayerSelect').value = initialLayer;
     updateMarkerColor();
@@ -661,7 +658,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (userApiKey) runScan();
     });
 
-    // GitHub popup
     const githubContainer = document.getElementById('githubContainer');
     const githubPopup = document.getElementById('githubPopup');
     let githubTimeout;
@@ -680,7 +676,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Connexion automatique
     const autoLoggedIn = await tryAutoLogin();
     if (!autoLoggedIn) {
         document.getElementById('authScreen').classList.remove('hidden');
