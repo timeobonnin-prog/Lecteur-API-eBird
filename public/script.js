@@ -66,20 +66,12 @@ async function fetchFullChecklist(subId) {
 
     // Cas 2 : la réponse contient un champ "observations"
     if (data.observations && Array.isArray(data.observations)) {
-        // On vérifie si c'est un tableau d'observations ou un tableau d'espèces
-        if (data.observations.length > 0 && data.observations[0].comName) {
-            return { observations: data.observations };
-        }
-        // Si c'est un tableau d'espèces (format différent)
-        if (data.observations.length > 0 && data.observations[0].commonName) {
-            // Convertir commonName -> comName
-            const converted = data.observations.map(obs => ({
-                comName: obs.commonName || obs.comName,
-                sciName: obs.scientificName || obs.sciName,
-                howMany: obs.count || obs.howMany || 1,
-                speciesCode: obs.speciesCode || obs.taxonCode || ''
-            }));
-            return { observations: converted };
+        // Vérifier si c'est un tableau d'observations avec comName ou commonName
+        if (data.observations.length > 0) {
+            const first = data.observations[0];
+            if (first.comName || first.commonName || first.sciName || first.scientificName) {
+                return { observations: data.observations };
+            }
         }
         return { observations: data.observations };
     }
@@ -119,7 +111,6 @@ async function fetchFullChecklist(subId) {
     // Cas 8 : on cherche n'importe quel champ qui semble être un tableau d'observations
     for (const key in data) {
         if (Array.isArray(data[key]) && data[key].length > 0) {
-            // Vérifie si le premier élément ressemble à une observation
             const first = data[key][0];
             if (first && (first.comName || first.commonName || first.sciName || first.scientificName || first.speciesCode)) {
                 return { observations: data[key] };
@@ -851,7 +842,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // --- Clic sur "Voir la liste complète" (VERSION DÉFINITIVE) ---
+    // --- Clic sur "Voir la liste complète" (API en priorité) ---
     container.addEventListener('click', async (e) => {
         const btn = e.target.closest('.full-checklist-btn');
         if (!btn) return;
@@ -867,18 +858,65 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.disabled = true;
 
         try {
-            // 1️⃣ On récupère depuis les données locales (rawObservations) en priorité
-            const localData = rawObservations.filter(obs => obs.subId === subId);
+            // 1️⃣ ON APPELLE D'ABORD L'API (avec includeObservations=true)
+            const checklistData = await fetchFullChecklist(subId);
             
-            if (localData.length > 0) {
-                // On reconstruit la liste avec les données locales
+            // Vérification si on a des observations
+            if (checklistData.observations && checklistData.observations.length > 0) {
+                // ✅ On a des données complètes via l'API
                 const card = btn.closest('.checklist-card');
                 const listContainer = card.querySelector('.species-list');
                 if (!listContainer) throw new Error('Conteneur introuvable');
                 const ul = listContainer.querySelector('ul');
                 if (!ul) throw new Error('Liste introuvable');
 
-                // On agrège les espèces (fusion des doublons)
+                // Agrégation des espèces
+                const speciesMap = new Map();
+                checklistData.observations.forEach(obs => {
+                    const name = obs.comName || obs.commonName || 'Inconnu';
+                    if (!speciesMap.has(name)) {
+                        speciesMap.set(name, { 
+                            name: name, 
+                            sci: obs.sciName || obs.scientificName || '', 
+                            count: 0, 
+                            speciesCode: obs.speciesCode || obs.taxonCode || ''
+                        });
+                    }
+                    speciesMap.get(name).count += (obs.howMany || obs.count || 1);
+                });
+                const aggregated = Array.from(speciesMap.values());
+
+                const speciesHtml = aggregated.map(s => `
+                    <li>
+                        <span>
+                            ${escapeHtml(s.name)} ${s.sci ? `<em>(${escapeHtml(s.sci)})</em>` : ''}
+                            ${s.speciesCode || s.sci ? `<span class="photo-trigger" data-code="${escapeHtml(s.speciesCode || '')}" data-sci="${escapeHtml(s.sci || '')}" style="cursor:pointer; margin-left:6px; font-size:0.7rem; color:var(--neon);" title="Voir la photo">📷</span><span class="photo-preview" style="display:none; margin-left:6px;"><img src="" style="max-width:40px; max-height:40px; border-radius:4px; vertical-align:middle;" /></span>` : ''}
+                        </span>
+                        <span class="qty">x${s.count}</span>
+                    </li>
+                `).join('');
+
+                ul.innerHTML = speciesHtml;
+                btn.style.display = 'none';
+                const info = document.createElement('div');
+                info.style.cssText = 'margin-top:6px; font-size:0.7rem; color:var(--neon);';
+                info.textContent = `✅ Liste complète (${aggregated.length} espèces) depuis eBird`;
+                listContainer.appendChild(info);
+                btn.textContent = '✅ OK';
+                btn.disabled = false;
+                return;
+            }
+
+            // 2️⃣ FALLBACK : si l'API n'a rien renvoyé (checklist privée ou vide)
+            // On essaye avec les données locales
+            const localData = rawObservations.filter(obs => obs.subId === subId);
+            if (localData.length > 0) {
+                const card = btn.closest('.checklist-card');
+                const listContainer = card.querySelector('.species-list');
+                if (!listContainer) throw new Error('Conteneur introuvable');
+                const ul = listContainer.querySelector('ul');
+                if (!ul) throw new Error('Liste introuvable');
+
                 const speciesMap = new Map();
                 localData.forEach(obs => {
                     const name = obs.comName || 'Inconnu';
@@ -907,74 +945,27 @@ document.addEventListener("DOMContentLoaded", async () => {
                 ul.innerHTML = speciesHtml;
                 btn.style.display = 'none';
                 const info = document.createElement('div');
-                info.style.cssText = 'margin-top:6px; font-size:0.7rem; color:var(--neon);';
-                info.textContent = `✅ ${aggregated.length} espèce(s) chargée(s) (derniers 30 jours)`;
+                info.style.cssText = 'margin-top:6px; font-size:0.7rem; color:#f59e0b;';
+                info.textContent = `⚠️ ${aggregated.length} espèce(s) (seulement les 30 derniers jours)`;
                 listContainer.appendChild(info);
-                btn.textContent = '✅ OK';
-                btn.disabled = false;
-                return;
-            }
-
-            // 2️⃣ Si aucune donnée locale, on essaye l'API (avec includeObservations=true)
-            const checklistData = await fetchFullChecklist(subId);
-            
-            if (!checklistData.observations || checklistData.observations.length === 0) {
-                // Pas de données : on affiche un message
-                btn.textContent = '⚠️ Liste privée';
+                btn.textContent = '⚠️ Partiel';
                 btn.disabled = false;
                 btn.style.background = '#f59e0b';
-                const card = btn.closest('.checklist-card');
-                const listContainer = card.querySelector('.species-list');
-                if (listContainer) {
-                    const info = document.createElement('div');
-                    info.style.cssText = 'margin-top:6px; font-size:0.7rem; color:#f59e0b;';
-                    info.innerHTML = '⚠️ Aucune observation disponible (checklist privée). <a href="https://ebird.org/checklist/' + subId + '" target="_blank" style="color:var(--neon);">Voir sur eBird</a>';
-                    listContainer.appendChild(info);
-                }
                 return;
             }
 
-            // 3️⃣ On a des observations via l'API
+            // 3️⃣ Ni API ni données locales : message d'information
+            btn.textContent = '⚠️ Pas de données';
+            btn.disabled = false;
+            btn.style.background = '#f59e0b';
             const card = btn.closest('.checklist-card');
             const listContainer = card.querySelector('.species-list');
-            if (!listContainer) throw new Error('Conteneur introuvable');
-            const ul = listContainer.querySelector('ul');
-            if (!ul) throw new Error('Liste introuvable');
-
-            // Agrégation des espèces
-            const speciesMap = new Map();
-            checklistData.observations.forEach(obs => {
-                const name = obs.comName || obs.commonName || 'Inconnu';
-                if (!speciesMap.has(name)) {
-                    speciesMap.set(name, { 
-                        name: name, 
-                        sci: obs.sciName || obs.scientificName || '', 
-                        count: 0, 
-                        speciesCode: obs.speciesCode || obs.taxonCode || ''
-                    });
-                }
-                speciesMap.get(name).count += (obs.howMany || obs.count || 1);
-            });
-            const aggregated = Array.from(speciesMap.values());
-
-            const speciesHtml = aggregated.map(s => `
-                <li>
-                    <span>
-                        ${escapeHtml(s.name)} ${s.sci ? `<em>(${escapeHtml(s.sci)})</em>` : ''}
-                        ${s.speciesCode || s.sci ? `<span class="photo-trigger" data-code="${escapeHtml(s.speciesCode || '')}" data-sci="${escapeHtml(s.sci || '')}" style="cursor:pointer; margin-left:6px; font-size:0.7rem; color:var(--neon);" title="Voir la photo">📷</span><span class="photo-preview" style="display:none; margin-left:6px;"><img src="" style="max-width:40px; max-height:40px; border-radius:4px; vertical-align:middle;" /></span>` : ''}
-                    </span>
-                    <span class="qty">x${s.count}</span>
-                </li>
-            `).join('');
-
-            ul.innerHTML = speciesHtml;
-            btn.style.display = 'none';
-            const info = document.createElement('div');
-            info.style.cssText = 'margin-top:6px; font-size:0.7rem; color:var(--neon);';
-            info.textContent = `✅ Liste complète (${aggregated.length} espèces) chargée depuis eBird`;
-            listContainer.appendChild(info);
-            btn.textContent = '✅ OK';
-            btn.disabled = false;
+            if (listContainer) {
+                const info = document.createElement('div');
+                info.style.cssText = 'margin-top:6px; font-size:0.7rem; color:#f59e0b;';
+                info.innerHTML = '⚠️ Aucune observation trouvée. <a href="https://ebird.org/checklist/' + subId + '" target="_blank" style="color:var(--neon);">Voir sur eBird</a>';
+                listContainer.appendChild(info);
+            }
 
         } catch (err) {
             btn.textContent = `❌ ${err.message}`;
