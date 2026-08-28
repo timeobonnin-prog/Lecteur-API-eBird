@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <strong>Exploration en temps réel des observations d’oiseaux</strong><br>
-  Interface cartographique connectée à l’API eBird 2.0, protégée par CAPTCHA et hébergée sur Vercel.
+  <strong>Exploration en temps réel des observations d'oiseaux</strong><br>
+  Interface cartographique connectée à l'API eBird 2.0, protégée par CAPTCHA et hébergée sur Vercel.
 </p>
 
 <p align="center">
@@ -28,16 +28,16 @@
 > **Ce projet nécessite une clé API eBird** pour fonctionner. Obtenez-la gratuitement [ici](https://ebird.org/api/keygen).
 
 > [!WARNING]
-> L’utilisation de l’API eBird est soumise à leurs [conditions d’utilisation](https://www.birds.cornell.edu/home/terms-of-use/). Respectez les limites de requêtes.
+> L'utilisation de l'API eBird est soumise à leurs [conditions d'utilisation](https://www.birds.cornell.edu/home/terms-of-use/). Respectez les limites de requêtes.
 
 ---
 
 ## 📖 Présentation
 
-**Lecteur API eBird** est une application web moderne qui permet d’explorer les observations d’oiseaux en temps réel via l’API eBird 2.0. Elle offre une interface cartographique interactive, une authentification sécurisée, une protection anti-bots (hCaptcha) et de nombreuses options de personnalisation.
+**Lecteur API eBird** est une application web moderne qui permet d'explorer les observations d'oiseaux en temps réel via l'API eBird 2.0. Elle offre une interface cartographique interactive, une authentification sécurisée, une protection anti-bots (hCaptcha) et de nombreuses options de personnalisation.
 
 > [!NOTE]
-> L’application est entièrement responsive et s’adapte aux écrans mobiles et desktop.
+> L'application est entièrement responsive et s'adapte aux écrans mobiles et desktop.
 
 ---
 
@@ -48,7 +48,7 @@
 | 🔐 **Authentification sécurisée** | Saisie unique de la clé API eBird, vérifiée côté serveur, stockée localement (auto-connexion). |
 | 🤖 **Protection anti-bots** | CAPTCHA hCaptcha obligatoire à la première utilisation. |
 | 🗺️ **Carte interactive** | Zoom, centrage automatique sur votre position, recherche de lieu par nom (géocodage avec suggestions). |
-| 🐦 **Checklists complètes** | Affichage de toutes les espèces d’une checklist (y compris les observations > 30 jours). |
+| 🐦 **Checklists complètes** | Affichage de toutes les espèces d'une checklist (y compris les observations > 30 jours). |
 | 📷 **Photos des espèces** | Visualisation des photos via Macaulay Library (proxy CORS) + fallback iNaturalist. |
 | 🔍 **Recherche par espèce** | Autocomplétion des noms français grâce à la taxonomie eBird, résultats filtrés par distance. |
 | 🚀 **Mise à jour automatique** | Enrichissement des checklists en arrière-plan (gestion intelligente des limites de taux API). |
@@ -91,7 +91,82 @@ Lecteur-API-eBird/
 │   ├── index.html               # Page principale
 │   ├── script.js                # Logique frontend
 │   └── style.css                # Styles
+├── .gitignore
 ├── LICENSE                      # Licence Apache 2.0
 ├── package.json                 # Dépendances et scripts
 ├── README.md                    # Documentation
 └── SECURITY.md                  # Politique de sécurité
+🚀 Installation et déploiement
+Prérequis
+Node.js (v16 ou supérieur)
+
+Vercel CLI (optionnel)
+
+Installation locale
+bash
+# Cloner le dépôt
+git clone https://github.com/timeobonnin-prog/Lecteur-API-eBird.git
+cd Lecteur-API-eBird
+
+# Installer les dépendances
+npm install
+
+# Lancer en mode développement
+npm run dev
+Déploiement sur Vercel
+bash
+# Installer Vercel CLI
+npm i -g vercel
+
+# Déployer
+vercel
+🔑 Obtention d'une clé API eBird
+Rendez-vous sur ebird.org/api/keygen
+
+Connectez-vous avec votre compte eBird (ou créez-en un)
+
+Générez votre clé API
+
+Collez-la dans l'interface de l'application
+
+🛠️ Technologies utilisées
+Frontend : HTML5, CSS3, JavaScript (ES6+)
+
+Cartographie : Leaflet.js
+
+API : eBird API 2.0
+
+Sécurité : hCaptcha
+
+Hébergement : Vercel (serverless)
+
+🤝 Contribution
+Les contributions sont les bienvenues ! Voici comment participer :
+
+Forkez le projet
+
+Créez votre branche (git checkout -b feature/amazing-feature)
+
+Commitez vos changements (git commit -m 'Add amazing feature')
+
+Pushez (git push origin feature/amazing-feature)
+
+Ouvrez une Pull Request
+
+📄 Licence
+Distribué sous licence Apache 2.0. Voir le fichier LICENSE pour plus d'informations.
+
+🙏 Remerciements
+eBird pour leur API
+
+Leaflet pour la cartographie
+
+hCaptcha pour la protection anti-bots
+
+OpenStreetMap pour les fonds de carte
+
+📞 Contact
+Timeo Bonnin
+GitHub : @timeobonnin-prog
+
+<p align="center"> <sub>Fait avec ❤️ pour les passionnés d'ornithologie</sub> </p> `
