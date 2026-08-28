@@ -27,18 +27,14 @@ async function fetchBirdPhoto(speciesCode, sciName) {
     const cacheKey = speciesCode || sciName;
     if (photoCache.has(cacheKey)) return photoCache.get(cacheKey);
 
-    // 1️⃣ Appel au proxy Macaulay (contourne CORS)
     if (speciesCode) {
         try {
             const res = await fetch(`/api/macaulay-photo?code=${speciesCode}`);
             if (res.ok) {
                 const data = await res.json();
                 if (data.url) {
-                    console.log(`✅ Photo Macaulay via proxy : ${data.url}`);
                     photoCache.set(cacheKey, data.url);
                     return data.url;
-                } else {
-                    console.log(`❌ Pas de photo Macaulay pour ${speciesCode}`);
                 }
             }
         } catch (e) {
@@ -46,7 +42,6 @@ async function fetchBirdPhoto(speciesCode, sciName) {
         }
     }
 
-    // 2️⃣ Fallback iNaturalist
     if (sciName) {
         try {
             const res = await fetch(`/api/bird-photo?q=${encodeURIComponent(sciName)}`);
@@ -65,18 +60,24 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 }
 
 // ============================================================
-// 2️⃣ Récupère la liste COMPLÈTE d'une checklist (format CORRECT)
+// 2️⃣ Récupère la liste COMPLÈTE d'une checklist (avec retry plus robuste)
 // ============================================================
 async function fetchFullChecklist(subId, retries = 0) {
     if (!userApiKey) throw new Error('Clé API manquante');
+
+    // Délai initial avant la requête (pour lisser le trafic)
+    if (retries === 0) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+    }
 
     const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
         headers: { 'x-user-ebird-key': userApiKey }
     });
 
     if (res.status === 429) {
-        const delay = Math.min(1000 * Math.pow(2, retries), 10000);
-        console.log(`⏳ Trop de requêtes pour ${subId}, attente ${delay}ms...`);
+        // Attente exponentielle plus longue
+        const delay = Math.min(2000 * Math.pow(2, retries), 30000);
+        console.log(`⏳ 429 pour ${subId}, attente ${delay}ms (tentative ${retries + 1})...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return fetchFullChecklist(subId, retries + 1);
     }
@@ -88,7 +89,6 @@ async function fetchFullChecklist(subId, retries = 0) {
 
     const data = await res.json();
 
-    // 🔥 Cas principal : la réponse a un champ "obs"
     if (data.obs && Array.isArray(data.obs)) {
         const observations = data.obs.map(obs => {
             const taxon = taxonomy.find(t => t.speciesCode === obs.speciesCode);
@@ -115,23 +115,19 @@ async function fetchFullChecklist(subId, retries = 0) {
         return { observations: observations };
     }
 
-    // Cas 2 : réponse avec "observations"
     if (data.observations && Array.isArray(data.observations)) {
         return { observations: data.observations };
     }
 
-    // Cas 3 : réponse avec "species"
     if (data.species && Array.isArray(data.species)) {
         return { observations: data.species };
     }
 
-    // Cas 4 : checklist privée (pas d'observations)
     if (data.subId && data.locId) {
         console.warn('⚠️ Checklist trouvée mais observations non disponibles (privée)');
         return { observations: [] };
     }
 
-    // Cas 5 : c'est un tableau directement
     if (Array.isArray(data)) {
         return { observations: data };
     }
@@ -140,7 +136,7 @@ async function fetchFullChecklist(subId, retries = 0) {
 }
 
 // ============================================================
-// 3️⃣ Mise à jour automatique de toutes les checklists (optimisée)
+// 3️⃣ Mise à jour automatique de toutes les checklists (TRÈS LENTE MAIS STABLE)
 // ============================================================
 async function fetchAndUpdateAllChecklists() {
     const subIds = Object.keys(checklists);
@@ -149,7 +145,7 @@ async function fetchAndUpdateAllChecklists() {
         return;
     }
 
-    console.log(`📋 Mise à jour de ${subIds.length} checklists...`);
+    console.log(`📋 Mise à jour de ${subIds.length} checklists (une par une, avec 500ms d'attente)...`);
 
     // Sauvegarder l'état d'expansion actuel
     const expandedState = {};
@@ -158,6 +154,7 @@ async function fetchAndUpdateAllChecklists() {
     }
 
     let updatedCount = 0;
+    let errorCount = 0;
 
     for (let i = 0; i < subIds.length; i++) {
         const subId = subIds[i];
@@ -183,25 +180,25 @@ async function fetchAndUpdateAllChecklists() {
                 cl.species = Array.from(speciesMap.values());
                 cl.totalBirds = cl.species.reduce((sum, s) => sum + s.count, 0);
                 updatedCount++;
-                console.log(`✅ Checklist ${subId} mise à jour (${cl.species.length} espèces)`);
+                console.log(`✅ ${i+1}/${subIds.length} ${subId} mis à jour (${cl.species.length} espèces)`);
             } else {
-                console.warn(`⚠️ Aucune observation pour ${subId}`);
+                console.warn(`⚠️ ${i+1}/${subIds.length} ${subId} : aucune observation`);
             }
         } catch (err) {
-            console.error(`❌ Erreur pour ${subId}:`, err.message);
+            errorCount++;
+            console.error(`❌ ${i+1}/${subIds.length} ${subId} : ${err.message}`);
         }
 
+        // 🔥 ATTENTE OBLIGATOIRE de 500ms entre chaque requête
         if (i < subIds.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-        }
-
-        if ((i + 1) % 5 === 0 || i === subIds.length - 1) {
-            console.log(`⏳ Progression : ${i + 1}/${subIds.length}`);
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
     }
 
+    // Un seul rafraîchissement à la fin
     renderChecklists();
 
+    // Restaurer l'état d'expansion
     setTimeout(() => {
         for (const id in expandedState) {
             if (expandedState[id] && cardRefs[id]) {
@@ -210,7 +207,7 @@ async function fetchAndUpdateAllChecklists() {
         }
     }, 100);
 
-    console.log(`📊 Mise à jour terminée : ${updatedCount}/${subIds.length} checklists enrichies`);
+    console.log(`📊 Mise à jour terminée : ${updatedCount} checklists enrichies, ${errorCount} erreurs`);
 }
 
 // ============================================================
