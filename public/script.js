@@ -114,7 +114,7 @@ async function fetchFullChecklist(subId) {
 }
 
 // ============================================================
-// 3️⃣ Mise à jour automatique de toutes les checklists
+// 3️⃣ Mise à jour automatique de toutes les checklists (optimisée)
 // ============================================================
 async function fetchAndUpdateAllChecklists() {
     const subIds = Object.keys(checklists);
@@ -125,7 +125,13 @@ async function fetchAndUpdateAllChecklists() {
 
     console.log(`📋 Mise à jour de ${subIds.length} checklists...`);
 
-    // Limiter le parallélisme à 3 requêtes simultanées
+    // Sauvegarder l'état d'expansion actuel
+    const expandedState = {};
+    for (const id in cardRefs) {
+        expandedState[id] = cardRefs[id].classList.contains('expanded');
+    }
+
+    // Limiter le parallélisme à 3
     const concurrency = 3;
     let updatedCount = 0;
 
@@ -135,23 +141,9 @@ async function fetchAndUpdateAllChecklists() {
             const cl = checklists[subId];
             if (!cl) return;
 
-            // Ajouter un indicateur de chargement
-            const card = cardRefs[cl.id];
-            if (card) {
-                const loader = document.createElement('div');
-                loader.className = 'checklist-loader';
-                loader.textContent = '⏳ Mise à jour...';
-                loader.style.cssText = 'font-size:0.7rem; color:var(--muted); margin-top:4px;';
-                const existingLoader = card.querySelector('.checklist-loader');
-                if (existingLoader) existingLoader.remove();
-                const listContainer = card.querySelector('.species-list');
-                if (listContainer) listContainer.appendChild(loader);
-            }
-
             try {
                 const data = await fetchFullChecklist(subId);
                 if (data.observations && data.observations.length > 0) {
-                    // Mettre à jour la checklist
                     const speciesMap = new Map();
                     data.observations.forEach(obs => {
                         const name = obs.comName || obs.commonName || obs.speciesCode || 'Inconnu';
@@ -175,12 +167,24 @@ async function fetchAndUpdateAllChecklists() {
             } catch (err) {
                 console.error(`❌ Erreur pour ${subId}:`, err.message);
             }
-
-            // Rafraîchir l'affichage après chaque batch
-            renderChecklists();
         });
         await Promise.all(promises);
+        
+        // Afficher une progression dans la console
+        console.log(`⏳ Progression : ${Math.min(i + concurrency, subIds.length)}/${subIds.length}`);
     }
+
+    // 🔥 Un SEUL rafraîchissement à la fin
+    renderChecklists();
+
+    // Restaurer l'état d'expansion
+    setTimeout(() => {
+        for (const id in expandedState) {
+            if (expandedState[id] && cardRefs[id]) {
+                cardRefs[id].classList.add('expanded');
+            }
+        }
+    }, 100);
 
     console.log(`📊 Mise à jour terminée : ${updatedCount}/${subIds.length} checklists enrichies`);
 }
@@ -369,8 +373,8 @@ async function runScan() {
         if (data.error) throw new Error(data.error);
         rawObservations = data;
         buildChecklists();
-        // 🔥 Lance la mise à jour automatique
-        await fetchAndUpdateAllChecklists();
+        // 🔥 Lance la mise à jour automatique (asynchrone, ne bloque pas l'affichage)
+        fetchAndUpdateAllChecklists();
     } catch (err) {
         document.getElementById('checklistContainer').innerHTML = `<div style="padding:20px; color:#f87171;">${escapeHtml(err.message)}</div>`;
     }
@@ -483,7 +487,7 @@ function buildSpeciesChecklists(observations) {
 }
 
 // ============================================================
-// 6️⃣ Affichage des cartes (checklist cards)
+// 6️⃣ Affichage des cartes (checklist cards) – avec préservation de l'état
 // ============================================================
 function renderChecklistCards(filtered, container, showSci) {
     filtered.forEach(cl => {
@@ -511,7 +515,9 @@ function renderChecklistCards(filtered, container, showSci) {
             </li>
         `).join('');
 
-        // 🔥 PLUS DE BOUTON : toutes les checklists sont mises à jour automatiquement
+        // 🔥 Préserver l'état d'expansion si la carte existait déjà
+        const wasExpanded = cardRefs[cl.id] && cardRefs[cl.id].classList.contains('expanded');
+        
         card.innerHTML = `
             <div class="checklist-name">${escapeHtml(cl.name)}</div>
             <div class="checklist-sub">🕒 ${formatDate(cl.lastDate)} · 👤 ${escapeHtml(cl.observer)}${distanceHtml}<br>🦅 ${cl.species.length} espèce(s) · 🔢 ${cl.totalBirds} indiv.</div>
@@ -519,6 +525,12 @@ function renderChecklistCards(filtered, container, showSci) {
                 <ul>${speciesHtml}</ul>
                 <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a>
             </div>`;
+
+        // Restaurer l'état d'expansion si nécessaire
+        if (wasExpanded) {
+            card.classList.add('expanded');
+        }
+
         card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
         card.addEventListener('click', (e) => {
             if (e.target.closest('a, .photo-trigger, .photo-preview')) return;
