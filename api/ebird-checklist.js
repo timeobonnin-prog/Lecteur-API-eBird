@@ -1,6 +1,5 @@
 // api/ebird-checklist.js
-const fetch = require('node-fetch');
-
+// Utilisation de fetch natif (Node.js 18+ ou Vercel)
 module.exports = async (req, res) => {
     // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,20 +9,26 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const apiKey = req.headers['x-user-ebird-key'];
-    if (!apiKey) return res.status(401).json({ error: 'Clé API eBird manquante.' });
+    if (!apiKey) {
+        return res.status(401).json({ error: 'Clé API eBird manquante.' });
+    }
 
     const { subId } = req.query;
-    if (!subId) return res.status(400).json({ error: 'subId requis.' });
+    if (!subId) {
+        return res.status(400).json({ error: 'subId requis.' });
+    }
 
     try {
         const url = `https://api.ebird.org/v2/product/checklist/view/${subId}`;
         const response = await fetch(url, {
             headers: { 'X-eBirdApiToken': apiKey }
         });
+
         if (!response.ok) {
             const text = await response.text();
             return res.status(response.status).json({ error: `eBird ${response.status}: ${text}` });
         }
+
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
