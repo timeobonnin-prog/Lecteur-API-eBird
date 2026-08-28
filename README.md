@@ -43,130 +43,43 @@
 
 ## ✨ Fonctionnalités clés
 
-| Fonctionnalité | Description |
-|----------------|-------------|
-| 🔐 **Authentification sécurisée** | Saisie unique de la clé API eBird, vérifiée côté serveur, stockée localement (auto-connexion). |
-| 🤖 **Protection anti-bots** | CAPTCHA hCaptcha obligatoire à la première utilisation. |
-| 🗺️ **Carte interactive** | Zoom, centrage automatique sur votre position, recherche de lieu par nom (géocodage avec suggestions). |
-| 🐦 **Checklists complètes** | Affichage de toutes les espèces d'une checklist (y compris les observations > 30 jours). |
-| 📷 **Photos des espèces** | Visualisation des photos via Macaulay Library (proxy CORS) + fallback iNaturalist. |
-| 🔍 **Recherche par espèce** | Autocomplétion des noms français grâce à la taxonomie eBird, résultats filtrés par distance. |
-| 🚀 **Mise à jour automatique** | Enrichissement des checklists en arrière-plan (gestion intelligente des limites de taux API). |
-| 🎨 **Thèmes multiples** | Mode sombre / clair, fonds de carte variés (clair, satellite, topographique). |
-| 📤 **Export des données** | Export en CSV, TXT ou JSON avec les colonnes officielles eBird. |
-| 📱 **Responsive** | Interface adaptée aux mobiles avec un panneau escamotable. |
+- 🔐 **Authentification sécurisée** – Saisie unique de la clé API eBird, vérifiée côté serveur, stockée localement (auto-connexion).
+- 🤖 **Protection anti-bots** – CAPTCHA hCaptcha obligatoire à la première utilisation.
+- 🗺️ **Carte interactive** – Zoom, centrage automatique sur votre position, recherche de lieu par nom (géocodage avec suggestions).
+- 🐦 **Checklists complètes** – Affichage de toutes les espèces d'une checklist (y compris les observations > 30 jours).
+- 📷 **Photos des espèces** – Visualisation des photos via Macaulay Library (proxy CORS) + fallback iNaturalist.
+- 🔍 **Recherche par espèce** – Autocomplétion des noms français grâce à la taxonomie eBird, résultats filtrés par distance.
+- 🚀 **Mise à jour automatique** – Enrichissement des checklists en arrière-plan (gestion intelligente des limites de taux API).
+- 🎨 **Thèmes multiples** – Mode sombre / clair, fonds de carte variés (clair, satellite, topographique).
+- 📤 **Export des données** – Export en CSV, TXT ou JSON avec les colonnes officielles eBird.
+- 📱 **Responsive** – Interface adaptée aux mobiles avec un panneau escamotable.
 
 ---
 
 ## 📊 Avancement du projet
 
-| Fonctionnalité | Statut |
-|----------------|--------|
-| 🔐 Authentification et sécurité | ✅ 100% |
-| 🗺️ Carte interactive (Leaflet) | ✅ 100% |
-| 🐦 Intégration API eBird | ✅ 100% |
-| 📷 Photos des espèces | ✅ 100% |
-| 🔍 Recherche et géocodage | ✅ 100% |
-| 🎨 Thèmes et personnalisation | ✅ 100% |
-| 📤 Export de données | ✅ 100% |
-| 📱 Responsive | ✅ 100% |
-| 🚀 Mise à jour automatique | ✅ 100% |
-| 📄 Documentation | 🟡 80% |
+- 🔐 Authentification et sécurité – ✅ 100%
+- 🗺️ Carte interactive (Leaflet) – ✅ 100%
+- 🐦 Intégration API eBird – ✅ 100%
+- 📷 Photos des espèces – ✅ 100%
+- 🔍 Recherche et géocodage – ✅ 100%
+- 🎨 Thèmes et personnalisation – ✅ 100%
+- 📤 Export de données – ✅ 100%
+- 📱 Responsive – ✅ 100%
+- 🚀 Mise à jour automatique – ✅ 100%
+- 📄 Documentation – 🟡 80%
 
 ---
 
-## 📁 Structure des dossiers
+## 🚀 Installation locale
 
-```text
-Lecteur-API-eBird/
-├── .github/
-│   └── ISSUE_TEMPLATE/          # Modèles de tickets GitHub
-├── api/                         # Fonctions serverless (Vercel)
-│   ├── ebird.js                 # Observations récentes
-│   ├── ebird-checklist.js       # Checklist complète
-│   ├── ebird-taxonomy.js        # Taxonomie eBird
-│   ├── macaulay-photo.js        # Proxy photos Macaulay
-│   └── verify-captcha.js        # Vérification hCaptcha
-├── public/                      # Fichiers statiques
-│   ├── index.html               # Page principale
-│   ├── script.js                # Logique frontend
-│   └── style.css                # Styles
-├── .gitignore
-├── LICENSE                      # Licence Apache 2.0
-├── package.json                 # Dépendances et scripts
-├── README.md                    # Documentation
-└── SECURITY.md                  # Politique de sécurité
-🚀 Installation et déploiement
-Prérequis
-Node.js (v16 ou supérieur)
+### Prérequis
+- [Node.js](https://nodejs.org/) (v16 ou supérieur)
 
-Vercel CLI (optionnel)
+### Installation
 
-Installation locale
-bash
-# Cloner le dépôt
+```bash
 git clone https://github.com/timeobonnin-prog/Lecteur-API-eBird.git
 cd Lecteur-API-eBird
-
-# Installer les dépendances
 npm install
-
-# Lancer en mode développement
 npm run dev
-Déploiement sur Vercel
-bash
-# Installer Vercel CLI
-npm i -g vercel
-
-# Déployer
-vercel
-🔑 Obtention d'une clé API eBird
-Rendez-vous sur ebird.org/api/keygen
-
-Connectez-vous avec votre compte eBird (ou créez-en un)
-
-Générez votre clé API
-
-Collez-la dans l'interface de l'application
-
-🛠️ Technologies utilisées
-Frontend : HTML5, CSS3, JavaScript (ES6+)
-
-Cartographie : Leaflet.js
-
-API : eBird API 2.0
-
-Sécurité : hCaptcha
-
-Hébergement : Vercel (serverless)
-
-🤝 Contribution
-Les contributions sont les bienvenues ! Voici comment participer :
-
-Forkez le projet
-
-Créez votre branche (git checkout -b feature/amazing-feature)
-
-Commitez vos changements (git commit -m 'Add amazing feature')
-
-Pushez (git push origin feature/amazing-feature)
-
-Ouvrez une Pull Request
-
-📄 Licence
-Distribué sous licence Apache 2.0. Voir le fichier LICENSE pour plus d'informations.
-
-🙏 Remerciements
-eBird pour leur API
-
-Leaflet pour la cartographie
-
-hCaptcha pour la protection anti-bots
-
-OpenStreetMap pour les fonds de carte
-
-📞 Contact
-Timeo Bonnin
-GitHub : @timeobonnin-prog
-
-<p align="center"> <sub>Fait avec ❤️ pour les passionnés d'ornithologie</sub> </p> `
