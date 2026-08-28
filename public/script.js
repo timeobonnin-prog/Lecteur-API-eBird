@@ -20,23 +20,45 @@ let userPosition = null;
 const photoCache = new Map();
 
 // ============================================================
-// 1️⃣ Récupère une photo (iNaturalist / Wikipedia)
+// 1️⃣ Récupère une photo (Macaulay Library + fallback)
 // ============================================================
 async function fetchBirdPhoto(speciesCode, sciName) {
-    if (!sciName) return null;
+    if (!speciesCode && !sciName) return null;
     const cacheKey = speciesCode || sciName;
     if (photoCache.has(cacheKey)) return photoCache.get(cacheKey);
 
-    try {
-        const res = await fetch(`/api/bird-photo?q=${encodeURIComponent(sciName)}`);
-        const data = await res.json();
-        if (data.url) {
-            photoCache.set(cacheKey, data.url);
-            return data.url;
+    // 1️⃣ Essayer Macaulay Library avec le code espèce (le plus fiable)
+    if (speciesCode) {
+        try {
+            const url = `https://search.macaulaylibrary.org/catalog.json?taxonCode=${speciesCode}&mediaType=photo&sort=rating_rank_desc&limit=1`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.length > 0 && data[0].assets && data[0].assets.length > 0) {
+                    const photoUrl = data[0].assets[0].thumb;
+                    photoCache.set(cacheKey, photoUrl);
+                    return photoUrl;
+                }
+            }
+        } catch (e) {
+            console.warn('Macaulay Library échec pour', speciesCode);
         }
-    } catch (e) {
-        console.warn('Photo introuvable pour', sciName);
     }
+
+    // 2️⃣ Fallback : iNaturalist / Wikipedia avec le nom scientifique
+    if (sciName) {
+        try {
+            const res = await fetch(`/api/bird-photo?q=${encodeURIComponent(sciName)}`);
+            const data = await res.json();
+            if (data.url) {
+                photoCache.set(cacheKey, data.url);
+                return data.url;
+            }
+        } catch (e) {
+            console.warn('iNaturalist échec pour', sciName);
+        }
+    }
+
     photoCache.set(cacheKey, null);
     return null;
 }
@@ -44,12 +66,20 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 // ============================================================
 // 2️⃣ Récupère la liste COMPLÈTE d'une checklist (format CORRECT)
 // ============================================================
-async function fetchFullChecklist(subId) {
+async function fetchFullChecklist(subId, retries = 0) {
     if (!userApiKey) throw new Error('Clé API manquante');
 
     const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
         headers: { 'x-user-ebird-key': userApiKey }
     });
+
+    if (res.status === 429) {
+        // Trop de requêtes : attendre un délai exponentiel
+        const delay = Math.min(1000 * Math.pow(2, retries), 10000);
+        console.log(`⏳ Trop de requêtes pour ${subId}, attente ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchFullChecklist(subId, retries + 1);
+    }
 
     if (!res.ok) {
         const errorText = await res.text();
@@ -61,14 +91,11 @@ async function fetchFullChecklist(subId) {
 
     // 🔥 Cas principal : la réponse a un champ "obs"
     if (data.obs && Array.isArray(data.obs)) {
-        // On transforme les obs en observations avec noms communs
         const observations = data.obs.map(obs => {
-            // Chercher le nom commun à partir du speciesCode dans la taxonomie
             const taxon = taxonomy.find(t => t.speciesCode === obs.speciesCode);
             const comName = taxon ? taxon.comName : obs.speciesCode;
             const sciName = taxon ? taxon.sciName : '';
 
-            // Extraire le nombre (gérer le cas "X")
             let count = 1;
             if (obs.howManyStr && obs.howManyStr !== 'X') {
                 count = parseInt(obs.howManyStr, 10) || 1;
@@ -131,47 +158,50 @@ async function fetchAndUpdateAllChecklists() {
         expandedState[id] = cardRefs[id].classList.contains('expanded');
     }
 
-    // Limiter le parallélisme à 3
-    const concurrency = 3;
     let updatedCount = 0;
 
-    for (let i = 0; i < subIds.length; i += concurrency) {
-        const batch = subIds.slice(i, i + concurrency);
-        const promises = batch.map(async (subId) => {
-            const cl = checklists[subId];
-            if (!cl) return;
+    // 🔥 On traite les checklists une par une (parallélisme 1) pour éviter les 429
+    for (let i = 0; i < subIds.length; i++) {
+        const subId = subIds[i];
+        const cl = checklists[subId];
+        if (!cl) continue;
 
-            try {
-                const data = await fetchFullChecklist(subId);
-                if (data.observations && data.observations.length > 0) {
-                    const speciesMap = new Map();
-                    data.observations.forEach(obs => {
-                        const name = obs.comName || obs.commonName || obs.speciesCode || 'Inconnu';
-                        if (!speciesMap.has(name)) {
-                            speciesMap.set(name, {
-                                name: name,
-                                sci: obs.sciName || obs.scientificName || '',
-                                count: 0,
-                                speciesCode: obs.speciesCode || ''
-                            });
-                        }
-                        speciesMap.get(name).count += (obs.howMany || 1);
-                    });
-                    cl.species = Array.from(speciesMap.values());
-                    cl.totalBirds = cl.species.reduce((sum, s) => sum + s.count, 0);
-                    updatedCount++;
-                    console.log(`✅ Checklist ${subId} mise à jour (${cl.species.length} espèces)`);
-                } else {
-                    console.warn(`⚠️ Aucune observation pour ${subId}`);
-                }
-            } catch (err) {
-                console.error(`❌ Erreur pour ${subId}:`, err.message);
+        try {
+            const data = await fetchFullChecklist(subId);
+            if (data.observations && data.observations.length > 0) {
+                const speciesMap = new Map();
+                data.observations.forEach(obs => {
+                    const name = obs.comName || obs.commonName || obs.speciesCode || 'Inconnu';
+                    if (!speciesMap.has(name)) {
+                        speciesMap.set(name, {
+                            name: name,
+                            sci: obs.sciName || obs.scientificName || '',
+                            count: 0,
+                            speciesCode: obs.speciesCode || ''
+                        });
+                    }
+                    speciesMap.get(name).count += (obs.howMany || 1);
+                });
+                cl.species = Array.from(speciesMap.values());
+                cl.totalBirds = cl.species.reduce((sum, s) => sum + s.count, 0);
+                updatedCount++;
+                console.log(`✅ Checklist ${subId} mise à jour (${cl.species.length} espèces)`);
+            } else {
+                console.warn(`⚠️ Aucune observation pour ${subId}`);
             }
-        });
-        await Promise.all(promises);
-        
-        // Afficher une progression dans la console
-        console.log(`⏳ Progression : ${Math.min(i + concurrency, subIds.length)}/${subIds.length}`);
+        } catch (err) {
+            console.error(`❌ Erreur pour ${subId}:`, err.message);
+        }
+
+        // Petit délai entre chaque requête pour respecter les limites de l'API
+        if (i < subIds.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        // Afficher la progression tous les 5 éléments
+        if ((i + 1) % 5 === 0 || i === subIds.length - 1) {
+            console.log(`⏳ Progression : ${i + 1}/${subIds.length}`);
+        }
     }
 
     // 🔥 Un SEUL rafraîchissement à la fin
