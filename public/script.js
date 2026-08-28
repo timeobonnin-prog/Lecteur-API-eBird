@@ -20,32 +20,33 @@ let userPosition = null;
 const photoCache = new Map();
 
 // ============================================================
-// 1️⃣ Récupère une photo (Macaulay Library + fallback)
+// 1️⃣ Récupère une photo (via proxy Macaulay + fallback)
 // ============================================================
 async function fetchBirdPhoto(speciesCode, sciName) {
     if (!speciesCode && !sciName) return null;
     const cacheKey = speciesCode || sciName;
     if (photoCache.has(cacheKey)) return photoCache.get(cacheKey);
 
-    // 1️⃣ Essayer Macaulay Library avec le code espèce (le plus fiable)
+    // 1️⃣ Appel au proxy Macaulay (contourne CORS)
     if (speciesCode) {
         try {
-            const url = `https://search.macaulaylibrary.org/catalog.json?taxonCode=${speciesCode}&mediaType=photo&sort=rating_rank_desc&limit=1`;
-            const res = await fetch(url);
+            const res = await fetch(`/api/macaulay-photo?code=${speciesCode}`);
             if (res.ok) {
                 const data = await res.json();
-                if (data && data.length > 0 && data[0].assets && data[0].assets.length > 0) {
-                    const photoUrl = data[0].assets[0].thumb;
-                    photoCache.set(cacheKey, photoUrl);
-                    return photoUrl;
+                if (data.url) {
+                    console.log(`✅ Photo Macaulay via proxy : ${data.url}`);
+                    photoCache.set(cacheKey, data.url);
+                    return data.url;
+                } else {
+                    console.log(`❌ Pas de photo Macaulay pour ${speciesCode}`);
                 }
             }
         } catch (e) {
-            console.warn('Macaulay Library échec pour', speciesCode);
+            console.warn('Proxy Macaulay échec pour', speciesCode);
         }
     }
 
-    // 2️⃣ Fallback : iNaturalist / Wikipedia avec le nom scientifique
+    // 2️⃣ Fallback iNaturalist
     if (sciName) {
         try {
             const res = await fetch(`/api/bird-photo?q=${encodeURIComponent(sciName)}`);
@@ -74,7 +75,6 @@ async function fetchFullChecklist(subId, retries = 0) {
     });
 
     if (res.status === 429) {
-        // Trop de requêtes : attendre un délai exponentiel
         const delay = Math.min(1000 * Math.pow(2, retries), 10000);
         console.log(`⏳ Trop de requêtes pour ${subId}, attente ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -87,7 +87,6 @@ async function fetchFullChecklist(subId, retries = 0) {
     }
 
     const data = await res.json();
-    console.log('📡 Réponse brute (checklist) :', data);
 
     // 🔥 Cas principal : la réponse a un champ "obs"
     if (data.obs && Array.isArray(data.obs)) {
@@ -160,7 +159,6 @@ async function fetchAndUpdateAllChecklists() {
 
     let updatedCount = 0;
 
-    // 🔥 On traite les checklists une par une (parallélisme 1) pour éviter les 429
     for (let i = 0; i < subIds.length; i++) {
         const subId = subIds[i];
         const cl = checklists[subId];
@@ -193,21 +191,17 @@ async function fetchAndUpdateAllChecklists() {
             console.error(`❌ Erreur pour ${subId}:`, err.message);
         }
 
-        // Petit délai entre chaque requête pour respecter les limites de l'API
         if (i < subIds.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 200));
         }
 
-        // Afficher la progression tous les 5 éléments
         if ((i + 1) % 5 === 0 || i === subIds.length - 1) {
             console.log(`⏳ Progression : ${i + 1}/${subIds.length}`);
         }
     }
 
-    // 🔥 Un SEUL rafraîchissement à la fin
     renderChecklists();
 
-    // Restaurer l'état d'expansion
     setTimeout(() => {
         for (const id in expandedState) {
             if (expandedState[id] && cardRefs[id]) {
@@ -403,7 +397,6 @@ async function runScan() {
         if (data.error) throw new Error(data.error);
         rawObservations = data;
         buildChecklists();
-        // 🔥 Lance la mise à jour automatique (asynchrone, ne bloque pas l'affichage)
         fetchAndUpdateAllChecklists();
     } catch (err) {
         document.getElementById('checklistContainer').innerHTML = `<div style="padding:20px; color:#f87171;">${escapeHtml(err.message)}</div>`;
@@ -545,7 +538,6 @@ function renderChecklistCards(filtered, container, showSci) {
             </li>
         `).join('');
 
-        // 🔥 Préserver l'état d'expansion si la carte existait déjà
         const wasExpanded = cardRefs[cl.id] && cardRefs[cl.id].classList.contains('expanded');
         
         card.innerHTML = `
@@ -556,7 +548,6 @@ function renderChecklistCards(filtered, container, showSci) {
                 <a href="https://ebird.org/checklist/${cl.id}" target="_blank" class="ebird-link">🔗 Voir eBird</a>
             </div>`;
 
-        // Restaurer l'état d'expansion si nécessaire
         if (wasExpanded) {
             card.classList.add('expanded');
         }
