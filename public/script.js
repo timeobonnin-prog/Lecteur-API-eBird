@@ -42,15 +42,23 @@ async function fetchBirdPhoto(speciesCode) {
 
 // Récupère la liste COMPLÈTE d'une checklist
 async function fetchFullChecklist(subId) {
-    if (!userApiKey) { alert('Pas de clé API'); return null; }
+    if (!userApiKey) { 
+        alert('Pas de clé API'); 
+        return null; 
+    }
     try {
         const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
             headers: { 'x-user-ebird-key': userApiKey }
         });
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Erreur ${res.status}: ${errorText}`);
+        }
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         return data;
     } catch (err) {
+        console.error('Erreur fetchFullChecklist:', err);
         alert('Erreur lors du chargement de la checklist : ' + err.message);
         return null;
     }
@@ -258,7 +266,7 @@ function buildChecklists() {
             name: obs.comName || 'Inconnu', 
             sci: obs.sciName || '', 
             count: obs.howMany || 1,
-            speciesCode: obs.speciesCode || ''  // pour les photos
+            speciesCode: obs.speciesCode || ''
         });
         checklists[subId].totalBirds += (obs.howMany || 1);
         if (new Date(obs.obsDt) > checklists[subId].dateObj) {
@@ -384,7 +392,8 @@ function renderChecklistCards(filtered, container, showSci) {
             </div>`;
         card.addEventListener('mouseenter', () => map.setView([cl.lat, cl.lng], map.getZoom(), { animate: true, duration: 0.3 }));
         card.addEventListener('click', (e) => {
-            if (e.target.closest('button, a')) return; // ne pas déclencher sur les boutons/liens
+            // Ne pas déclencher sur les boutons, liens ou déclencheurs de photo (ils ont leur propre stopPropagation)
+            if (e.target.closest('button, a, .photo-trigger, .photo-preview')) return;
             map.setView([cl.lat, cl.lng], 12);
             card.classList.toggle('expanded');
         });
@@ -720,6 +729,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // -------------------------------------------------
     // Gestion des photos et listes complètes (délégation)
+    // 🛠️ CORRECTION : ajout de e.stopPropagation() pour éviter la fermeture de la carte
     // -------------------------------------------------
     const container = document.getElementById('checklistContainer');
     
@@ -727,6 +737,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     container.addEventListener('click', async (e) => {
         const trigger = e.target.closest('.photo-trigger');
         if (!trigger) return;
+        e.stopPropagation(); // 🔥 EMPÊCHE LA CARTE DE SE REFERMER
+
         const code = trigger.dataset.code;
         if (!code) {
             trigger.textContent = '❌';
@@ -752,9 +764,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     container.addEventListener('click', async (e) => {
         const btn = e.target.closest('.full-checklist-btn');
         if (!btn) return;
+        e.stopPropagation(); // 🔥 EMPÊCHE LA CARTE DE SE REFERMER
+
         const subId = btn.dataset.subid;
         if (!subId) return;
 
+        // Si le bouton est déjà en erreur, on réessaie
         btn.textContent = '⏳ Chargement...';
         btn.disabled = true;
 
@@ -773,16 +788,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Reconstruire la liste avec toutes les observations
         const speciesHtml = checklistData.observations
-            .map(obs => `
+            .map(obs => {
+                const code = obs.speciesCode || '';
+                return `
                 <li>
                     <span>
                         ${escapeHtml(obs.comName || 'Inconnu')} 
                         ${obs.sciName ? `<em>(${escapeHtml(obs.sciName)})</em>` : ''}
-                        ${obs.speciesCode ? `<span class="photo-trigger" data-code="${escapeHtml(obs.speciesCode)}" style="cursor:pointer; margin-left:6px; font-size:0.7rem; color:var(--neon);" title="Voir la photo">📷</span><span class="photo-preview" style="display:none; margin-left:6px;"><img src="" style="max-width:40px; max-height:40px; border-radius:4px; vertical-align:middle;" /></span>` : ''}
+                        ${code ? `<span class="photo-trigger" data-code="${escapeHtml(code)}" style="cursor:pointer; margin-left:6px; font-size:0.7rem; color:var(--neon);" title="Voir la photo">📷</span><span class="photo-preview" style="display:none; margin-left:6px;"><img src="" style="max-width:40px; max-height:40px; border-radius:4px; vertical-align:middle;" /></span>` : ''}
                     </span>
                     <span class="qty">x${obs.howMany || 1}</span>
                 </li>
-            `).join('');
+            `}).join('');
 
         ul.innerHTML = speciesHtml;
         btn.style.display = 'none';
