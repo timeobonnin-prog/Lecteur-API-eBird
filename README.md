@@ -1,3 +1,5 @@
+<div align="center">
+
 ![Lecteur API eBird](https://github.com/user-attachments/assets/6898c3ef-8f53-4ff2-8874-dd5ea4ed84e8)
 
 # Lecteur API eBird
@@ -14,3 +16,5 @@ Une interface cartographique libre connectée à l'API eBird 2.0 pour explorer l
 🐦 **Lecteur API eBird** — Explorez la biodiversité autour de vous.
 
 Fait avec ❤️ par **Timéo Bonnin**
+
+</div>
