@@ -26,13 +26,8 @@ Une interface web libre et réactive qui utilise l'API eBird pour afficher des c
 ## Capture & démo "en direct"
 Une démo animée est incluse pour la landing page :
 
-![démo rapide](public/demo.gif)
+![démo rapide](demo.gif)
 
-Pour remplacer par un vrai GIF :
-- Ajoutez `public/demo.gif` (2–4s) — je peux générer un GIF si vous voulez — et remplacez l’image ci‑dessous par `![demo](public/demo.gif)`.
-- Ou hébergez une courte vidéo et collez le lien ici.
-
-Si vous voulez que je convertisse une capture vidéo en GIF et l'ajoute au dépôt, dites "Générer GIF".
 
 ## Installation rapide (aperçu frontend)
 1. Cloner le dépôt :
