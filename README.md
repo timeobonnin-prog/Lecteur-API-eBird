@@ -1,20 +1,65 @@
 <div align="center">
 
-<img src="https://github.com/user-attachments/assets/6898c3ef-8f53-4ff2-8874-dd5ea4ed84e8" alt="Lecteur API eBird" width="180" />
+<img src="https://raw.githubusercontent.com/timeobonnin-prog/Lecteur-API-eBird/main/public/API%20Ebird.png" alt="Lecteur API eBird" width="180" />
 
 # Lecteur API eBird
 
-**Explorez les observations d'oiseaux en temps réel**  
-Une interface cartographique libre connectée à l'API eBird 2.0 pour explorer la biodiversité autour de vous.
+**Explorez les observations d'oiseaux en temps réel**
 
-[🌐 Site en ligne](https://lecteur-api-ebird.vercel.app) · [💻 Code source](https://github.com/timeobonnin-prog/Lecteur-API-eBird) · [🔑 Obtenir une clé API](https://ebird.org/api/keygen) · [📄 Licence](https://github.com/timeobonnin-prog/Lecteur-API-eBird/blob/main/LICENSE)
+Une interface web libre et réactive qui utilise l'API eBird pour afficher des checklists, filtrer par espèce, exporter des données et explorer les zones sur une carte interactive.
 
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white) ![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=leaflet&logoColor=white) ![eBird API 2.0](https://img.shields.io/badge/eBird%20API-2.0-4CAF50?style=for-the-badge) ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white) ![MIT License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge) ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
+[🌐 Démo en ligne](https://lecteur-api-ebird.vercel.app) · [💻 Code source](https://github.com/timeobonnin-prog/Lecteur-API-eBird) · [🔑 Obtenir une clé eBird](https://ebird.org/api/keygen) · [📄 Licence](https://github.com/timeobonnin-prog/Lecteur-API-eBird/blob/main/LICENSE)
 
-[🌐 Présentation intégrale du projet ici](https://timeobonnin-prog.github.io/Lecteur-API-eBird/)
 
-🐦 **Lecteur API eBird** — Explorez la biodiversité autour de vous.
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white) ![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=leaflet&logoColor=white) ![eBird API 2.0](https://img.shields.io/badge/eBird%20API-2.0-4CAF50?style=for-the-badge) ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
-Fait avec ❤️ par **Timéo Bonnin**
+---
 
-</div>
+## Présentation rapide
+- Carte interactive (multi fonds)
+- Recherche par espèce et par lieu (autocomplétion)
+- Sélection de zone (découpage en tuiles pour respecter la limite 50 km)
+- Cache client par tuile (réduction des appels API)
+- Export CSV / JSON / TXT
+- Adapté mobile (UI responsive)
+
+## Capture & démo "en direct"
+Pour un README vivant et « qui bouge » :
+- Ajouter un GIF court (2–4s) dans `public/demo.gif` puis insérer `![demo](public/demo.gif)` ici.
+- Ou enregistrer une courte vidéo de l’app et l’héberger, puis ajouter le lien.
+Si vous voulez, je peux générer le code d’exemple pour insérer un GIF et le préparer.
+
+## Installation rapide (aperçu frontend)
+1. Cloner le dépôt :
+```bash
+git clone https://github.com/timeobonnin-prog/Lecteur-API-eBird.git
+cd Lecteur-API-eBird
+```
+2. Prévisualiser la landing page :
+```bash
+python -m http.server 8000
+# ouvrir http://localhost:8000
+```
+3. Pour tester l’application complète, déployer sur Vercel ou exécuter les fonctions dans `api/`.
+
+## Configuration importante
+- L’application frontend demande une clé eBird. Collez-la dans le champ prévu dans l’UI (stockée en `localStorage` sous `ebirdApiKey`).
+- Variables serveur utiles : `HCAPTCHA_SECRET` (vérification captcha) et éventuellement `EBIRD_API_KEY` pour proxys.
+
+## Fichiers clefs
+- `index.html` — page de présentation / landing
+- `public/` — UI, `public/script.js` contient la logique de sélection, cache et requêtes eBird
+- `api/` — fonctions backend (ex: `verify-captcha.js`)
+
+## Développement & contribution
+Contributions bienvenues : ouvrez une issue, proposez une PR. Idées :
+- Déplacer tout le traitement d’API côté serveur pour protéger la clé
+- Réduire concurrence / backoff pour limiter les 429
+- UI : ajouter diagnostics de cache (liste, purge) et améliorations d’accessibilité
+
+## Licence
+MIT — voir `LICENSE`.
+
+---
+
+Si vous voulez un README encore plus visuel (GIF intégré + badges dynamiques + tableau des commandes), dites "Ajouter GIF" ou "Rendre README plus technique" et je le fais.
