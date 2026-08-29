@@ -302,7 +302,7 @@ body { background:var(--bg); color:var(--text); font-family:system-ui, sans-seri
         min-height: 36px !important;
     }
     
-    /* SIDEBAR - Affichée en bas, bien visible */
+    /* SIDEBAR - Affichée en bas, bien visible - 2/3 de l'écran */
     .sidebar {
         position: relative;
         top: auto;
@@ -311,8 +311,8 @@ body { background:var(--bg); color:var(--text); font-family:system-ui, sans-seri
         bottom: auto;
         width: 100%;
         height: auto;
-        max-height: 55vh;
-        min-height: 280px;
+        max-height: 66vh;
+        min-height: 340px;
         border-radius: 20px 20px 0 0;
         transition: max-height 0.3s;
         margin-top: 0;
@@ -602,8 +602,8 @@ body { background:var(--bg); color:var(--text); font-family:system-ui, sans-seri
     
     /* SIDEBAR */
     .sidebar {
-        max-height: 45vh;
-        min-height: 220px;
+        max-height: 55vh;
+        min-height: 280px;
     }
     .sidebar-header {
         padding: 14px;
