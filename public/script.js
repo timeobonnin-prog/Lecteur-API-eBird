@@ -25,6 +25,8 @@ let selectionPoints = [];
 let selectionLayer = null;
 const cacheTTL = 1000 * 60 * 60; // 1 heure
 const checklistCacheTTL = 1000 * 60 * 60 * 24; // 24 heures
+// Toggle per-tile caching. Set to false to avoid localStorage bloat for very large selections
+const TILE_CACHING_ENABLED = false;
 
 function showSelectMessage(msg) {
     let el = document.getElementById('selectMessage');
@@ -559,11 +561,24 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
             tiles.push([latCenter, lngCenter]);
         }
     }
+    // Limit tiles if too many: sample up to MAX_TILES centers
+    const MAX_TILES = 10;
+    let usedTiles = tiles;
+    if (tiles.length > MAX_TILES) {
+        const step = tiles.length / MAX_TILES;
+        const sampled = [];
+        for (let k = 0; k < MAX_TILES; k++) {
+            sampled.push(tiles[Math.floor(k * step)]);
+        }
+        usedTiles = sampled;
+        showSelectMessage(`Sélection large — limitée à ${usedTiles.length} tuiles de ${MAX_RADIUS}km (max)`);
+    }
+
     let aggregated = [];
     const seen = new Set();
     const concurrency = 3;
-    for (let i=0;i<tiles.length;i+=concurrency) {
-        const batch = tiles.slice(i, i+concurrency);
+    for (let i=0;i<usedTiles.length;i+=concurrency) {
+        const batch = usedTiles.slice(i, i+concurrency);
         await Promise.all(batch.map(async (c) => {
             const tileRadius = Math.min(MAX_RADIUS, radiusKm);
             const url = `/api/ebird?lat=${c[0]}&lng=${c[1]}&dist=${tileRadius}&maxResults=10000`;
@@ -574,17 +589,19 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
                 if (Array.isArray(data)) {
                     data.forEach(obs => { if (obs.subId && !seen.has(obs.subId)) { seen.add(obs.subId); aggregated.push(obs); } });
                 }
-                // Cache per-tile to avoid storing one huge aggregated object
-                try {
-                    const tileKey = `ebird_cache:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
-                    localStorage.setItem(tileKey, JSON.stringify({ t: Date.now(), data }));
-                } catch (e) { /* ignore storage errors */ }
-                // Build and store enriched checklists per tile (species aggregated) to avoid recomputing later
-                try {
-                    const tileChecklists = buildChecklistsFromRaw(data);
-                    const enrichedKey = `ebird_cache_enriched:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
-                    localStorage.setItem(enrichedKey, JSON.stringify({ t: Date.now(), v: tileChecklists }));
-                } catch (e) { /* ignore */ }
+                // Cache per-tile (disabled by default to avoid localStorage bloat for large selections)
+                if (typeof TILE_CACHING_ENABLED !== 'undefined' && TILE_CACHING_ENABLED) {
+                    try {
+                        const tileKey = `ebird_cache:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
+                        localStorage.setItem(tileKey, JSON.stringify({ t: Date.now(), data }));
+                    } catch (e) { /* ignore storage errors */ }
+                    // Build and store enriched checklists per tile (species aggregated) to avoid recomputing later
+                    try {
+                        const tileChecklists = buildChecklistsFromRaw(data);
+                        const enrichedKey = `ebird_cache_enriched:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
+                        localStorage.setItem(enrichedKey, JSON.stringify({ t: Date.now(), v: tileChecklists }));
+                    } catch (e) { /* ignore */ }
+                }
             } catch (e) { console.warn('Tile fetch error', e); }
         }));
         // small pause to reduce burst
@@ -594,7 +611,7 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
     rawObservations = aggregated;
     buildChecklists();
     fetchAndUpdateAllChecklists();
-    showCacheBadge(`Résultat agrégé de ${tiles.length} requêtes (cache par tuile)`);
+    showCacheBadge(`Résultat agrégé de ${usedTiles.length} requêtes (cache par tuile)`);
     hideSelectMessage();
 }
 
