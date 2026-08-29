@@ -132,9 +132,26 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 async function fetchFullChecklist(subId, retries = 0) {
  if (!userApiKey) throw new Error('Clé API manquante');
 
- // 🔥 FORCER IGNORER LE CACHE POUR CE TEST
- // (on ne lit pas le cache pour voir la réponse brute)
- // On va juste logger et continuer
+ // 🔥 Vérifier le cache, mais ignorer si la valeur est { observations: [] }
+ try {
+ const cacheKey = `ebird_checklist:${subId}`;
+ const raw = localStorage.getItem(cacheKey);
+ if (raw) {
+ const obj = JSON.parse(raw);
+ if (Date.now() - obj.t < checklistCacheTTL) {
+ // Vérifier si les observations ne sont pas vides
+ if (obj.v && obj.v.observations && obj.v.observations.length > 0) {
+ console.log(`✅ Cache valide pour ${subId}, utilisation`);
+ return obj.v;
+ } else {
+ console.log(`⚠️ Cache pour ${subId} est vide, on le supprime`);
+ localStorage.removeItem(cacheKey);
+ }
+ } else {
+ localStorage.removeItem(cacheKey);
+ }
+ }
+ } catch (e) { /* ignore */ }
 
  if (retries === 0) await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -157,30 +174,27 @@ async function fetchFullChecklist(subId, retries = 0) {
 
  const data = await res.json();
 
- // 🔥 LOG OBLIGATOIRE – on verra exactement la réponse
- console.log(`📡 Réponse brute pour ${subId} :`, JSON.stringify(data, null, 2));
+ // 🔥 Log pour voir la réponse (utile pour debug)
+ console.log(`📡 Réponse brute pour ${subId} :`, data);
 
- // Extraction des observations – format spécifique à eBird
+ // --- Extraction des observations (format eBird) ---
  let observations = [];
 
- // Cas 1 : la réponse a un champ "obs" (c'est le format qu'on a vu)
+ // Cas 1 : champ "obs" (le plus fréquent)
  if (data.obs && Array.isArray(data.obs)) {
  observations = data.obs.map(obs => {
- // Chercher le nom dans la taxonomie
  const taxon = taxonomy.find(t => t.speciesCode === obs.speciesCode);
  const comName = taxon ? taxon.comName : obs.speciesCode;
  const sciName = taxon ? taxon.sciName : '';
-
  let count = 1;
  if (obs.howManyStr && obs.howManyStr !== 'X') {
  count = parseInt(obs.howManyStr, 10) || 1;
  } else if (obs.howManyAtleast) {
  count = obs.howManyAtleast;
  }
-
  return {
- comName: comName,
- sciName: sciName,
+ comName,
+ sciName,
  howMany: count,
  speciesCode: obs.speciesCode,
  present: obs.present || false,
@@ -188,32 +202,49 @@ async function fetchFullChecklist(subId, retries = 0) {
  };
  });
  console.log(`✅ ${observations.length} observations extraites de "obs" pour ${subId}`);
- return { observations };
+ const result = { observations };
+ // Sauvegarder dans le cache
+ try {
+ localStorage.setItem(`ebird_checklist:${subId}`, JSON.stringify({ t: Date.now(), v: result }));
+ } catch (e) { /* ignore */ }
+ return result;
  }
 
  // Cas 2 : champ "observations"
  if (data.observations && Array.isArray(data.observations)) {
  observations = data.observations;
  console.log(`✅ ${observations.length} observations extraites de "observations" pour ${subId}`);
- return { observations };
+ const result = { observations };
+ try {
+ localStorage.setItem(`ebird_checklist:${subId}`, JSON.stringify({ t: Date.now(), v: result }));
+ } catch (e) { /* ignore */ }
+ return result;
  }
 
  // Cas 3 : champ "species"
  if (data.species && Array.isArray(data.species)) {
  observations = data.species;
  console.log(`✅ ${observations.length} observations extraites de "species" pour ${subId}`);
- return { observations };
+ const result = { observations };
+ try {
+ localStorage.setItem(`ebird_checklist:${subId}`, JSON.stringify({ t: Date.now(), v: result }));
+ } catch (e) { /* ignore */ }
+ return result;
  }
 
  // Cas 4 : tableau direct
  if (Array.isArray(data)) {
  observations = data;
  console.log(`✅ ${observations.length} observations extraites du tableau pour ${subId}`);
- return { observations };
+ const result = { observations };
+ try {
+ localStorage.setItem(`ebird_checklist:${subId}`, JSON.stringify({ t: Date.now(), v: result }));
+ } catch (e) { /* ignore */ }
+ return result;
  }
 
- // Cas 5 : checklist privée ou vide
- if (data.subId && data.locId && !data.obs) {
+ // Cas 5 : checklist privée ou vide (on ne met pas en cache)
+ if (data.subId && data.locId && !data.obs && !data.observations) {
  console.warn(`⚠️ Checklist ${subId} : métadonnées seulement (privée ou vide)`);
  return { observations: [] };
  }
@@ -222,10 +253,14 @@ async function fetchFullChecklist(subId, retries = 0) {
  for (const key in data) {
  if (Array.isArray(data[key]) && data[key].length > 0) {
  const first = data[key][0];
- if (first && (first.comName || first.sciName || first.speciesCode || first.commonName || first.scientificName || first.speciesCode)) {
+ if (first && (first.comName || first.sciName || first.speciesCode || first.commonName || first.scientificName)) {
  observations = data[key];
  console.log(`✅ ${observations.length} observations extraites de "${key}" pour ${subId}`);
- return { observations };
+ const result = { observations };
+ try {
+ localStorage.setItem(`ebird_checklist:${subId}`, JSON.stringify({ t: Date.now(), v: result }));
+ } catch (e) { /* ignore */ }
+ return result;
  }
  }
  }
