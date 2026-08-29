@@ -445,6 +445,38 @@
                 font-size: 0.95rem;
             }
         }
+
+    /* Modal (demo preview) */
+    .modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.6);
+        z-index: 50;
+    }
+    .modal[aria-hidden="false"] { display:flex; }
+    .modal-content {
+        position: relative;
+        background: linear-gradient(180deg, rgba(9,23,16,0.98), rgba(6,12,10,0.98));
+        border: 1px solid var(--border);
+        padding: 20px;
+        border-radius: 12px;
+        max-width: 900px;
+        width: calc(100% - 40px);
+        box-shadow: 0 8px 30px rgba(2,6,4,0.6);
+    }
+    .modal-close {
+        position: absolute;
+        right: 18px;
+        top: 12px;
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        font-size: 28px;
+        cursor: pointer;
+    }
     </style>
 </head>
 <body>
@@ -460,7 +492,18 @@
                 Connectez-vous avec votre clé eBird, explorez la biodiversité autour de vous et exportez vos données.
             </p>
             <a href="https://lecteur-api-ebird.vercel.app/" class="btn">Lancer l'application</a>
+            <button id="demoBtn" class="btn" style="margin-left:12px;background:transparent;border:1px solid var(--neon);box-shadow:none;">Voir la démo</button>
         </header>
+
+        <!-- Démo modal -->
+        <div id="demoModal" class="modal" aria-hidden="true">
+            <div class="modal-content">
+                <button class="modal-close" id="demoClose" aria-label="Fermer">&times;</button>
+                <h3 style="color:var(--neon);margin-top:6px;margin-bottom:8px;">Démo rapide</h3>
+                <img src="public/demo.svg" alt="Démo Lecteur API eBird" style="max-width:100%;height:auto;border-radius:8px;display:block;margin-bottom:10px;" />
+                <p style="color:var(--muted);font-size:0.95rem;margin:0;">Cliquez en dehors ou appuyez sur Échap pour fermer.</p>
+            </div>
+        </div>
 
         <!-- Fonctionnalités -->
         <section class="section">
@@ -595,6 +638,19 @@
             requestAnimationFrame(animate);
         }
         animate();
+
+        // Demo modal script (ouvrir/fermer)
+        (function(){
+            const demoBtn = document.getElementById('demoBtn');
+            const demoModal = document.getElementById('demoModal');
+            const demoClose = document.getElementById('demoClose');
+            if (demoBtn && demoModal) {
+                demoBtn.addEventListener('click', (e) => { e.preventDefault(); demoModal.style.display = 'flex'; demoModal.setAttribute('aria-hidden','false'); });
+                demoClose && demoClose.addEventListener('click', () => { demoModal.style.display = 'none'; demoModal.setAttribute('aria-hidden','true'); });
+                demoModal.addEventListener('click', (e) => { if (e.target === demoModal) { demoModal.style.display = 'none'; demoModal.setAttribute('aria-hidden','true'); } });
+                window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { demoModal.style.display = 'none'; demoModal.setAttribute('aria-hidden','true'); } });
+            }
+        })();
     </script>
 </body>
 </html>

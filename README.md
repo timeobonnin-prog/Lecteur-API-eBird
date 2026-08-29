@@ -24,10 +24,15 @@ Une interface web libre et réactive qui utilise l'API eBird pour afficher des c
 - Adapté mobile (UI responsive)
 
 ## Capture & démo "en direct"
-Pour un README vivant et « qui bouge » :
-- Ajouter un GIF court (2–4s) dans `public/demo.gif` puis insérer `![demo](public/demo.gif)` ici.
-- Ou enregistrer une courte vidéo de l’app et l’héberger, puis ajouter le lien.
-Si vous voulez, je peux générer le code d’exemple pour insérer un GIF et le préparer.
+Une démo animée est incluse pour la landing page :
+
+![démo rapide](public/demo.svg)
+
+Pour remplacer par un vrai GIF :
+- Ajoutez `public/demo.gif` (2–4s) — je peux générer un GIF si vous voulez — et remplacez l’image ci‑dessous par `![demo](public/demo.gif)`.
+- Ou hébergez une courte vidéo et collez le lien ici.
+
+Si vous voulez que je convertisse une capture vidéo en GIF et l'ajoute au dépôt, dites "Générer GIF".
 
 ## Installation rapide (aperçu frontend)
 1. Cloner le dépôt :
