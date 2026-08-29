@@ -25,6 +25,8 @@ let selectionPoints = [];
 let selectionLayer = null;
 const cacheTTL = 1000 * 60 * 60; // 1 heure
 const checklistCacheTTL = 1000 * 60 * 60 * 24; // 24 heures
+// Toggle per-tile caching. Set to false to avoid localStorage bloat for very large selections
+const TILE_CACHING_ENABLED = false;
 
 function showSelectMessage(msg) {
     let el = document.getElementById('selectMessage');
@@ -587,17 +589,19 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
                 if (Array.isArray(data)) {
                     data.forEach(obs => { if (obs.subId && !seen.has(obs.subId)) { seen.add(obs.subId); aggregated.push(obs); } });
                 }
-                // Cache per-tile to avoid storing one huge aggregated object
-                try {
-                    const tileKey = `ebird_cache:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
-                    localStorage.setItem(tileKey, JSON.stringify({ t: Date.now(), data }));
-                } catch (e) { /* ignore storage errors */ }
-                // Build and store enriched checklists per tile (species aggregated) to avoid recomputing later
-                try {
-                    const tileChecklists = buildChecklistsFromRaw(data);
-                    const enrichedKey = `ebird_cache_enriched:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
-                    localStorage.setItem(enrichedKey, JSON.stringify({ t: Date.now(), v: tileChecklists }));
-                } catch (e) { /* ignore */ }
+                // Cache per-tile (disabled by default to avoid localStorage bloat for large selections)
+                if (typeof TILE_CACHING_ENABLED !== 'undefined' && TILE_CACHING_ENABLED) {
+                    try {
+                        const tileKey = `ebird_cache:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
+                        localStorage.setItem(tileKey, JSON.stringify({ t: Date.now(), data }));
+                    } catch (e) { /* ignore storage errors */ }
+                    // Build and store enriched checklists per tile (species aggregated) to avoid recomputing later
+                    try {
+                        const tileChecklists = buildChecklistsFromRaw(data);
+                        const enrichedKey = `ebird_cache_enriched:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
+                        localStorage.setItem(enrichedKey, JSON.stringify({ t: Date.now(), v: tileChecklists }));
+                    } catch (e) { /* ignore */ }
+                }
             } catch (e) { console.warn('Tile fetch error', e); }
         }));
         // small pause to reduce burst
