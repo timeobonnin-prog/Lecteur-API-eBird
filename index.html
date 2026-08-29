@@ -307,10 +307,143 @@
         }
         .footer a:hover { text-decoration: underline; }
 
-        @media (max-width: 600px) {
-            .hero { padding: 40px 15px 30px; }
-            .hero img { width: 100px; height: 100px; }
-            .features-grid { grid-template-columns: 1fr; }
+        @media (max-width: 768px) {
+            /* Hero Section - Plus spacieux */
+            .hero { 
+                padding: 50px 20px 40px; 
+            }
+            .hero img { 
+                width: 90px; 
+                height: 90px; 
+            }
+            .hero h1 {
+                font-size: clamp(1.8rem, 6vw, 2.5rem);
+                margin-bottom: 15px;
+            }
+            .hero p {
+                font-size: 1rem;
+                line-height: 1.8;
+                margin-bottom: 25px;
+                padding: 0 10px;
+            }
+            
+            /* Bouton principal - Plus gros et cliquable */
+            .btn {
+                padding: 16px 40px;
+                font-size: 1rem;
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+                display: block;
+            }
+            
+            /* Sections - Plus d'air */
+            .section {
+                padding: 30px 20px 50px;
+            }
+            .section h2 {
+                font-size: 1.5rem;
+                margin-bottom: 30px;
+            }
+            
+            /* Grille de fonctionnalités - Une colonne avec espacement */
+            .features-grid { 
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            /* Cartes de fonctionnalités - Plus d'espace interne */
+            .feature-card {
+                padding: 25px;
+                border-radius: 20px;
+            }
+            .feature-card h3 {
+                font-size: 1.15rem;
+                margin-bottom: 12px;
+            }
+            .feature-card p {
+                font-size: 0.95rem;
+                line-height: 1.7;
+            }
+            
+            /* Liste des étapes */
+            .steps li {
+                padding-left: 55px;
+                margin-bottom: 20px;
+                line-height: 1.8;
+                font-size: 1rem;
+            }
+            .steps li a {
+                font-size: 1rem;
+            }
+            
+            /* Liens utiles - Stack vertical */
+            .link-list {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .link-list a {
+                width: 100%;
+                padding: 14px 20px;
+                font-size: 1rem;
+                justify-content: flex-start;
+                border-radius: 15px;
+            }
+            
+            /* Footer */
+            .footer {
+                padding: 25px 20px;
+                font-size: 0.9rem;
+                line-height: 1.8;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Très petits écrans - Encore plus d'espace */
+            .hero { 
+                padding: 40px 15px 30px; 
+            }
+            .hero img { 
+                width: 80px; 
+                height: 80px; 
+            }
+            .hero h1 {
+                font-size: 1.6rem;
+            }
+            .hero p {
+                font-size: 0.95rem;
+                line-height: 1.7;
+            }
+            
+            .btn {
+                padding: 14px 30px;
+                font-size: 0.95rem;
+            }
+            
+            .section {
+                padding: 25px 15px 40px;
+            }
+            .section h2 {
+                font-size: 1.3rem;
+            }
+            
+            .feature-card {
+                padding: 20px;
+            }
+            .feature-card h3 {
+                font-size: 1.1rem;
+            }
+            
+            .steps li {
+                padding-left: 45px;
+                margin-bottom: 18px;
+                font-size: 0.95rem;
+            }
+            
+            .link-list a {
+                padding: 12px 16px;
+                font-size: 0.95rem;
+            }
         }
     </style>
 </head>
