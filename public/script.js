@@ -130,115 +130,119 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 // 2️⃣ Récupère la liste COMPLÈTE d'une checklist (avec retry robuste)
 // ============================================================
 async function fetchFullChecklist(subId, retries = 0) {
-    if (!userApiKey) throw new Error('Clé API manquante');
+ if (!userApiKey) throw new Error('Clé API manquante');
 
-    // Vérifier cache local
-    try {
-        const cacheKey = `ebird_checklist:${subId}`;
-        const raw = localStorage.getItem(cacheKey);
-        if (raw) {
-            const obj = JSON.parse(raw);
-            if (Date.now() - obj.t < checklistCacheTTL) {
-                return obj.v;
-            } else {
-                localStorage.removeItem(cacheKey);
-            }
-        }
-    } catch (e) { /* ignore */ }
+ // 🔥 AJOUT : Log explicite pour savoir qu’on entre dans la fonction
+ console.log(`🔍 fetchFullChecklist appelée pour ${subId}, tentative ${retries+1}`);
 
-    if (retries === 0) await new Promise(resolve => setTimeout(resolve, 100));
+ // 1️⃣ Cache (on le garde mais on va le logger)
+ try {
+ const cacheKey = `ebird_checklist:${subId}`;
+ const raw = localStorage.getItem(cacheKey);
+ if (raw) {
+ const obj = JSON.parse(raw);
+ if (Date.now() - obj.t < checklistCacheTTL) {
+ console.log(`✅ Cache trouvé pour ${subId}, utilisation`);
+ return obj.v;
+ } else {
+ localStorage.removeItem(cacheKey);
+ }
+ }
+ } catch (e) { /* ignore */ }
 
-    const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
-        headers: { 'x-user-ebird-key': userApiKey }
-    });
+ // 2️⃣ Délai
+ if (retries === 0) await new Promise(resolve => setTimeout(resolve, 100));
 
-    if (res.status === 429) {
-        const delay = Math.min(2000 * Math.pow(2, retries), 30000);
-        console.log(`⏳ 429 pour ${subId}, attente ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return fetchFullChecklist(subId, retries + 1);
-    }
+ // 3️⃣ Requête
+ const res = await fetch(`/api/ebird-checklist?subId=${subId}`, {
+ headers: { 'x-user-ebird-key': userApiKey }
+ });
 
-    if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Erreur ${res.status}: ${errorText}`);
-    }
+ // 4️⃣ Gestion 429
+ if (res.status === 429) {
+ const delay = Math.min(2000 * Math.pow(2, retries), 30000);
+ console.log(`⏳ 429 pour ${subId}, attente ${delay}ms...`);
+ await new Promise(resolve => setTimeout(resolve, delay));
+ return fetchFullChecklist(subId, retries + 1);
+ }
 
-    const data = await res.json();
+ // 5️⃣ Erreur HTTP
+ if (!res.ok) {
+ const errorText = await res.text();
+ console.error(`❌ Erreur HTTP ${res.status} pour ${subId} : ${errorText}`);
+ throw new Error(`Erreur ${res.status}: ${errorText}`);
+ }
 
-    // 🔥 LOG POUR VOIR LA RÉPONSE BRUTE
-    console.log(`📡 Réponse brute pour ${subId} :`, data);
+ // 6️⃣ Lecture JSON
+ const data = await res.json();
 
-    // Sauvegarder dans le cache
-    try {
-        const cacheKey = `ebird_checklist:${subId}`;
-        localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), v: data }));
-    } catch (e) { /* ignore */ }
+ // 🔥🔥🔥 CE LOG EST OBLIGATOIRE – IL APPARAÎTRA DANS LA CONSOLE
+ console.log(`📡 Réponse brute pour ${subId} :`, JSON.stringify(data, null, 2));
 
-    // Extraction des observations
-    let observations = [];
+ // 7️⃣ Sauvegarde cache (avec la réponse brute)
+ try {
+ const cacheKey = `ebird_checklist:${subId}`;
+ localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), v: data }));
+ } catch (e) { /* ignore */ }
 
-    // Cas 1 : champ "obs" (format product/checklist/view)
-    if (data.obs && Array.isArray(data.obs)) {
-        observations = data.obs.map(obs => {
-            const taxon = taxonomy.find(t => t.speciesCode === obs.speciesCode);
-            const comName = taxon ? taxon.comName : obs.speciesCode;
-            const sciName = taxon ? taxon.sciName : '';
-            let count = 1;
-            if (obs.howManyStr && obs.howManyStr !== 'X') {
-                count = parseInt(obs.howManyStr, 10) || 1;
-            } else if (obs.howManyAtleast) {
-                count = obs.howManyAtleast;
-            }
-            return {
-                comName,
-                sciName,
-                howMany: count,
-                speciesCode: obs.speciesCode,
-                present: obs.present || false,
-                comments: obs.comments || ''
-            };
-        });
-        return { observations };
-    }
+ // 8️⃣ Extraction des observations – essai multiple
+ let observations = null;
 
-    // Cas 2 : champ "observations"
-    if (data.observations && Array.isArray(data.observations)) {
-        observations = data.observations;
-        return { observations };
-    }
+ if (data.obs && Array.isArray(data.obs)) {
+ observations = data.obs.map(obs => {
+ const taxon = taxonomy.find(t => t.speciesCode === obs.speciesCode);
+ const comName = taxon ? taxon.comName : obs.speciesCode;
+ const sciName = taxon ? taxon.sciName : '';
+ let count = 1;
+ if (obs.howManyStr && obs.howManyStr !== 'X') {
+ count = parseInt(obs.howManyStr, 10) || 1;
+ } else if (obs.howManyAtleast) {
+ count = obs.howManyAtleast;
+ }
+ return { comName, sciName, howMany: count, speciesCode: obs.speciesCode };
+ });
+ return { observations };
+ }
 
-    // Cas 3 : champ "species"
-    if (data.species && Array.isArray(data.species)) {
-        observations = data.species;
-        return { observations };
-    }
+ if (data.observations && Array.isArray(data.observations)) {
+ observations = data.observations;
+ return { observations };
+ }
 
-    // Cas 4 : tableau direct
-    if (Array.isArray(data)) {
-        observations = data;
-        return { observations };
-    }
+ if (data.species && Array.isArray(data.species)) {
+ observations = data.species;
+ return { observations };
+ }
 
-    // Cas 5 : métadonnées sans observations (checklist privée)
-    if (data.subId && data.locId) {
-        console.warn(`⚠️ Checklist ${subId} privée ou sans observations`);
-        return { observations: [] };
-    }
+ if (Array.isArray(data)) {
+ observations = data;
+ return { observations };
+ }
 
-    // Dernier recours : on cherche un tableau dans l'objet
-    for (const key in data) {
-        if (Array.isArray(data[key]) && data[key].length > 0) {
-            const first = data[key][0];
-            if (first && (first.comName || first.sciName || first.speciesCode)) {
-                observations = data[key];
-                return { observations };
-            }
-        }
-    }
+ if (data.checklist && data.checklist.observations && Array.isArray(data.checklist.observations)) {
+ observations = data.checklist.observations;
+ return { observations };
+ }
 
-    console.warn(`⚠️ Aucune observation trouvée pour ${subId}, format inattendu`);
-    return { observations: [] };
+ // Si on a des métadonnées mais pas d’observations (checklist privée)
+ if (data.subId && data.locId) {
+ console.warn(`⚠️ Checklist ${subId} privée ou vide (aucune observation)`);
+ return { observations: [] };
+ }
+
+ // Recherche d’un tableau quelconque
+ for (const key in data) {
+ if (Array.isArray(data[key]) && data[key].length > 0) {
+ const first = data[key][0];
+ if (first && (first.comName || first.sciName || first.speciesCode || first.commonName || first.scientificName)) {
+ observations = data[key];
+ return { observations };
+ }
+ }
+ }
+
+ console.warn(`⚠️ Aucune observation trouvée pour ${subId}, format inattendu`);
+ return { observations: [] };
 }
 
 // ============================================================
