@@ -425,8 +425,8 @@ body { background:var(--bg); color:var(--text); font-family:system-ui, sans-seri
         display: flex;
         justify-content: space-between;
         gap: 10px;
-        margin-bottom: 5px;
-        padding: 4px 0;
+        margin-bottom: 7px;
+        padding: 6px 0;
         align-items: center;
     }
     .species-list .qty {
