@@ -26,7 +26,7 @@ let selectionLayer = null;
 const cacheTTL = 1000 * 60 * 60; // 1 heure
 const checklistCacheTTL = 1000 * 60 * 60 * 24; // 24 heures
 // Toggle per-tile caching. Set to false to avoid localStorage bloat for very large selections
-const TILE_CACHING_ENABLED = false;
+const TILE_CACHING_ENABLED = true;
 
 function showSelectMessage(msg) {
     let el = document.getElementById('selectMessage');
