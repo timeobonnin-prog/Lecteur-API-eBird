@@ -535,7 +535,8 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
     for (let i=0;i<tiles.length;i+=concurrency) {
         const batch = tiles.slice(i, i+concurrency);
         await Promise.all(batch.map(async (c) => {
-            const url = `/api/ebird?lat=${c[0]}&lng=${c[1]}&dist=${Math.min(MAX_RADIUS, radiusKm)}&maxResults=10000`;
+            const tileRadius = Math.min(MAX_RADIUS, radiusKm);
+            const url = `/api/ebird?lat=${c[0]}&lng=${c[1]}&dist=${tileRadius}&maxResults=10000`;
             try {
                 const res = await fetch(url, { headers: { 'x-user-ebird-key': userApiKey } });
                 if (!res.ok) return;
@@ -543,16 +544,21 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
                 if (Array.isArray(data)) {
                     data.forEach(obs => { if (obs.subId && !seen.has(obs.subId)) { seen.add(obs.subId); aggregated.push(obs); } });
                 }
+                // Cache per-tile to avoid storing one huge aggregated object
+                try {
+                    const tileKey = `ebird_cache:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
+                    localStorage.setItem(tileKey, JSON.stringify({ t: Date.now(), data }));
+                } catch (e) { /* ignore storage errors */ }
             } catch (e) { console.warn('Tile fetch error', e); }
         }));
         // small pause to reduce burst
         await new Promise(r => setTimeout(r, 400));
     }
+    // Use aggregated results in-memory for display, but do not store the full aggregation as a single huge key
     rawObservations = aggregated;
-    try { const key = `ebird_cache:${center[0].toFixed(4)}:${center[1].toFixed(4)}:multi:${Math.round(radiusKm)}`; localStorage.setItem(key, JSON.stringify({ t: Date.now(), data: aggregated })); } catch(e) {}
     buildChecklists();
     fetchAndUpdateAllChecklists();
-    showCacheBadge(`Résultat agrégé de ${tiles.length} requêtes`);
+    showCacheBadge(`Résultat agrégé de ${tiles.length} requêtes (cache par tuile)`);
     hideSelectMessage();
 }
 
