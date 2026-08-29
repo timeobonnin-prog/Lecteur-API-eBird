@@ -549,6 +549,12 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
                     const tileKey = `ebird_cache:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
                     localStorage.setItem(tileKey, JSON.stringify({ t: Date.now(), data }));
                 } catch (e) { /* ignore storage errors */ }
+                // Build and store enriched checklists per tile (species aggregated) to avoid recomputing later
+                try {
+                    const tileChecklists = buildChecklistsFromRaw(data);
+                    const enrichedKey = `ebird_cache_enriched:${c[0].toFixed(4)}:${c[1].toFixed(4)}:${tileRadius}`;
+                    localStorage.setItem(enrichedKey, JSON.stringify({ t: Date.now(), v: tileChecklists }));
+                } catch (e) { /* ignore */ }
             } catch (e) { console.warn('Tile fetch error', e); }
         }));
         // small pause to reduce burst
@@ -560,6 +566,41 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
     fetchAndUpdateAllChecklists();
     showCacheBadge(`Résultat agrégé de ${tiles.length} requêtes (cache par tuile)`);
     hideSelectMessage();
+}
+
+// Build checklists object from a raw observations array (returns object, does not mutate globals)
+function buildChecklistsFromRaw(observations) {
+    const result = {};
+    if (!Array.isArray(observations)) return result;
+    observations.forEach(obs => {
+        const subId = obs.subId; if (!subId) return;
+        if (!result[subId]) {
+            result[subId] = {
+                id: subId,
+                name: obs.locName || 'Lieu inconnu',
+                lat: obs.lat, lng: obs.lng,
+                observer: obs.userDisplayName || 'Anonyme',
+                lastDate: obs.obsDt,
+                dateObj: new Date(obs.obsDt),
+                species: [],
+                totalBirds: 0
+            };
+        }
+        const existing = result[subId].species.find(s => s.name === obs.comName);
+        if (existing) existing.count += (obs.howMany || 1);
+        else result[subId].species.push({
+            name: obs.comName || 'Inconnu',
+            sci: obs.sciName || '',
+            count: obs.howMany || 1,
+            speciesCode: obs.speciesCode || ''
+        });
+        result[subId].totalBirds += (obs.howMany || 1);
+        if (new Date(obs.obsDt) > result[subId].dateObj) {
+            result[subId].dateObj = new Date(obs.obsDt);
+            result[subId].lastDate = obs.obsDt;
+        }
+    });
+    return result;
 }
 
 function buildChecklists() {
