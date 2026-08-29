@@ -507,6 +507,55 @@ async function runScan() {
     }
 }
 
+// Helper: fetch area by splitting into tiles when radius > 50km
+async function fetchAreaWithTiles(bounds, radiusKm) {
+    const MAX_RADIUS = 50;
+    if (radiusKm <= MAX_RADIUS) { document.getElementById('radiusSelect').value = radiusKm; runScan(); return; }
+    showSelectMessage('Zone >50km — découpage en plusieurs requêtes (respect limite API).');
+    const north = bounds.getNorth(), south = bounds.getSouth(), west = bounds.getWest(), east = bounds.getEast();
+    const latSpan = north - south; const lonSpan = east - west;
+    const avgLat = (north + south)/2;
+    const degPerKmLat = 1/111;
+    const degPerKmLng = 1/(111 * Math.cos(avgLat * Math.PI/180) || 1);
+    const stepLat = (MAX_RADIUS*2 - 5) * degPerKmLat;
+    const stepLng = (MAX_RADIUS*2 - 5) * degPerKmLng;
+    const latSteps = Math.max(1, Math.ceil(latSpan / stepLat));
+    const lonSteps = Math.max(1, Math.ceil(lonSpan / stepLng));
+    const tiles = [];
+    for (let i=0;i<latSteps;i++){
+        for (let j=0;j<lonSteps;j++){
+            const latCenter = south + (i+0.5)*(latSpan/latSteps);
+            const lngCenter = west + (j+0.5)*(lonSpan/lonSteps);
+            tiles.push([latCenter, lngCenter]);
+        }
+    }
+    let aggregated = [];
+    const seen = new Set();
+    const concurrency = 3;
+    for (let i=0;i<tiles.length;i+=concurrency) {
+        const batch = tiles.slice(i, i+concurrency);
+        await Promise.all(batch.map(async (c) => {
+            const url = `/api/ebird?lat=${c[0]}&lng=${c[1]}&dist=${Math.min(MAX_RADIUS, radiusKm)}&maxResults=10000`;
+            try {
+                const res = await fetch(url, { headers: { 'x-user-ebird-key': userApiKey } });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    data.forEach(obs => { if (obs.subId && !seen.has(obs.subId)) { seen.add(obs.subId); aggregated.push(obs); } });
+                }
+            } catch (e) { console.warn('Tile fetch error', e); }
+        }));
+        // small pause to reduce burst
+        await new Promise(r => setTimeout(r, 400));
+    }
+    rawObservations = aggregated;
+    try { const key = `ebird_cache:${center[0].toFixed(4)}:${center[1].toFixed(4)}:multi:${Math.round(radiusKm)}`; localStorage.setItem(key, JSON.stringify({ t: Date.now(), data: aggregated })); } catch(e) {}
+    buildChecklists();
+    fetchAndUpdateAllChecklists();
+    showCacheBadge(`Résultat agrégé de ${tiles.length} requêtes`);
+    hideSelectMessage();
+}
+
 function buildChecklists() {
     checklists = {};
     rawObservations.forEach(obs => {
@@ -1007,9 +1056,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 selectionPoints = [];
                 hideSelectMessage();
                 if (selectBtn) selectBtn.classList.remove('active');
-                showSelectMessage('Zone sélectionnée — Chargement des listes…');
-                setTimeout(() => hideSelectMessage(), 2000);
-                if (userApiKey) runScan();
+
+                // Respect API max radius (50 km): if selection >50 km, découper en tuiles et agréger
+                if (radiusKm > 50) {
+                    showSelectMessage('Sélection >50 km — découpage en plusieurs requêtes pour respecter la limite API.');
+                    // lancer requêtes tuiles et agréger
+                    fetchAreaWithTiles(bounds, radiusKm);
+                } else {
+                    showSelectMessage('Zone sélectionnée — Chargement des listes…');
+                    setTimeout(() => hideSelectMessage(), 2000);
+                    if (userApiKey) runScan();
+                }
             }
             return;
         }
