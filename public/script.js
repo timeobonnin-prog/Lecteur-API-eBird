@@ -53,6 +53,36 @@ function showCacheBadge(txt) {
 }
 function hideCacheBadge() { const el = document.getElementById('cacheBadge'); if (el) el.style.display = 'none'; }
 
+// Utility: log ebird cache keys and sizes for debugging
+function logCacheOverview() {
+    try {
+        const keys = Object.keys(localStorage).filter(k => k.startsWith('ebird_cache:') || k.startsWith('ebird_cache_enriched:'));
+        console.group('ebird cache overview');
+        console.log('Total ebird cache keys:', keys.length);
+        let totalSize = 0;
+        keys.forEach(k => {
+            const raw = localStorage.getItem(k) || '';
+            const size = raw.length;
+            totalSize += size;
+            let age = '';
+            try {
+                const obj = JSON.parse(raw);
+                if (obj && obj.t) age = Math.round((Date.now() - obj.t) / 1000) + 's';
+            } catch (e) { /* not JSON or parse error */ }
+            console.log(k, 'size=', size + ' chars', age ? ('age=' + age) : '');
+        });
+        console.log('Total size (chars):', totalSize);
+        console.groupEnd();
+    } catch (e) {
+        console.error('logCacheOverview error', e);
+    }
+}
+
+// Expose helpers for quick console use
+window.logEbirdCache = logCacheOverview;
+window.showEbirdCacheKey = function(key) { try { console.log(JSON.parse(localStorage.getItem(key))); } catch(e){ console.log(localStorage.getItem(key)); } };
+
+
 
 // ============================================================
 // 1️⃣ Récupère une photo (via proxy Macaulay + fallback)
