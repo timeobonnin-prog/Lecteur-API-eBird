@@ -28,7 +28,6 @@ Une démo animée est incluse pour la landing page :
 
 ![démo rapide](demo.gif)
 
-
 ## Installation rapide (aperçu frontend)
 1. Cloner le dépôt :
 ```bash
