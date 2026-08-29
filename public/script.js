@@ -19,6 +19,41 @@ let userPosition = null;
 // Cache pour les photos
 const photoCache = new Map();
 
+// Sélection de zone et cache
+let selectionMode = false;
+let selectionPoints = [];
+let selectionLayer = null;
+const cacheTTL = 1000 * 60 * 60; // 1 heure
+const checklistCacheTTL = 1000 * 60 * 60 * 24; // 24 heures
+
+function showSelectMessage(msg) {
+    let el = document.getElementById('selectMessage');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'selectMessage';
+        el.className = 'select-message';
+        document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+function hideSelectMessage() { const el = document.getElementById('selectMessage'); if (el) el.style.display = 'none'; }
+
+function showCacheBadge(txt) {
+    let el = document.getElementById('cacheBadge');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'cacheBadge';
+        el.className = 'cache-badge';
+        document.body.appendChild(el);
+    }
+    el.textContent = txt;
+    el.style.display = 'block';
+    setTimeout(() => { if (el) el.style.display = 'none'; }, 2500);
+}
+function hideCacheBadge() { const el = document.getElementById('cacheBadge'); if (el) el.style.display = 'none'; }
+
+
 // ============================================================
 // 1️⃣ Récupère une photo (via proxy Macaulay + fallback)
 // ============================================================
@@ -65,6 +100,20 @@ async function fetchBirdPhoto(speciesCode, sciName) {
 async function fetchFullChecklist(subId, retries = 0) {
     if (!userApiKey) throw new Error('Clé API manquante');
 
+    // Vérifier cache local pour la checklist
+    try {
+        const cacheKey = `ebird_checklist:${subId}`;
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) {
+            const obj = JSON.parse(raw);
+            if (Date.now() - obj.t < checklistCacheTTL) {
+                return obj.v;
+            } else {
+                localStorage.removeItem(cacheKey);
+            }
+        }
+    } catch (e) { /* ignore cache errors */ }
+
     // Délai initial de 100ms
     if (retries === 0) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -88,6 +137,13 @@ async function fetchFullChecklist(subId, retries = 0) {
     }
 
     const data = await res.json();
+
+    // Sauvegarder dans le cache local pour éviter de recharger
+    try {
+        const cacheKey = `ebird_checklist:${subId}`;
+        localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), v: data }));
+    } catch (e) { /* ignore storage errors */ }
+
 
     if (data.obs && Array.isArray(data.obs)) {
         const observations = data.obs.map(obs => {
@@ -414,6 +470,25 @@ async function runScan() {
     if (!userApiKey || currentSpeciesCode) return;
     showLoading();
     const radius = document.getElementById('radiusSelect').value;
+
+    // Vérifier le cache local first
+    const cacheKey = `ebird_cache:${center[0].toFixed(4)}:${center[1].toFixed(4)}:${radius}`;
+    try {
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) {
+            const obj = JSON.parse(raw);
+            if (Date.now() - obj.t < cacheTTL) {
+                rawObservations = obj.data;
+                buildChecklists();
+                fetchAndUpdateAllChecklists();
+                showCacheBadge('Données chargées depuis le cache');
+                return;
+            } else {
+                localStorage.removeItem(cacheKey);
+            }
+        }
+    } catch (e) { /* ignore cache errors */ }
+
     const url = `/api/ebird?lat=${center[0]}&lng=${center[1]}&dist=${radius}&maxResults=10000`;
     try {
         const res = await fetch(url, { headers: { 'x-user-ebird-key': userApiKey } });
@@ -421,6 +496,10 @@ async function runScan() {
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         rawObservations = data;
+
+        // Sauvegarder dans le cache local
+        try { localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), data })); } catch (e) { /* ignore */ }
+
         buildChecklists();
         fetchAndUpdateAllChecklists();
     } catch (err) {
@@ -902,12 +981,62 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     map.on('click', (e) => {
+        const selectBtn = document.getElementById('selectAreaBtn');
+        if (selectionMode) {
+            if (selectionPoints.length === 0) {
+                selectionPoints.push(e.latlng);
+                showSelectMessage('Sélectionnez le coin opposé pour définir la zone');
+                // place a temporary marker
+                L.circleMarker(e.latlng, { radius:4, color:'#0ea' }).addTo(layerGroup);
+            } else {
+                selectionPoints.push(e.latlng);
+                const lat1 = selectionPoints[0].lat, lng1 = selectionPoints[0].lng;
+                const lat2 = selectionPoints[1].lat, lng2 = selectionPoints[1].lng;
+                const south = Math.min(lat1, lat2), north = Math.max(lat1, lat2);
+                const west = Math.min(lng1, lng2), east = Math.max(lng1, lng2);
+                const bounds = L.latLngBounds([south, west], [north, east]);
+                if (selectionLayer) map.removeLayer(selectionLayer);
+                selectionLayer = L.rectangle(bounds, { color:'#10b981', weight:1, fillOpacity:0.06 }).addTo(layerGroup);
+                const centerLat = (north + south) / 2; const centerLng = (east + west) / 2;
+                center = [centerLat, centerLng];
+                const corner = L.latLng(north, east);
+                const distMeters = L.latLng(centerLat, centerLng).distanceTo(corner);
+                const radiusKm = Math.max(1, Math.ceil(distMeters / 1000));
+                document.getElementById('radiusSelect').value = radiusKm;
+                selectionMode = false;
+                selectionPoints = [];
+                hideSelectMessage();
+                if (selectBtn) selectBtn.classList.remove('active');
+                showSelectMessage('Zone sélectionnée — Chargement des listes…');
+                setTimeout(() => hideSelectMessage(), 2000);
+                if (userApiKey) runScan();
+            }
+            return;
+        }
+
         center = [e.latlng.lat, e.latlng.lng];
         currentSpeciesCode = null;
         speciesChecklists = {};
         document.getElementById('searchInput').value = '';
         if (userApiKey) runScan();
     });
+
+    // --- Sélection de zone bouton ---
+    const selectBtn = document.getElementById('selectAreaBtn');
+    if (selectBtn) {
+        selectBtn.addEventListener('click', () => {
+            selectionMode = !selectionMode;
+            selectionPoints = [];
+            if (selectionMode) {
+                showSelectMessage('Cliquez sur la carte pour définir le premier coin');
+                selectBtn.classList.add('active');
+            } else {
+                hideSelectMessage();
+                selectBtn.classList.remove('active');
+                if (selectionLayer) { map.removeLayer(selectionLayer); selectionLayer = null; }
+            }
+        });
+    }
 
     // --- GitHub popup ---
     const githubContainer = document.getElementById('githubContainer');

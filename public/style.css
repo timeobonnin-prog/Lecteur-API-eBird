@@ -467,6 +467,34 @@ body { background:var(--bg); color:var(--text); font-family:system-ui, sans-seri
         max-width: 100%;
         border-radius: 20px;
     }
+
+    /* Sélection zone message */
+    .select-message {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(16,185,129,0.95);
+        color: #021;
+        padding: 8px 14px;
+        border-radius: 12px;
+        z-index: 10002;
+        font-weight: 700;
+        box-shadow: 0 6px 18px rgba(2,6,4,0.4);
+        display: none;
+    }
+    .cache-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(255,255,255,0.06);
+        color: var(--neon);
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        z-index: 10002;
+        border:1px solid var(--border);
+    }
     .modal-content h3 {
         margin-bottom: 18px;
         font-size: 1.1rem;
