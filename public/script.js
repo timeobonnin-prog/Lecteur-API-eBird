@@ -559,11 +559,24 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
             tiles.push([latCenter, lngCenter]);
         }
     }
+    // Limit tiles if too many: sample up to MAX_TILES centers
+    const MAX_TILES = 10;
+    let usedTiles = tiles;
+    if (tiles.length > MAX_TILES) {
+        const step = tiles.length / MAX_TILES;
+        const sampled = [];
+        for (let k = 0; k < MAX_TILES; k++) {
+            sampled.push(tiles[Math.floor(k * step)]);
+        }
+        usedTiles = sampled;
+        showSelectMessage(`Sélection large — limitée à ${usedTiles.length} tuiles de ${MAX_RADIUS}km (max)`);
+    }
+
     let aggregated = [];
     const seen = new Set();
     const concurrency = 3;
-    for (let i=0;i<tiles.length;i+=concurrency) {
-        const batch = tiles.slice(i, i+concurrency);
+    for (let i=0;i<usedTiles.length;i+=concurrency) {
+        const batch = usedTiles.slice(i, i+concurrency);
         await Promise.all(batch.map(async (c) => {
             const tileRadius = Math.min(MAX_RADIUS, radiusKm);
             const url = `/api/ebird?lat=${c[0]}&lng=${c[1]}&dist=${tileRadius}&maxResults=10000`;
@@ -594,7 +607,7 @@ async function fetchAreaWithTiles(bounds, radiusKm) {
     rawObservations = aggregated;
     buildChecklists();
     fetchAndUpdateAllChecklists();
-    showCacheBadge(`Résultat agrégé de ${tiles.length} requêtes (cache par tuile)`);
+    showCacheBadge(`Résultat agrégé de ${usedTiles.length} requêtes (cache par tuile)`);
     hideSelectMessage();
 }
 
