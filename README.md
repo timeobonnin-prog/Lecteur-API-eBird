@@ -23,10 +23,14 @@ Une interface web libre et réactive qui utilise l'API eBird pour afficher des c
 - Export CSV / JSON / TXT
 - Adapté mobile (UI responsive)
 
+
 ## Capture & démo "en direct"
 Une démo animée est incluse pour la landing page :
 
 ![démo rapide](demo.gif)
+=======
+
+main
 
 ## Installation rapide (aperçu frontend)
 1. Cloner le dépôt :
