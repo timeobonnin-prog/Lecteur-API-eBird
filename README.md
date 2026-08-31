@@ -8,7 +8,7 @@
 
 Une interface web libre et réactive qui utilise l'API eBird pour afficher des checklists, filtrer par espèce, exporter des données et explorer les zones sur une carte interactive.
 
-[🌐 Site en ligne](https://lecteur-api-ebird.vercel.app) · [💻 Code source](https://github.com/timeobonnin-prog/Lecteur-API-eBird) · [🔑 Obtenir une clé eBird](https://ebird.org/api/keygen) · [📄 Licence](https://github.com/timeobonnin-prog/Lecteur-API-eBird/blob/main/LICENSE) . [🌐 Présentation](https://lecteur-api-ebird.vercel.app)
+[🌐 Site en ligne](https://lecteur-api-ebird.vercel.app) · [💻 Code source](https://github.com/timeobonnin-prog/Lecteur-API-eBird) · [🔑 Obtenir une clé eBird](https://ebird.org/api/keygen) · [📄 Licence](https://github.com/timeobonnin-prog/Lecteur-API-eBird/blob/main/LICENSE) . [🌐 Présentation](https://timeobonnin-prog.github.io/Lecteur-API-eBird/)
 
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white) ![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=leaflet&logoColor=white) ![eBird API 2.0](https://img.shields.io/badge/eBird%20API-2.0-4CAF50?style=for-the-badge) ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
