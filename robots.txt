@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://lecteur-api-ebird.vercel.app/sitemap.xml
+Sitemap: https://timeobonnin-prog.github.io/Lecteur-API-eBird/sitemap.xml
